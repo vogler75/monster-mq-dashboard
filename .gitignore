@@ -12,9 +12,3 @@ src/config/config-instance.json
 # OS & Logs
 .DS_Store
 *.log
-
-# Desktop build artifacts (preserve base icons, ignore temporary outputs)
-build/*
-!build/icon.png
-!build/icon.icns
-!build/icon.ico

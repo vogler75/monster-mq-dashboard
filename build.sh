@@ -132,12 +132,12 @@ if [[ "$BUILD_MAC" = true || "$BUILD_WIN" = true ]]; then
   echo -e "${GREEN}=== Packaging MonsterMQ Desktop App ===${NC}"
 
   # Prepare app icon if needed
-  mkdir -p build
-  if [[ ! -f build/icon.png ]]; then
+  mkdir -p icons
+  if [[ ! -f icons/icon.png ]]; then
     if [[ -f appicon.png ]]; then
-      cp appicon.png build/icon.png
+      cp appicon.png icons/icon.png
     elif [[ -f appicon-option1.png ]]; then
-      cp appicon-option1.png build/icon.png
+      cp appicon-option1.png icons/icon.png
     fi
   fi
 

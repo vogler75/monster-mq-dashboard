@@ -173,12 +173,12 @@ goto finish
 
 :build_desktop
 echo === Packaging MonsterMQ Desktop App ===
-if not exist "build" mkdir build
-if not exist "build\icon.png" (
+if not exist "icons" mkdir icons
+if not exist "icons\icon.png" (
     if exist "appicon.png" (
-        copy /Y "appicon.png" "build\icon.png" >nul
+        copy /Y "appicon.png" "icons\icon.png" >nul
     ) else if exist "appicon-option1.png" (
-        copy /Y "appicon-option1.png" "build\icon.png" >nul
+        copy /Y "appicon-option1.png" "icons\icon.png" >nul
     )
 )
 

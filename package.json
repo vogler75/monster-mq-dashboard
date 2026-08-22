@@ -46,14 +46,14 @@
       "target": [
         "dmg"
       ],
-      "icon": "build/icon.icns",
+      "icon": "icons/icon.icns",
       "artifactName": "${productName}-mac-${arch}.${ext}"
     },
     "win": {
       "target": [
         "nsis"
       ],
-      "icon": "build/icon.ico",
+      "icon": "icons/icon.ico",
       "artifactName": "${productName}-win-${arch}-setup.${ext}"
     }
   }

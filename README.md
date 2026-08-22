@@ -114,7 +114,7 @@ Upload desktop applications (`.dmg` and `.exe`) to GitHub Releases:
 
 ```
 dashboard/
-├── build/                # Desktop app icon assets (.png, .icns, .ico)
+├── icons/                # Desktop app icon assets (.png, .icns, .ico)
 ├── electron/             # Electron main process and preload scripts
 │   ├── main.cjs
 │   └── preload.cjs
