@@ -11,4 +11,6 @@ document.head.appendChild(meta);
 defineIxIconCustomElements();
 defineCustomElements();
 
+window.__DASHBOARD_VERSION__ = typeof __DASHBOARD_VERSION__ !== 'undefined' ? __DASHBOARD_VERSION__ : '1.8.29';
+
 document.body.classList.add('theme-classic-dark');

@@ -353,7 +353,71 @@ class SidebarManager {
             ixMenu.appendChild(logoutItem);
         }
 
+        // About item
+        const aboutItem = document.createElement('ix-menu-item');
+        aboutItem.setAttribute('slot', 'bottom');
+        aboutItem.setAttribute('label', 'About');
+        aboutItem.setAttribute('icon', 'info');
+        aboutItem.addEventListener('click', () => this.showAboutModal());
+        ixMenu.appendChild(aboutItem);
+
         this._addCollapseToggle(ixMenu);
+    }
+
+    async showAboutModal() {
+        const dashVersion = window.__DASHBOARD_VERSION__ ? `v${window.__DASHBOARD_VERSION__}` : 'unknown';
+        let brokerVersion = 'unknown';
+        let nodeId = 'unknown';
+
+        if (window.graphqlClient) {
+            try {
+                const broker = await window.graphqlClient.getBroker();
+                if (broker) {
+                    brokerVersion = broker.version ? `v${broker.version}` : 'unknown';
+                    nodeId = broker.nodeId || (window.brokerManager ? window.brokerManager.getDisplayName() : 'unknown');
+                }
+            } catch (e) {
+                // Ignore failure
+            }
+        }
+
+        const runtime = window.isElectron ? 'Desktop App (Electron)' : 'Web Browser';
+
+        const body = document.createElement('div');
+        body.innerHTML = `
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+                <img src="/assets/logo.png" alt="MonsterMQ" style="width:48px;height:48px;border-radius:8px;">
+                <div>
+                    <h3 style="margin:0;font-size:1.25rem;color:var(--text-primary);">MonsterMQ Dashboard</h3>
+                    <div style="color:var(--text-secondary);font-size:0.875rem;">Industrial IoT & MQTT 5.0 Gateway Platform</div>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--dark-surface-2, #334155);border:1px solid var(--dark-border, #475569);border-radius:8px;">
+                    <span style="color:var(--text-secondary);font-size:0.9rem;">Dashboard Version</span>
+                    <span class="status-badge badge-neutral" style="font-weight:600;font-size:0.85rem;">${dashVersion}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--dark-surface-2, #334155);border:1px solid var(--dark-border, #475569);border-radius:8px;">
+                    <span style="color:var(--text-secondary);font-size:0.9rem;">Connected Broker</span>
+                    <span style="color:var(--text-primary);font-weight:500;font-size:0.9rem;">${nodeId} (${brokerVersion})</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--dark-surface-2, #334155);border:1px solid var(--dark-border, #475569);border-radius:8px;">
+                    <span style="color:var(--text-secondary);font-size:0.9rem;">Runtime Platform</span>
+                    <span style="color:var(--text-primary);font-size:0.9rem;">${runtime}</span>
+                </div>
+            </div>
+        `;
+
+        if (window.ui && window.ui.modal) {
+            window.ui.modal({
+                title: 'About MonsterMQ',
+                body: body,
+                size: 'sm',
+                footer: [
+                    { label: 'Close', variant: 'secondary', onClick: (modal) => modal.close() }
+                ]
+            });
+        }
     }
 
     _addCollapseToggle(ixMenu) {

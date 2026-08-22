@@ -226,9 +226,15 @@ function buildProxyConfig() {
   return proxy;
 }
 
+const pkg = JSON.parse(readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
+const DASHBOARD_VERSION = pkg.version || '1.8.29';
+
 export default defineConfig({
   root: 'src',
   publicDir: false,
+  define: {
+    __DASHBOARD_VERSION__: JSON.stringify(DASHBOARD_VERSION)
+  },
   build: {
     outDir: '../dist',
     emptyOutDir: true,

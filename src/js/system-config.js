@@ -51,6 +51,7 @@ class SystemConfigManager {
         // Node & Cluster
         this.setText('cfg-node-id', cfg.nodeId);
         this.setText('cfg-version', cfg.version);
+        this.setText('cfg-dashboard-version', window.__DASHBOARD_VERSION__ ? `v${window.__DASHBOARD_VERSION__}` : '-');
         this.setEl('cfg-clustered', cfg.clustered
             ? this.badge('enabled', 'Clustered')
             : this.badge('disabled', 'Standalone'));

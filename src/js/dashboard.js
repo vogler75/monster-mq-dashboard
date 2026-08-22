@@ -677,6 +677,11 @@ class DashboardManager {
         const versionElement = document.getElementById('version-info');
         if (!versionElement) return;
 
+        const dashVersion = window.__DASHBOARD_VERSION__ ? `v${window.__DASHBOARD_VERSION__}` : '';
+        const dashBadge = dashVersion
+            ? `<span class="status-badge badge-neutral" title="MonsterMQ Dashboard Version">Dashboard ${dashVersion}</span>`
+            : '';
+
         try {
             const broker = await window.graphqlClient.getBroker();
             const version = broker?.version || 'unknown';
@@ -684,10 +689,13 @@ class DashboardManager {
             const title = nodeId ? `Selected broker: ${nodeId}` : 'Selected broker';
             versionElement.innerHTML =
                 `<span class="status-badge badge-neutral" title="${title}">${nodeId || 'broker'}</span>` +
-                `<span class="status-badge badge-info">v${version}</span>`;
+                `<span class="status-badge badge-info" title="Broker Version">Broker v${version}</span>` +
+                dashBadge;
         } catch (error) {
             console.warn('Failed to load selected broker version:', error);
-            versionElement.innerHTML = `<span class="status-badge badge-neutral">version unknown</span>`;
+            versionElement.innerHTML =
+                `<span class="status-badge badge-neutral">Broker: unknown</span>` +
+                dashBadge;
         }
     }
 
