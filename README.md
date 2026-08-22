@@ -89,23 +89,37 @@ Desktop packages will be generated in `dist-desktop/`.
 
 ---
 
-## Publishing Releases to GitHub
+## Release & Publishing Workflow
+
+### 1. Tag a New Release (`release.sh`)
+
+Automatically bumps version in `version.txt` and `package.json`, generates release notes in `releases/vX.Y.Z.txt` from git commit logs, commits the bump, and creates a local git tag:
+
+```bash
+# Auto-increment patch version (e.g. 1.8.29 -> 1.8.30)
+./release.sh
+
+# Or set explicit version:
+./release.sh 1.9.0
+```
+
+### 2. Build & Publish to GitHub (`publish.sh`)
 
 Upload desktop applications (`.dmg` and `.exe`) to GitHub Releases:
 
 ```bash
-# Upload all desktop packages in dist-desktop/ for current version
-./publish.sh
-
-# Or build desktop apps first and upload automatically:
+# Build desktop packages and upload to GitHub Release
 ./publish.sh --build
+
+# Or upload existing packages in dist-desktop/:
+./publish.sh
 
 # Upload specific platform only:
 ./publish.sh --mac
 ./publish.sh --win
 
-# Non-interactive / CI (auto-confirm):
-./publish.sh -y
+# Push commits and tag to remote repository:
+git push origin HEAD && git push origin --tags
 ```
 
 ---
@@ -130,6 +144,7 @@ dashboard/
 ├── vite.config.js        # Vite bundler configuration & multi-broker dev server
 ├── build.sh              # Unified build script (web & desktop)
 ├── build.bat             # Unified build script for Windows (web & desktop)
+├── release.sh            # Version bump, release notes generation & git tagging
 ├── publish.sh            # Upload desktop apps to GitHub Releases
 ├── run.sh                # Local Vite dev server runner with proxy support
 └── DESIGN.md             # Design system rules & UI guidelines

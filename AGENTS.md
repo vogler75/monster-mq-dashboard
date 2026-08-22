@@ -32,6 +32,10 @@ npm run build
 ./build.sh --win     # Windows NSIS setup
 ./build.sh --clean   # Clean output folders
 
+# Release & version management
+./release.sh         # Auto-increment patch version (e.g. 1.8.29 -> 1.8.30)
+./release.sh 1.9.0   # Set explicit version and create tag
+
 # Publish desktop apps to GitHub Releases
 ./publish.sh         # Upload desktop packages for current version
 ./publish.sh --build # Build and publish
