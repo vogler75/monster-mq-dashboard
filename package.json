@@ -47,6 +47,9 @@
         "dmg"
       ],
       "icon": "icons/icon.icns",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
       "artifactName": "${productName}-mac-${arch}.${ext}"
     },
     "win": {

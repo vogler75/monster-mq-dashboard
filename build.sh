@@ -153,8 +153,7 @@ if [[ "$BUILD_MAC" = true || "$BUILD_WIN" = true ]]; then
     fi
   fi
 
-  echo "Running electron-builder with flags: $BUILD_FLAGS"
-  CSC_IDENTITY_AUTO_DISCOVERY=false npx electron-builder $BUILD_FLAGS
+  npx electron-builder $BUILD_FLAGS
 
   # Post-processing artifact rename for consistency
   if [[ "$BUILD_MAC" = true ]]; then
