@@ -87,6 +87,27 @@ build.bat --win
 
 Desktop packages will be generated in `dist-desktop/`.
 
+### macOS Desktop App Installation (Gatekeeper)
+
+When downloading pre-built macOS `.dmg` installers from GitHub Releases, macOS Gatekeeper tags the download with a quarantine attribute (`com.apple.quarantine`) because the binary is ad-hoc signed without a paid Apple Developer notarization certificate.
+
+When opening for the first time, macOS may show:
+> *"Apple could not verify “MonsterMQ-Dashboard.app” is free of malware that may harm your Mac or compromise your privacy."*
+
+#### How to Open:
+
+- **Option 1 (System Settings)**:
+  1. Open **System Settings** &rarr; **Privacy & Security**.
+  2. Scroll down to the **Security** section.
+  3. Look for *“MonsterMQ-Dashboard.app” was blocked from use...* and click **Open Anyway**.
+
+- **Option 2 (Terminal)**:
+  After copying `MonsterMQ-Dashboard.app` to your `/Applications` folder, run:
+  ```bash
+  xattr -cr /Applications/MonsterMQ-Dashboard.app
+  ```
+  *(This removes the quarantine flag and allows the app to launch directly).*
+
 ---
 
 ## Release & Publishing Workflow
