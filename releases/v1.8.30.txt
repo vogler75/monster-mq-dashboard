@@ -1,0 +1,13 @@
+Release v1.8.30
+Built from commit: 218d1b1
+Date: 2026-08-23 15:48:15
+
+Changes since v1.8.29:
+---
+218d1b1 feat(archive): add QuestDB support to archive groups and database connections
+f29d32d Avoid 404 fetch requests to /api/brokers and /config/brokers.json in production web mode
+018cb4f Fix modal close button callback in UI helper and About dialog
+add38b9 Support CrateDB and SQLite database connection options in archive groups
+0b029e4 Add From and To date and time range picker to Topic Visualizer
+357763d Document macOS Gatekeeper installation steps in README
+b4814a6 Configure ad-hoc signing for macOS desktop packaging to fix damaged app error
