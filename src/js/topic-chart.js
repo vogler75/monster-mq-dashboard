@@ -22,6 +22,7 @@ class TopicChartManager {
         this.topics = []; // Array of {topic, field, color}
         this.timeRangeMinutes = 10;
         this.endTime = new Date();
+        this.startTime = new Date(this.endTime.getTime() - this.timeRangeMinutes * 60 * 1000);
         this.archiveGroup = 'Default';
         this.aggregationMode = 'RAW'; // RAW, ONE_MINUTE, FIVE_MINUTES, FIFTEEN_MINUTES, ONE_HOUR, ONE_DAY
         this.isLoading = false;
@@ -39,6 +40,7 @@ class TopicChartManager {
         this.setupEventListeners();
         await this.loadArchiveGroups();
         this.loadState();
+        this.updateTimeInputs();
         this.updateTimeDisplay();
 
         if (this.topics.length > 0) {
@@ -111,11 +113,56 @@ class TopicChartManager {
     setupEventListeners() {
         // Time range select
         document.getElementById('time-range-select').addEventListener('change', (e) => {
+            if (e.target.value === 'custom') return;
             this.timeRangeMinutes = parseInt(e.target.value);
+            this.startTime = new Date(this.endTime.getTime() - this.timeRangeMinutes * 60 * 1000);
+            this.updateTimeInputs();
             this.saveState();
             this.updateTimeDisplay();
             this.refreshChart();
         });
+
+        // From time input
+        const fromInput = document.getElementById('from-time');
+        if (fromInput) {
+            fromInput.addEventListener('change', (e) => {
+                if (!e.target.value) return;
+                const parsed = new Date(e.target.value);
+                if (isNaN(parsed.getTime())) return;
+
+                this.startTime = parsed;
+                if (this.startTime >= this.endTime) {
+                    this.endTime = new Date(this.startTime.getTime() + Math.max(1, this.timeRangeMinutes) * 60 * 1000);
+                }
+                this.timeRangeMinutes = Math.max(1, Math.round((this.endTime.getTime() - this.startTime.getTime()) / (60 * 1000)));
+                this.updateRangeSelect();
+                this.updateTimeInputs();
+                this.saveState();
+                this.updateTimeDisplay();
+                this.refreshChart();
+            });
+        }
+
+        // To time input
+        const toInput = document.getElementById('to-time');
+        if (toInput) {
+            toInput.addEventListener('change', (e) => {
+                if (!e.target.value) return;
+                const parsed = new Date(e.target.value);
+                if (isNaN(parsed.getTime())) return;
+
+                this.endTime = parsed;
+                if (this.endTime <= this.startTime) {
+                    this.startTime = new Date(this.endTime.getTime() - Math.max(1, this.timeRangeMinutes) * 60 * 1000);
+                }
+                this.timeRangeMinutes = Math.max(1, Math.round((this.endTime.getTime() - this.startTime.getTime()) / (60 * 1000)));
+                this.updateRangeSelect();
+                this.updateTimeInputs();
+                this.saveState();
+                this.updateTimeDisplay();
+                this.refreshChart();
+            });
+        }
 
         // Archive group select
         document.getElementById('archive-group-select').addEventListener('change', (e) => {
@@ -205,38 +252,87 @@ class TopicChartManager {
         }
     }
 
+    toLocalISOString(date) {
+        if (!date || isNaN(date.getTime())) return '';
+        const pad = n => String(n).padStart(2, '0');
+        return date.getFullYear() + '-' +
+            pad(date.getMonth() + 1) + '-' +
+            pad(date.getDate()) + 'T' +
+            pad(date.getHours()) + ':' +
+            pad(date.getMinutes());
+    }
+
+    updateTimeInputs() {
+        const fromInput = document.getElementById('from-time');
+        const toInput = document.getElementById('to-time');
+        if (fromInput) fromInput.value = this.toLocalISOString(this.startTime);
+        if (toInput) toInput.value = this.toLocalISOString(this.endTime);
+    }
+
+    updateRangeSelect() {
+        const select = document.getElementById('time-range-select');
+        if (!select) return;
+        const matching = this.findMatchingPreset(this.timeRangeMinutes);
+        if (matching) {
+            select.value = matching;
+        } else {
+            select.value = 'custom';
+        }
+    }
+
+    findMatchingPreset(minutes) {
+        const options = [5, 10, 30, 60, 360, 1440, 10080];
+        const match = options.find(opt => opt === minutes);
+        return match !== undefined ? match.toString() : null;
+    }
+
     // Time navigation methods
     jumpBack() {
-        this.endTime = new Date(this.endTime.getTime() - this.timeRangeMinutes * 60 * 1000);
+        const duration = this.endTime.getTime() - this.startTime.getTime();
+        this.endTime = new Date(this.endTime.getTime() - duration);
+        this.startTime = new Date(this.startTime.getTime() - duration);
+        this.updateTimeInputs();
         this.updateTimeDisplay();
         this.refreshChart();
     }
 
     stepBack() {
-        const stepMs = this.timeRangeMinutes * 60 * 1000 * 0.1;
+        const duration = this.endTime.getTime() - this.startTime.getTime();
+        const stepMs = duration * 0.1;
         this.endTime = new Date(this.endTime.getTime() - stepMs);
+        this.startTime = new Date(this.startTime.getTime() - stepMs);
+        this.updateTimeInputs();
         this.updateTimeDisplay();
         this.refreshChart();
     }
 
     stepForward() {
-        const stepMs = this.timeRangeMinutes * 60 * 1000 * 0.1;
+        const duration = this.endTime.getTime() - this.startTime.getTime();
+        const stepMs = duration * 0.1;
         const now = new Date();
         this.endTime = new Date(Math.min(this.endTime.getTime() + stepMs, now.getTime()));
+        this.startTime = new Date(this.endTime.getTime() - duration);
+        this.updateTimeInputs();
         this.updateTimeDisplay();
         this.refreshChart();
     }
 
     jumpToNow() {
+        const duration = this.endTime.getTime() - this.startTime.getTime();
         this.endTime = new Date();
+        this.startTime = new Date(this.endTime.getTime() - duration);
+        this.updateTimeInputs();
         this.updateTimeDisplay();
         this.refreshChart();
     }
 
     zoomIn() {
-        if (this.timeRangeMinutes > 1) {
-            this.timeRangeMinutes = Math.max(1, Math.floor(this.timeRangeMinutes / 2));
-            document.getElementById('time-range-select').value = this.findClosestTimeRange(this.timeRangeMinutes);
+        const currentMinutes = Math.max(2, Math.round((this.endTime.getTime() - this.startTime.getTime()) / (60 * 1000)));
+        if (currentMinutes > 1) {
+            this.timeRangeMinutes = Math.max(1, Math.floor(currentMinutes / 2));
+            this.startTime = new Date(this.endTime.getTime() - this.timeRangeMinutes * 60 * 1000);
+            this.updateRangeSelect();
+            this.updateTimeInputs();
             this.saveState();
             this.updateTimeDisplay();
             this.refreshChart();
@@ -244,8 +340,11 @@ class TopicChartManager {
     }
 
     zoomOut() {
-        this.timeRangeMinutes = Math.min(10080, this.timeRangeMinutes * 2); // Max 7 days
-        document.getElementById('time-range-select').value = this.findClosestTimeRange(this.timeRangeMinutes);
+        const currentMinutes = Math.max(1, Math.round((this.endTime.getTime() - this.startTime.getTime()) / (60 * 1000)));
+        this.timeRangeMinutes = Math.min(10080, currentMinutes * 2); // Max 7 days
+        this.startTime = new Date(this.endTime.getTime() - this.timeRangeMinutes * 60 * 1000);
+        this.updateRangeSelect();
+        this.updateTimeInputs();
         this.saveState();
         this.updateTimeDisplay();
         this.refreshChart();
@@ -267,15 +366,18 @@ class TopicChartManager {
     }
 
     updateTimeDisplay() {
-        const startTime = new Date(this.endTime.getTime() - this.timeRangeMinutes * 60 * 1000);
-        const formatOptions = this.timeRangeMinutes >= 1440
+        const durationMinutes = Math.round((this.endTime.getTime() - this.startTime.getTime()) / (60 * 1000));
+        const formatOptions = durationMinutes >= 1440
             ? { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
             : { hour: '2-digit', minute: '2-digit', second: '2-digit' };
 
-        const startStr = startTime.toLocaleString('en-US', formatOptions);
+        const startStr = this.startTime.toLocaleString('en-US', formatOptions);
         const endStr = this.endTime.toLocaleString('en-US', formatOptions);
 
-        document.getElementById('time-display').textContent = `${startStr} - ${endStr}`;
+        const timeDisplay = document.getElementById('time-display');
+        if (timeDisplay) {
+            timeDisplay.textContent = `${startStr} - ${endStr}`;
+        }
     }
 
     // Topic management
@@ -390,19 +492,18 @@ class TopicChartManager {
         this.isLoading = true;
 
         try {
-            const startTime = new Date(this.endTime.getTime() - this.timeRangeMinutes * 60 * 1000);
             let datasets = [];
 
             if (this.aggregationMode === 'RAW') {
                 // Use raw data fetching (existing logic)
-                datasets = await this.fetchRawDatasets(startTime, this.endTime);
+                datasets = await this.fetchRawDatasets(this.startTime, this.endTime);
             } else {
                 // Use aggregated data fetching
-                datasets = await this.fetchAggregatedDatasets(startTime, this.endTime);
+                datasets = await this.fetchAggregatedDatasets(this.startTime, this.endTime);
             }
 
             this.chart.data.datasets = datasets;
-            this.chart.options.scales.x.min = startTime.getTime();
+            this.chart.options.scales.x.min = this.startTime.getTime();
             this.chart.options.scales.x.max = this.endTime.getTime();
             this.chart.update();
 
@@ -667,7 +768,8 @@ class TopicChartManager {
             const timeRange = safeStorage.getItem('topicChart.timeRange');
             if (timeRange) {
                 this.timeRangeMinutes = parseInt(timeRange);
-                document.getElementById('time-range-select').value = this.findClosestTimeRange(this.timeRangeMinutes);
+                this.startTime = new Date(this.endTime.getTime() - this.timeRangeMinutes * 60 * 1000);
+                this.updateRangeSelect();
             }
 
             const archiveGroup = safeStorage.getItem('topicChart.archiveGroup');
@@ -682,6 +784,7 @@ class TopicChartManager {
                 document.getElementById('aggregation-mode-select').value = aggregationMode;
             }
 
+            this.updateTimeInputs();
             this.renderTopicsList();
         } catch (error) {
             console.error('Error loading state:', error);

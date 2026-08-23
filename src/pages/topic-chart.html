@@ -79,12 +79,17 @@
         }
 
         .time-range-select {
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 0.75rem;
             background: var(--dark-bg, var(--background-primary));
             border: 1px solid var(--dark-border, var(--border-color));
             border-radius: 6px;
             color: var(--text-primary);
             font-size: 0.875rem;
+        }
+
+        input[type="datetime-local"].time-range-select {
+            cursor: pointer;
+            color-scheme: dark;
         }
 
         .time-display {
@@ -518,7 +523,7 @@
 
         .hidden {
             display: none !important;
-        }@media (max-width: 768px) {
+        }        @media (max-width: 768px) {
             .topic-browser-side-panel {
                 width: 100vw;
                 right: -100vw;
@@ -532,14 +537,19 @@
             }
 
             .time-controls-group {
-                justify-content: center;
+                justify-content: space-between;
+            }
+
+            .time-controls-group input[type="datetime-local"],
+            .time-controls-group select {
+                flex: 1;
             }
 
             .time-display {
                 margin-left: 0;
                 text-align: center;
             }
-}</style>
+        }</style>
 </head>
 <body>
     <ix-application force-breakpoint="lg">
@@ -578,7 +588,7 @@
                     <button class="btn-nav" id="btn-jump-now" title="Jump to now">&#187;</button>
                 </div>
                 <div class="time-controls-group">
-                    <label>Range:</label>
+                    <label for="time-range-select">Range:</label>
                     <select class="time-range-select" id="time-range-select">
                         <option value="5">5 minutes</option>
                         <option value="10" selected>10 minutes</option>
@@ -587,16 +597,25 @@
                         <option value="360">6 hours</option>
                         <option value="1440">24 hours</option>
                         <option value="10080">7 days</option>
+                        <option value="custom">Custom</option>
                     </select>
                 </div>
                 <div class="time-controls-group">
-                    <label>Archive:</label>
+                    <label for="from-time">From:</label>
+                    <input type="datetime-local" id="from-time" class="time-range-select">
+                </div>
+                <div class="time-controls-group">
+                    <label for="to-time">To:</label>
+                    <input type="datetime-local" id="to-time" class="time-range-select">
+                </div>
+                <div class="time-controls-group">
+                    <label for="archive-group-select">Archive:</label>
                     <select class="time-range-select" id="archive-group-select">
                         <option value="">Loading&hellip;</option>
                     </select>
                 </div>
                 <div class="time-controls-group">
-                    <label>Data:</label>
+                    <label for="aggregation-mode-select">Data:</label>
                     <select class="time-range-select" id="aggregation-mode-select">
                         <option value="RAW">Raw</option>
                         <option value="ONE_MINUTE">1 min avg</option>
