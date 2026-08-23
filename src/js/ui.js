@@ -185,6 +185,19 @@
         setContent(body, opts.body);
         content.appendChild(body);
 
+        function close() {
+            if (!overlay.isConnected) return;
+            document.removeEventListener('keydown', onKeydown, true);
+            overlay.remove();
+            var idx = openModals.indexOf(handle);
+            if (idx !== -1) openModals.splice(idx, 1);
+            if (previouslyFocused && previouslyFocused.focus) {
+                try { previouslyFocused.focus(); } catch (e) { /* element gone */ }
+            }
+            opts.onClose && opts.onClose();
+        }
+        close.close = close;
+
         // Footer
         var autofocusTarget = null;
         if (opts.footer && opts.footer.length) {
@@ -193,7 +206,13 @@
                 var btn = el('button', 'btn btn-' + (spec.variant || 'secondary'), spec.label);
                 btn.type = 'button';
                 if (spec.id) btn.id = spec.id;
-                btn.addEventListener('click', function () { spec.onClick && spec.onClick(close); });
+                btn.addEventListener('click', function () {
+                    if (spec.onClick) {
+                        spec.onClick(close, handle);
+                    } else {
+                        close();
+                    }
+                });
                 if (spec.autofocus) autofocusTarget = btn;
                 footer.appendChild(btn);
             });
@@ -210,18 +229,6 @@
             } else if (e.key === 'Tab') {
                 trapFocus(content, e);
             }
-        }
-
-        function close() {
-            if (!overlay.isConnected) return;
-            document.removeEventListener('keydown', onKeydown, true);
-            overlay.remove();
-            var idx = openModals.indexOf(handle);
-            if (idx !== -1) openModals.splice(idx, 1);
-            if (previouslyFocused && previouslyFocused.focus) {
-                try { previouslyFocused.focus(); } catch (e) { /* element gone */ }
-            }
-            opts.onClose && opts.onClose();
         }
 
         if (dismissable) {

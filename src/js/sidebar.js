@@ -414,7 +414,7 @@ class SidebarManager {
                 body: body,
                 size: 'sm',
                 footer: [
-                    { label: 'Close', variant: 'secondary', onClick: (modal) => modal.close() }
+                    { label: 'Close', variant: 'secondary', onClick: (close) => (typeof close === 'function' ? close() : close.close()) }
                 ]
             });
         }
