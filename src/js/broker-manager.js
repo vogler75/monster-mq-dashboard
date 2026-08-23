@@ -80,6 +80,7 @@ class BrokerManager {
         var loadedFromApi = false;
         var loadedFromRemoteApi = false;
 
+        // 1. Electron Desktop App: load config via IPC
         if (window.isElectron && window.ElectronAPI) {
             try {
                 var config = await window.ElectronAPI.readConfig();
@@ -95,23 +96,7 @@ class BrokerManager {
             }
         }
 
-        if (!loadedFromApi) {
-            try {
-                var apiResponse = await fetch('/api/brokers', { cache: 'no-store' });
-                if (apiResponse.ok) {
-                    var apiPayload = await apiResponse.json();
-                    var apiBrokers = Array.isArray(apiPayload && apiPayload.brokers) ? apiPayload.brokers : apiPayload;
-                    if (Array.isArray(apiBrokers) && apiBrokers.length > 0) {
-                        this.setBrokers(apiBrokers);
-                        loadedFromApi = true;
-                        loadedFromRemoteApi = true;
-                    }
-                }
-            } catch (e) {
-                console.debug('BrokerManager: /api/brokers load failed, falling back to local storage', e);
-            }
-        }
-
+        // 2. Browser Local Storage: check if custom brokers were configured in browser
         if (!loadedFromApi) {
             try {
                 var stored = window.safeStorage.getItem('monstermq_desktop_brokers');
@@ -125,19 +110,28 @@ class BrokerManager {
             }
         }
 
-        if (!loadedFromApi) {
+        // 3. Vite Dev Server only: in development (port 5173), load /api/brokers from Vite dev middleware
+        var isViteDev = window.location.port === '5173' || (typeof window.__VITE_DEV__ !== 'undefined' && window.__VITE_DEV__);
+        if (!loadedFromApi && isViteDev) {
             try {
-                var resp = await fetch('/config/brokers.json', { cache: 'no-store' });
-                if (resp.ok) {
-                    var remote = await resp.json();
-                    this.setBrokers(Array.isArray(remote) ? remote : []);
-                } else {
-                    this.setBrokers([defaultLocal]);
+                var apiResponse = await fetch('/api/brokers', { cache: 'no-store' });
+                if (apiResponse.ok) {
+                    var apiPayload = await apiResponse.json();
+                    var apiBrokers = Array.isArray(apiPayload && apiPayload.brokers) ? apiPayload.brokers : apiPayload;
+                    if (Array.isArray(apiBrokers) && apiBrokers.length > 0) {
+                        this.setBrokers(apiBrokers);
+                        loadedFromApi = true;
+                        loadedFromRemoteApi = true;
+                    }
                 }
             } catch (e) {
-                console.warn('BrokerManager: could not load brokers.json', e);
-                this.setBrokers([defaultLocal]);
+                console.debug('BrokerManager: /api/brokers load failed', e);
             }
+        }
+
+        // 4. Default: local broker endpoint
+        if (!loadedFromApi) {
+            this.setBrokers([defaultLocal]);
         }
 
         this.isLocalMode = !loadedFromRemoteApi;
