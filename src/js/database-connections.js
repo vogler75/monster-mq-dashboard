@@ -113,6 +113,9 @@ class DatabaseConnectionsManager {
             } else if (type === 'MONGODB') {
                 urlLabel.textContent = 'URL';
                 urlInput.placeholder = 'mongodb://host:27017';
+            } else if (type === 'CRATEDB') {
+                urlLabel.textContent = 'URL';
+                urlInput.placeholder = 'jdbc:postgresql://host:5432/doc';
             } else {
                 urlLabel.textContent = 'URL';
                 urlInput.placeholder = 'jdbc:postgresql://host:5432/db';
@@ -137,6 +140,10 @@ class DatabaseConnectionsManager {
         };
         if (input.type === 'POSTGRES') {
             delete input.database;
+        }
+        if (input.type === 'CRATEDB') {
+            delete input.database;
+            delete input.schema;
         }
         if (input.type === 'MONGODB') {
             delete input.schema;

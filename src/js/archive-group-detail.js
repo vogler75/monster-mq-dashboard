@@ -245,15 +245,15 @@ class ArchiveGroupDetailManager {
             const lastValAllowed = new Set(['NONE', 'MEMORY']);
             if (cfg.clustered) lastValAllowed.add('HAZELCAST');
             if (cfg.postgresUrl || this.databaseConnections.some(conn => conn.type === 'POSTGRES')) lastValAllowed.add('POSTGRES');
-            if (cfg.crateDbUrl) lastValAllowed.add('CRATEDB');
+            if (cfg.crateDbUrl || this.databaseConnections.some(conn => conn.type === 'CRATEDB')) lastValAllowed.add('CRATEDB');
             if (cfg.mongoDbUrl || this.databaseConnections.some(conn => conn.type === 'MONGODB')) lastValAllowed.add('MONGODB');
-            if (cfg.sqlitePath) lastValAllowed.add('SQLITE');
+            if (cfg.sqlitePath || this.databaseConnections.some(conn => conn.type === 'SQLITE')) lastValAllowed.add('SQLITE');
 
             const archiveAllowed = new Set(['NONE']);
             if (cfg.postgresUrl || this.databaseConnections.some(conn => conn.type === 'POSTGRES')) archiveAllowed.add('POSTGRES');
-            if (cfg.crateDbUrl) archiveAllowed.add('CRATEDB');
+            if (cfg.crateDbUrl || this.databaseConnections.some(conn => conn.type === 'CRATEDB')) archiveAllowed.add('CRATEDB');
             if (cfg.mongoDbUrl || this.databaseConnections.some(conn => conn.type === 'MONGODB')) archiveAllowed.add('MONGODB');
-            if (cfg.sqlitePath) archiveAllowed.add('SQLITE');
+            if (cfg.sqlitePath || this.databaseConnections.some(conn => conn.type === 'SQLITE')) archiveAllowed.add('SQLITE');
 
             const filterSelect = (id, allowed) => {
                 const select = document.getElementById(id);
@@ -296,6 +296,7 @@ class ArchiveGroupDetailManager {
         const archiveType = document.getElementById('group-archive-type')?.value;
         const requiredTypes = new Set();
         if (lastValType === 'POSTGRES' || archiveType === 'POSTGRES') requiredTypes.add('POSTGRES');
+        if (lastValType === 'CRATEDB' || archiveType === 'CRATEDB') requiredTypes.add('CRATEDB');
         if (lastValType === 'MONGODB' || archiveType === 'MONGODB') requiredTypes.add('MONGODB');
         if (lastValType === 'SQLITE' || archiveType === 'SQLITE') requiredTypes.add('SQLITE');
 

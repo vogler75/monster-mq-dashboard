@@ -193,9 +193,13 @@ class ArchiveGroupsManager {
     getDatabaseConnectionLabel(group) {
         const usesDatabaseConnection =
             group.lastValType === 'POSTGRES' ||
+            group.lastValType === 'CRATEDB' ||
             group.lastValType === 'MONGODB' ||
+            group.lastValType === 'SQLITE' ||
             group.archiveType === 'POSTGRES' ||
-            group.archiveType === 'MONGODB';
+            group.archiveType === 'CRATEDB' ||
+            group.archiveType === 'MONGODB' ||
+            group.archiveType === 'SQLITE';
 
         if (!usesDatabaseConnection) return '-';
         return group.databaseConnectionName || 'Default';

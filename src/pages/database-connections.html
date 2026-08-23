@@ -25,7 +25,7 @@
         <div class="container">
             <div class="page-header">
                 <h1 class="page-title">Database Connections</h1>
-                <p class="page-subtitle">Manage named PostgreSQL, MongoDB, and SQLite connections for archive groups</p>
+                <p class="page-subtitle">Manage named PostgreSQL, CrateDB, MongoDB, and SQLite connections for archive groups</p>
             </div>
 
             <div id="error-message" class="error-message" style="display:none;">
@@ -42,6 +42,7 @@
                         <select id="type-filter" class="form-control">
                             <option value="">All types</option>
                             <option value="POSTGRES">PostgreSQL</option>
+                            <option value="CRATEDB">CrateDB</option>
                             <option value="MONGODB">MongoDB</option>
                             <option value="SQLITE">SQLite</option>
                         </select>
@@ -85,6 +86,7 @@
                             <label for="connection-type">Type</label>
                             <select id="connection-type" class="form-control">
                                 <option value="POSTGRES">PostgreSQL</option>
+                                <option value="CRATEDB">CrateDB</option>
                                 <option value="MONGODB">MongoDB</option>
                                 <option value="SQLITE">SQLite</option>
                             </select>
