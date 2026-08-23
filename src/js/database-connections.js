@@ -116,6 +116,9 @@ class DatabaseConnectionsManager {
             } else if (type === 'CRATEDB') {
                 urlLabel.textContent = 'URL';
                 urlInput.placeholder = 'jdbc:postgresql://host:5432/doc';
+            } else if (type === 'QUESTDB') {
+                urlLabel.textContent = 'URL';
+                urlInput.placeholder = 'ws::addr=localhost:9000; or http://localhost:9000';
             } else {
                 urlLabel.textContent = 'URL';
                 urlInput.placeholder = 'jdbc:postgresql://host:5432/db';

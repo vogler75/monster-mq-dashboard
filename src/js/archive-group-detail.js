@@ -233,7 +233,7 @@ class ArchiveGroupDetailManager {
         try {
             const result = await window.graphqlClient.query(`
                 query { brokerConfig {
-                    clustered postgresUrl crateDbUrl mongoDbUrl sqlitePath kafkaServers
+                    clustered postgresUrl crateDbUrl questDbUrl mongoDbUrl sqlitePath kafkaServers
                 }
                 databaseConnections {
                     name type url username database readOnly
@@ -252,6 +252,7 @@ class ArchiveGroupDetailManager {
             const archiveAllowed = new Set(['NONE']);
             if (cfg.postgresUrl || this.databaseConnections.some(conn => conn.type === 'POSTGRES')) archiveAllowed.add('POSTGRES');
             if (cfg.crateDbUrl || this.databaseConnections.some(conn => conn.type === 'CRATEDB')) archiveAllowed.add('CRATEDB');
+            if (cfg.questDbUrl || this.databaseConnections.some(conn => conn.type === 'QUESTDB')) archiveAllowed.add('QUESTDB');
             if (cfg.mongoDbUrl || this.databaseConnections.some(conn => conn.type === 'MONGODB')) archiveAllowed.add('MONGODB');
             if (cfg.sqlitePath || this.databaseConnections.some(conn => conn.type === 'SQLITE')) archiveAllowed.add('SQLITE');
 
@@ -297,6 +298,7 @@ class ArchiveGroupDetailManager {
         const requiredTypes = new Set();
         if (lastValType === 'POSTGRES' || archiveType === 'POSTGRES') requiredTypes.add('POSTGRES');
         if (lastValType === 'CRATEDB' || archiveType === 'CRATEDB') requiredTypes.add('CRATEDB');
+        if (archiveType === 'QUESTDB') requiredTypes.add('QUESTDB');
         if (lastValType === 'MONGODB' || archiveType === 'MONGODB') requiredTypes.add('MONGODB');
         if (lastValType === 'SQLITE' || archiveType === 'SQLITE') requiredTypes.add('SQLITE');
 

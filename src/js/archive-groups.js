@@ -198,6 +198,7 @@ class ArchiveGroupsManager {
             group.lastValType === 'SQLITE' ||
             group.archiveType === 'POSTGRES' ||
             group.archiveType === 'CRATEDB' ||
+            group.archiveType === 'QUESTDB' ||
             group.archiveType === 'MONGODB' ||
             group.archiveType === 'SQLITE';
 
