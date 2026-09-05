@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonsterMQ - Data Catalog</title>
+    <script type="module" src="/js/ix-init.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/graphql-client.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/log-viewer.js"></script>
+    <script src="/js/sidebar.js"></script>
+</head>
+<body>
+    <ix-application force-breakpoint="lg">
+    <ix-menu application-name="MonsterMQ" pinned start-expanded></ix-menu>
+    <div class="main-content" id="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div class="page-header-content">
+                    <div>
+                        <h1 class="page-title">Data Catalog</h1>
+                        <p class="page-subtitle">Model MQTT data as semantic object types, instances, and relationships</p>
+                    </div>
+                    <div class="page-header-actions" data-requires-auth>
+                        <input type="file" id="catalog-import-file" accept="application/json,.json" hidden>
+                        <button class="btn btn-secondary" id="catalog-import-btn"><ix-icon name="import" size="16"></ix-icon> Import</button>
+                        <button class="btn btn-secondary" id="catalog-export-btn"><ix-icon name="export" size="16"></ix-icon> Export</button>
+                        <button class="btn btn-secondary" id="catalog-infer-btn"><ix-icon name="tree" size="16"></ix-icon> Infer</button>
+                        <button class="btn btn-primary" id="catalog-ai-btn"><ix-icon name="rocket" size="16"></ix-icon> Propose with AI</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-message" class="error-message" style="display:none;">
+                <div class="error-content"><span class="error-icon">&#9888;</span><span class="error-text"></span></div>
+            </div>
+
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <div class="form-group">
+                        <label for="catalog-namespace-filter">Namespace</label>
+                        <select id="catalog-namespace-filter" class="form-control"><option value="">All namespaces</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="catalog-search">Search</label>
+                        <input id="catalog-search" class="form-control" type="search" placeholder="Types, instances, topics, relations">
+                    </div>
+                </div>
+                <div class="toolbar-right">
+                    <ix-icon-button id="catalog-refresh-btn" icon="refresh" variant="subtle-tertiary" title="Refresh catalog"></ix-icon-button>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card"><div class="metric-header"><span class="metric-title">Object Types</span><div class="metric-icon"><ix-icon name="data-management" size="12"></ix-icon></div></div><div class="metric-value" id="catalog-types-count">0</div><div class="metric-label">Semantic schemas</div></div>
+                <div class="metric-card"><div class="metric-header"><span class="metric-title">Instances</span><div class="metric-icon is-info"><ix-icon name="database" size="12"></ix-icon></div></div><div class="metric-value" id="catalog-instances-count">0</div><div class="metric-label">Mapped MQTT objects</div></div>
+                <div class="metric-card"><div class="metric-header"><span class="metric-title">Relations</span><div class="metric-icon is-ok"><ix-icon name="hierarchy" size="12"></ix-icon></div></div><div class="metric-value" id="catalog-relations-count">0</div><div class="metric-label">Semantic links</div></div>
+                <div class="metric-card"><div class="metric-header"><span class="metric-title">Namespaces</span><div class="metric-icon"><ix-icon name="folder" size="12"></ix-icon></div></div><div class="metric-value" id="catalog-namespaces-count">0</div><div class="metric-label">Catalog domains</div></div>
+            </div>
+
+            <div class="data-table">
+                <div class="table-header"><div class="table-title"><h2>Object Types</h2></div><div class="table-actions"><button class="btn btn-primary" id="catalog-add-type" data-requires-auth><ix-icon name="add-circle" size="16"></ix-icon> Add Type</button></div></div>
+                <div class="table-responsive"><table><thead><tr><th>Name</th><th>ID</th><th>Namespace</th><th>Topic Pattern</th><th>Instances</th><th>Updated</th><th>Actions</th></tr></thead><tbody id="catalog-types-body"></tbody></table></div>
+            </div>
+
+            <div class="data-table">
+                <div class="table-header"><div class="table-title"><h2>Object Instances</h2></div><div class="table-actions"><button class="btn btn-primary" id="catalog-add-instance" data-requires-auth><ix-icon name="add-circle" size="16"></ix-icon> Add Instance</button></div></div>
+                <div class="table-responsive"><table><thead><tr><th>Name</th><th>ID</th><th>Type</th><th>Base Topic</th><th>Properties</th><th>Updated</th><th>Actions</th></tr></thead><tbody id="catalog-instances-body"></tbody></table></div>
+            </div>
+
+            <div class="data-table">
+                <div class="table-header"><div class="table-title"><h2>Relationships</h2></div><div class="table-actions"><button class="btn btn-primary" id="catalog-add-relation" data-requires-auth><ix-icon name="add-circle" size="16"></ix-icon> Add Relation</button></div></div>
+                <div class="table-responsive"><table><thead><tr><th>Source</th><th>Relationship</th><th>Target</th><th>Actions</th></tr></thead><tbody id="catalog-relations-body"></tbody></table></div>
+            </div>
+
+            <div id="loading-indicator" class="loading-indicator" style="display:none;"><div class="loading-spinner"></div><span>Loading data catalog&hellip;</span></div>
+        </div>
+    </div>
+    <script src="/js/data-catalog.js"></script>
+    </ix-application>
+</body>
+</html>
