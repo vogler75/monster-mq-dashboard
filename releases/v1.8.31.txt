@@ -1,0 +1,10 @@
+Release v1.8.31
+Built from commit: d8f5f54
+Date: 2026-09-05 13:29:05
+
+Changes since v1.8.30:
+---
+d8f5f54 Standardize dashboard page lifecycle and shared UI patterns
+a766039 Organize Storage and Loggers menus in sidebar
+9959ffe Add data catalog dashboard with CRUD and discovery workflows
+7139e5b Bump lockfile transitive deps
