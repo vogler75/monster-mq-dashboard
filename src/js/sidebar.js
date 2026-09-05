@@ -185,17 +185,22 @@ class SidebarManager {
             {
                 section: 'Configuration', sectionIcon: 'cogwheel',
                 items: [
-                    { href: '/pages/archive-groups.html', icon: 'health', text: 'Archives' },
                     { href: '/pages/scripts.html', icon: 'document', text: 'Scripts', feature: 'FlowEngine' },
                     { href: '/pages/workflows.html', icon: 'ontology-filled', text: 'Workflows', feature: 'FlowEngine' },
                     { href: '/pages/hmi-screens.html', icon: 'screen', text: 'HMI Screens', feature: 'Hmi' }
                 ]
             },
             {
-                section: 'Databases', sectionIcon: 'database',
+                section: 'Storage', sectionIcon: 'database',
                 items: [
-                    { href: '/pages/database-connections.html', icon: 'database', text: 'DB Connections' },
-                    { href: '/pages/jdbc-loggers.html', icon: 'database', text: 'JDBC Loggers', feature: 'JdbcLogger' },
+                    { href: '/pages/archive-groups.html', icon: 'health', text: 'Archives' },
+                    { href: '/pages/database-connections.html', icon: 'database', text: 'Connections' }
+                ]
+            },
+            {
+                section: 'Loggers', sectionIcon: 'log',
+                items: [
+                    { href: '/pages/jdbc-loggers.html', icon: 'database', text: 'JDBC', feature: 'JdbcLogger' },
                     { href: '/pages/influxdb-loggers.html', icon: 'database', text: 'InfluxDB', feature: 'InfluxDBLogger' },
                     { href: '/pages/timebase-loggers.html', icon: 'database', text: 'TimeBase', feature: 'TimeBaseLogger' }
                 ]
