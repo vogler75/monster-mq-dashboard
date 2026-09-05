@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Kafka Server Management JavaScript
 
 class KafkaServerManager {
@@ -81,7 +86,7 @@ class KafkaServerManager {
             else if (server.status === 'ERROR') statusClass = 'status-error';
             else if (!server.enabled) statusClass = 'status-stopped';
             
-            const nodeIndicator = server.isOnCurrentNode ? '📍 ' : '';
+            const nodeIndicator = server.isOnCurrentNode ? '<span class="status-badge badge-info">this node</span> ' : '';
             row.innerHTML = `
                 <td><div class="client-name" style="font-weight:600; color:var(--text-primary);">${this.escapeHtml(server.name)}</div></td>
                 <td><small class="client-namespace" style="font-family:monospace; color:var(--text-muted);">${this.escapeHtml(server.host)}</small></td>
@@ -217,3 +222,13 @@ document.addEventListener('DOMContentLoaded', () => {
     kafkaServerManager = new KafkaServerManager();
     window.kafkaServerManager = kafkaServerManager;
 });
+
+page.expose({
+    get KafkaServerManager() { return KafkaServerManager; },
+    get confirmDeleteKafkaServer() { return confirmDeleteKafkaServer; },
+    get kafkaServerManager() { return kafkaServerManager; },
+    get refreshKafkaServers() { return refreshKafkaServers; }
+});
+page.ready();
+return () => page.dispose();
+}

@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 /**
  * MonsterMQ Script Editor Detail Controller
  * Handles loading, form interaction, AI generation, syntax validation,
@@ -718,6 +723,7 @@ async function saveScript() {
         await graphqlQuery(instanceMutation, instanceVars);
 
         if (isUpdate) {
+            ui.markPageSaved();
             showNotification('Script updated successfully', 'success');
             if (editingScriptName !== instanceId) {
                 // The old-format migration above re-creates the script under a new
@@ -726,10 +732,11 @@ async function saveScript() {
                 editingScriptName = instanceId;
                 const url = new URL(window.location.href);
                 url.searchParams.set('name', instanceId);
-                window.history.replaceState({}, '', url.toString());
+                window.replacePageUrl(url.toString());
             }
             await loadScriptForEditing();
         } else {
+            ui.markPageSaved();
             showNotification(`Script "${displayName}" created successfully`, 'success');
             setTimeout(() => {
                 window.spaLocation.href = `/pages/script-detail.html?name=${encodeURIComponent(instanceId)}`;
@@ -746,7 +753,7 @@ async function deleteCurrentScript() {
     if (!editingScriptName) return;
     
     const displayName = editingScriptName.replace(/^script-instance-/, '').replace(/^script-/, '');
-    showConfirmModal('Confirm Delete', `Are you sure you want to delete script "<b>${escapeHtml(displayName)}</b>"?<br><br>This action cannot be undone.`, async () => {
+    showConfirmModal('Confirm Delete', `Are you sure you want to delete script "${displayName}"?\n\nThis action cannot be undone.`, async () => {
         try {
             const classId = `script-class-${displayName}`;
             const instanceId = `script-instance-${displayName}`;
@@ -762,6 +769,7 @@ async function deleteCurrentScript() {
                 await graphqlQuery(deleteClassMutation, { name: editingScriptName });
             }
             
+            ui.markPageSaved();
             showNotification('Script deleted successfully', 'success');
             setTimeout(goBackToScriptsList, 600);
         } catch (e) {
@@ -803,38 +811,45 @@ function escapeHtml(text) {
 }
 
 function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.textContent = message;
-    notification.style.cssText = `position:fixed;top:20px;right:20px;padding:.6rem 1rem;background:${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};color:#fff;border-radius:4px;z-index:10000;font-size:.75rem;opacity:1;transition:opacity .3s;animation:notify-dismiss 2.8s forwards;`;
-    document.body.appendChild(notification);
-    notification.addEventListener('animationend', () => notification.remove());
-    if (!document.getElementById('notify-keyframes')) {
-        const style = document.createElement('style');
-        style.id = 'notify-keyframes';
-        style.textContent = '@keyframes notify-dismiss{0%,85%{opacity:1}100%{opacity:0}}';
-        document.head.appendChild(style);
+    return ui.toast(message, type);
+}
+
+async function showConfirmModal(title, message, onConfirm, confirmLabel = 'Delete') {
+    if (await ui.confirm({ title, message, confirmLabel, danger: true })) {
+        return onConfirm();
     }
 }
 
-function showConfirmModal(title, message, onConfirm, confirmLabel = 'Delete') {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;z-index:9999;padding:2rem;box-sizing:border-box;';
-    overlay.innerHTML = `
-        <div style="background:var(--dark-surface);border-radius:12px;border:1px solid var(--dark-border);max-width:500px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
-            <div style="padding:1.5rem 2rem;border-bottom:1px solid var(--dark-border);display:flex;justify-content:space-between;align-items:center;">
-                <h3 style="margin:0;color:var(--text-primary);font-size:1.25rem;font-weight:600;">${title}</h3>
-                <button class="modal-close-btn" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;line-height:1;">×</button>
-            </div>
-            <div style="padding:2rem;color:var(--text-primary);">${message}</div>
-            <div style="padding:1.5rem 2rem;border-top:1px solid var(--dark-border);display:flex;justify-content:flex-end;gap:1rem;">
-                <button class="btn btn-secondary modal-cancel-btn">Cancel</button>
-                <button class="btn btn-danger modal-confirm-btn">${confirmLabel}</button>
-            </div>
-        </div>`;
-    document.body.appendChild(overlay);
-    const close = () => overlay.remove();
-    overlay.querySelector('.modal-close-btn').onclick = close;
-    overlay.querySelector('.modal-cancel-btn').onclick = close;
-    overlay.querySelector('.modal-confirm-btn').onclick = () => { close(); onConfirm(); };
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+page.expose({
+    get addDatabaseNode() { return addDatabaseNode; },
+    get addTopicRow() { return addTopicRow; },
+    get collectDatabaseNodes() { return collectDatabaseNodes; },
+    get convertToMs() { return convertToMs; },
+    get databaseNodeCounter() { return databaseNodeCounter; },
+    get deleteCurrentScript() { return deleteCurrentScript; },
+    get editingScriptName() { return editingScriptName; },
+    get escapeHtml() { return escapeHtml; },
+    get expandFullCodeEditor() { return expandFullCodeEditor; },
+    get generateScriptWithAI() { return generateScriptWithAI; },
+    get getDatabaseAccessSummary() { return getDatabaseAccessSummary; },
+    get getDatabaseNodesForPrompt() { return getDatabaseNodesForPrompt; },
+    get goBackToScriptsList() { return goBackToScriptsList; },
+    get graphqlQuery() { return graphqlQuery; },
+    get initScriptDetailPage() { return initScriptDetailPage; },
+    get loadScriptForEditing() { return loadScriptForEditing; },
+    get originalClassData() { return originalClassData; },
+    get originalInstanceData() { return originalInstanceData; },
+    get parseIntervalMs() { return parseIntervalMs; },
+    get parseQueryParams() { return parseQueryParams; },
+    get removeDatabaseNode() { return removeDatabaseNode; },
+    get removeTopicRow() { return removeTopicRow; },
+    get renderDatabaseNodes() { return renderDatabaseNodes; },
+    get saveScript() { return saveScript; },
+    get showConfirmModal() { return showConfirmModal; },
+    get showNotification() { return showNotification; },
+    get toggleTriggerPanels() { return toggleTriggerPanels; },
+    get validateScriptCode() { return validateScriptCode; }
+});
+page.ready();
+return () => page.dispose();
 }

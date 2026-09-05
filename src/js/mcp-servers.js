@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // MCP Server Management JavaScript
 
 class McpServerManager {
@@ -200,3 +205,13 @@ document.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) {
     }
 });
+
+page.expose({
+    get McpServerManager() { return McpServerManager; },
+    get confirmDeleteServer() { return confirmDeleteServer; },
+    get mcpServerManager() { return mcpServerManager; },
+    get refreshMcpServers() { return refreshMcpServers; }
+});
+page.ready();
+return () => page.dispose();
+}

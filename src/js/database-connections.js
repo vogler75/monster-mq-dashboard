@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class DatabaseConnectionsManager {
     constructor() {
         this.connections = [];
@@ -247,3 +252,10 @@ class DatabaseConnectionsManager {
 document.addEventListener('DOMContentLoaded', () => {
     window.databaseConnectionsManager = new DatabaseConnectionsManager();
 });
+
+page.expose({
+    get DatabaseConnectionsManager() { return DatabaseConnectionsManager; }
+});
+page.ready();
+return () => page.dispose();
+}

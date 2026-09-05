@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class TopicNamespaceDetailManager {
     constructor() {
         this.isNewNamespace = false;
@@ -207,6 +212,7 @@ class TopicNamespaceDetailManager {
                 `, { input });
 
                 if (result.topicNamespace.create.success) {
+                    ui.markPageSaved();
                     ui.success(`Namespace "${input.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/topic-namespace-detail.html?name=${encodeURIComponent(input.name)}`; }, 800);
                 } else {
@@ -230,6 +236,7 @@ class TopicNamespaceDetailManager {
                 `, { name: this.namespaceName, input });
 
                 if (result.topicNamespace.update.success) {
+                    ui.markPageSaved();
                     ui.success('Namespace updated successfully');
                     await this.loadNamespace();
                 } else {
@@ -244,17 +251,9 @@ class TopicNamespaceDetailManager {
         }
     }
 
-    showDeleteModal() {
-        document.getElementById('delete-namespace-name').textContent = this.namespaceName;
-        document.getElementById('delete-namespace-modal').style.display = 'flex';
-    }
-
-    hideDeleteModal() {
-        document.getElementById('delete-namespace-modal').style.display = 'none';
-    }
-
-    async confirmDeleteNamespace() {
-        this.hideDeleteModal();
+    async showDeleteModal() {
+        const entityName = this.namespaceName;
+        if (!await ui.confirmDelete(entityName)) return;
 
         try {
             console.log('Deleting namespace:', this.namespaceName);
@@ -268,6 +267,7 @@ class TopicNamespaceDetailManager {
             `, { name: this.namespaceName });
 
             if (result.topicNamespace.delete) {
+                ui.markPageSaved();
                 console.log('Namespace deleted successfully');
                 window.spaLocation.href = '/pages/topic-namespaces.html';
             } else {
@@ -277,6 +277,7 @@ class TopicNamespaceDetailManager {
             console.error('Error deleting namespace:', error);
             this.showError('Failed to delete namespace: ' + error.message);
         }
+
     }
 
     showError(message) { ui.showError(message); }
@@ -305,23 +306,19 @@ function showDeleteModal() {
     window.namespaceDetailManager.showDeleteModal();
 }
 
-function hideDeleteModal() {
-    window.namespaceDetailManager.hideDeleteModal();
-}
-
-function confirmDeleteNamespace() {
-    window.namespaceDetailManager.confirmDeleteNamespace();
-}
-
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
     window.namespaceDetailManager = new TopicNamespaceDetailManager();
 });
 
 // Handle modal clicks (close when clicking outside)
-window.onclick = (event) => {
-    const deleteModal = document.getElementById('delete-namespace-modal');
-    if (event.target === deleteModal) {
-        hideDeleteModal();
-    }
-};
+
+page.expose({
+    get TopicNamespaceDetailManager() { return TopicNamespaceDetailManager; },
+    get goBack() { return goBack; },
+    get saveNamespace() { return saveNamespace; },
+    get showDeleteModal() { return showDeleteModal; }
+});
+page.ready();
+return () => page.dispose();
+}

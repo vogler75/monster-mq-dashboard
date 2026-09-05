@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         
         .tree-node {
@@ -215,7 +215,7 @@
                         <button id="add-user-btn" class="btn btn-primary"><ix-icon name="add-circle" size="16"></ix-icon> Add New User</button>
                     </div>
                 </div>
-                <table>
+                <div class="table-responsive"><table>
                     <thead>
                         <tr>
                             <th>Username</th>
@@ -230,7 +230,7 @@
                     <tbody id="users-table-body">
                         <!-- Users will be populated here -->
                     </tbody>
-                </table>
+                </table></div>
             </div>
         </div>
     </div>
@@ -333,7 +333,7 @@
                                 </div>
                             </div>
                             <div>
-                                <button id="add-acl-rule-btn" class="btn btn-primary" style="padding: 0.5rem 0.75rem; font-size: 0.875rem;">Add</button>
+                                <button id="add-acl-rule-btn" class="btn btn-primary">Add</button>
                             </div>
                         </div>
                         <div style="margin-bottom:0.75rem; font-size:0.7rem; color:var(--theme-color-std-text); opacity:0.7; flex-shrink:0;">
@@ -394,9 +394,9 @@
 
                     <!-- Search/Browse Controls -->
                     <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-                        <input type="text" id="acl-search-input" placeholder="Search topics..." disabled style="flex: 1; padding: 0.5rem; background: var(--dark-bg); border: 1px solid var(--dark-border); border-radius: 6px; color: var(--text-primary); font-size: 0.875rem;" />
-                        <button id="acl-browse-button" class="btn btn-primary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Browse</button>
-                        <button id="acl-search-button" class="btn btn-primary" style="display: none; padding: 0.5rem 1rem; font-size: 0.875rem;">Search</button>
+                        <input type="text" id="acl-search-input" placeholder="Search topics..." disabled style="flex: 1; padding: 0.5rem; background: var(--dark-bg); border: 1px solid var(--dark-border); border-radius: 6px; color: var(--text-primary); font-size: 0.875rem;" / data-ignore-dirty>
+                        <button id="acl-browse-button" class="btn btn-primary">Browse</button>
+                        <button id="acl-search-button" class="btn btn-primary" style="display: none;">Search</button>
                     </div>
 
                     <!-- Topic Tree Container -->
@@ -410,7 +410,7 @@
         </div>
     </div>
 
-    <script src="/js/users.js"></script>
+    <script type="module" src="/js/users.js"></script>
     </ix-application>
 </body>
 </html>

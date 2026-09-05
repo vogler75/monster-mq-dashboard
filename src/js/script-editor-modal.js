@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 /**
  * Shared Script Editor Modal
  *
@@ -96,7 +101,7 @@ const ScriptEditorModal = (() => {
     }
 
     // Get references
-    overlay = document.getElementById('script-editor-overlay');
+    overlay = page.own(document.getElementById('script-editor-overlay'));
     textarea = document.getElementById('script-editor-textarea');
     validationEl = document.getElementById('script-editor-validation');
     aiPanel = document.getElementById('script-editor-ai-panel');
@@ -412,3 +417,10 @@ const ScriptEditorModal = (() => {
 
 // Make globally available
 window.ScriptEditorModal = ScriptEditorModal;
+
+page.expose({
+    get ScriptEditorModal() { return ScriptEditorModal; }
+});
+page.ready();
+return () => page.dispose();
+}

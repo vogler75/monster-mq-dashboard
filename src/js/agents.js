@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // AI Agent Management JavaScript
 
 class AgentManager {
@@ -688,3 +693,13 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+page.expose({
+    get AgentManager() { return AgentManager; },
+    get agentManager() { return agentManager; },
+    get confirmDeleteAgent() { return confirmDeleteAgent; },
+    get refreshAgents() { return refreshAgents; }
+});
+page.ready();
+return () => page.dispose();
+}

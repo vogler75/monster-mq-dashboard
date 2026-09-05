@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Kafka Server Editor/Detail JavaScript
 
 class KafkaServerDetail {
@@ -269,9 +274,11 @@ class KafkaServerDetail {
 
             if (success) {
                 if (this.isNew) {
+                    ui.markPageSaved();
                     this.showSuccess(`Kafka server "${name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/kafka-server-detail.html?server=${encodeURIComponent(name)}`; }, 800);
                 } else {
+                    ui.markPageSaved();
                     this.showSuccess(`Kafka server "${name}" updated successfully`);
                     await this.loadServerDetails();
                 }
@@ -287,17 +294,10 @@ class KafkaServerDetail {
         }
     }
 
-    showDeleteModal() {
-        document.getElementById('delete-server-name').textContent = this.serverName;
-        document.getElementById('delete-server-modal').style.display = 'flex';
-    }
+    async showDeleteModal() {
+        const entityName = this.serverName;
+        if (!await ui.confirmDelete(entityName)) return;
 
-    hideDeleteModal() {
-        document.getElementById('delete-server-modal').style.display = 'none';
-    }
-
-    async confirmDeleteServer() {
-        this.hideDeleteModal();
         this.showLoading(true);
         try {
             const mutation = `
@@ -307,6 +307,7 @@ class KafkaServerDetail {
             `;
             const result = await this.client.query(mutation, { name: this.serverName });
             if (result.kafkaServer.delete) {
+                ui.markPageSaved();
                 this.showSuccess(`Kafka server "${this.serverName}" deleted successfully`);
                 setTimeout(() => window.navigateTo('/pages/kafka-servers.html'), 1500);
             } else {
@@ -318,6 +319,7 @@ class KafkaServerDetail {
         } finally {
             this.showLoading(false);
         }
+
     }
 
     // UI helpers
@@ -331,8 +333,6 @@ class KafkaServerDetail {
 // Global wrappers
 var saveServer = () => kafkaServerDetail.saveServer();
 var showDeleteModal = () => kafkaServerDetail.showDeleteModal();
-var hideDeleteModal = () => kafkaServerDetail.hideDeleteModal();
-var confirmDeleteServer = () => kafkaServerDetail.confirmDeleteServer();
 var addStreamRow = () => kafkaServerDetail.addStreamRow('', '', 168, '', true);
 function removeStreamRow(btn) {
     const row = btn.closest('.stream-config-row');
@@ -356,4 +356,16 @@ function goBack() {
 // Initialize
 var kafkaServerDetail;
 document.addEventListener('DOMContentLoaded', () => { kafkaServerDetail = new KafkaServerDetail(); });
-document.addEventListener('click', e => { if (e.target.classList.contains('modal')) { if (e.target.id === 'delete-server-modal') kafkaServerDetail.hideDeleteModal(); }});
+
+page.expose({
+    get KafkaServerDetail() { return KafkaServerDetail; },
+    get addStreamRow() { return addStreamRow; },
+    get goBack() { return goBack; },
+    get kafkaServerDetail() { return kafkaServerDetail; },
+    get removeStreamRow() { return removeStreamRow; },
+    get saveServer() { return saveServer; },
+    get showDeleteModal() { return showDeleteModal; }
+});
+page.ready();
+return () => page.dispose();
+}

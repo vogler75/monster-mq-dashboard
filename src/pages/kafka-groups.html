@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         .chip-container { display: flex; flex-wrap: wrap; gap: 0.4rem; }
         .topic-chip { display: inline-flex; align-items: center; background: rgba(124, 58, 237, 0.15); color: #C084FC; border: 1px solid rgba(124, 58, 237, 0.3); padding: 0.25rem 0.6rem; border-radius: 12px; font-size: 0.75rem; font-family: monospace; }
@@ -63,12 +63,12 @@
                     <div class="table-actions">
                         <div class="search-container">
                             <span class="search-icon">🔍</span>
-                            <input type="text" id="group-search" class="search-input" placeholder="Search by Group ID..." oninput="kafkaGroupsManager.filterGroups()">
+                            <input type="text" id="group-search" class="search-input" placeholder="Search by Group ID..." oninput="kafkaGroupsManager.filterGroups()" data-ignore-dirty>
                         </div>
                         <ix-icon-button icon="refresh" variant="subtle-tertiary" onclick="refreshKafkaGroups()" title="Refresh consumer groups"></ix-icon-button>
                     </div>
                 </div>
-                <table>
+                <div class="table-responsive"><table>
                     <thead>
                         <tr>
                             <th>Group ID</th>
@@ -81,7 +81,7 @@
                     <tbody id="kafka-groups-table-body">
                         <tr><td colspan="5" class="no-data">Loading consumer groups&hellip;</td></tr>
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             <div id="loading-indicator" class="loading-indicator" style="display:none;">
@@ -99,24 +99,9 @@
     </div>
 
     <!-- Confirm Delete Modal -->
-    <div id="confirm-delete-group-modal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Remove Consumer Group</h3>
-                <button class="modal-close" onclick="hideConfirmDeleteGroupModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the consumer group <strong id="delete-group-name" style="color:var(--monster-purple);"></strong>?</p>
-                <p style="margin-top:0.5rem; color:var(--text-muted); font-size:0.875rem;">This will permanently remove all committed offsets for this group across all MQTT streams. Active consumers will be forced to restart from the configured stream offset defaults (earliest/latest).</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="hideConfirmDeleteGroupModal()">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDeleteGroup()">Delete Group</button>
-            </div>
-        </div>
-    </div>
 
-    <script src="/js/kafka-groups.js"></script>
+
+    <script type="module" src="/js/kafka-groups.js"></script>
     </ix-application>
 </body>
 </html>

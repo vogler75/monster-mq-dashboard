@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 /**
  * MonsterMQ Scripts List Page Controller
  * Table-based listing of simplified Scripts.
@@ -285,7 +290,7 @@ async function toggleScriptState(rawName, enable) {
 
 async function deleteScript(rawName) {
     const cleanName = rawName.replace(/^script-instance-/, '').replace(/^script-/, '');
-    showConfirmModal('Confirm Delete', `Are you sure you want to delete script "<b>${escapeHtml(cleanName)}</b>"?<br><br>This will permanently stop and delete the script.`, async () => {
+    showConfirmModal('Confirm Delete', `Are you sure you want to delete script "${cleanName}"?\n\nThis will permanently stop and delete the script.`, async () => {
         try {
             // Delete instance first, then class
             const deleteInstanceMutation = `mutation($name:String!){ flow { deleteInstance(name:$name) } }`;
@@ -382,39 +387,32 @@ function formatDateTime(dateStr) {
     return dateStr.replace(/\.\d+Z?$/, '').replace('T', ' ');
 }
 
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.textContent = message;
-    notification.style.cssText = `position:fixed;top:20px;right:20px;padding:.6rem 1rem;background:${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};color:#fff;border-radius:4px;z-index:10000;font-size:.75rem;opacity:1;transition:opacity .3s;animation:notify-dismiss 2.8s forwards;`;
-    document.body.appendChild(notification);
-    notification.addEventListener('animationend', () => notification.remove());
-    if (!document.getElementById('notify-keyframes')) {
-        const style = document.createElement('style');
-        style.id = 'notify-keyframes';
-        style.textContent = '@keyframes notify-dismiss{0%,85%{opacity:1}100%{opacity:0}}';
-        document.head.appendChild(style);
-    }
+function showNotification(message, type = 'info') { return ui.toast(message, type); }
+
+async function showConfirmModal(title, message, onConfirm, confirmLabel = 'Delete') {
+    if (await ui.confirm({ title, message, confirmLabel, danger: true })) return onConfirm();
 }
 
-function showConfirmModal(title, message, onConfirm, confirmLabel = 'Delete') {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;z-index:9999;padding:2rem;box-sizing:border-box;';
-    overlay.innerHTML = `
-        <div style="background:var(--dark-surface);border-radius:12px;border:1px solid var(--dark-border);max-width:500px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
-            <div style="padding:1.5rem 2rem;border-bottom:1px solid var(--dark-border);display:flex;justify-content:space-between;align-items:center;">
-                <h3 style="margin:0;color:var(--text-primary);font-size:1.25rem;font-weight:600;">${title}</h3>
-                <button class="modal-close-btn" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;line-height:1;">×</button>
-            </div>
-            <div style="padding:2rem;color:var(--text-primary);">${message}</div>
-            <div style="padding:1.5rem 2rem;border-top:1px solid var(--dark-border);display:flex;justify-content:flex-end;gap:1rem;">
-                <button class="btn btn-secondary modal-cancel-btn">Cancel</button>
-                <button class="btn btn-danger modal-confirm-btn">${confirmLabel}</button>
-            </div>
-        </div>`;
-    document.body.appendChild(overlay);
-    const close = () => overlay.remove();
-    overlay.querySelector('.modal-close-btn').onclick = close;
-    overlay.querySelector('.modal-cancel-btn').onclick = close;
-    overlay.querySelector('.modal-confirm-btn').onclick = () => { close(); onConfirm(); };
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+page.expose({
+    get deleteScript() { return deleteScript; },
+    get editScript() { return editScript; },
+    get escapeHtml() { return escapeHtml; },
+    get filterText() { return filterText; },
+    get formatDateTime() { return formatDateTime; },
+    get formatInterval() { return formatInterval; },
+    get graphqlQuery() { return graphqlQuery; },
+    get initScriptsPage() { return initScriptsPage; },
+    get loadScriptsList() { return loadScriptsList; },
+    get renderScriptsTable() { return renderScriptsTable; },
+    get runScriptManually() { return runScriptManually; },
+    get scriptsList() { return scriptsList; },
+    get setupInteractions() { return setupInteractions; },
+    get showConfirmModal() { return showConfirmModal; },
+    get showNotification() { return showNotification; },
+    get sortState() { return sortState; },
+    get toggleScriptState() { return toggleScriptState; },
+    get toggleSort() { return toggleSort; }
+});
+page.ready();
+return () => page.dispose();
 }

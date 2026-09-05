@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // HMI Screens List Page Manager
 
 class HmiScreensManager {
@@ -330,3 +335,10 @@ class HmiScreensManager {
 document.addEventListener('DOMContentLoaded', () => {
     window.hmiManager = new HmiScreensManager();
 });
+
+page.expose({
+    get HmiScreensManager() { return HmiScreensManager; }
+});
+page.ready();
+return () => page.dispose();
+}

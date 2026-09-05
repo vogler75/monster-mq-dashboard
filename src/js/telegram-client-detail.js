@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Telegram Client Detail Management JavaScript
 
 class TelegramClientDetailManager {
@@ -240,6 +245,7 @@ class TelegramClientDetailManager {
                 `;
                 const result = await this.client.query(mutation, { input: data });
                 if (result.telegramClient.create.success) {
+                    ui.markPageSaved();
                     this.showSuccess(`Telegram client "${data.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/telegram-client-detail.html?client=${encodeURIComponent(data.name)}`; }, 800);
                 } else {
@@ -266,6 +272,7 @@ class TelegramClientDetailManager {
                 if (prevNodeId && data.nodeId && data.nodeId !== prevNodeId) {
                     await this.reassignClient(data.nodeId);
                 }
+                ui.markPageSaved();
                 this.showSuccess('Telegram client updated successfully');
             } else {
                 const errors = result.telegramClient.update.errors || ['Unknown error'];
@@ -301,6 +308,7 @@ class TelegramClientDetailManager {
             const mutation = `mutation DeleteTelegramClient($name: String!) { telegramClient { delete(name: $name) } }`;
             const result = await this.client.query(mutation, { name: this.clientName });
             if (result.telegramClient.delete) {
+                ui.markPageSaved();
                 this.showSuccess('Telegram client deleted');
                 this.cleanup();
                 setTimeout(() => { window.spaLocation.href = '/pages/telegram-clients.html'; }, 800);
@@ -336,3 +344,14 @@ function saveClient() { telegramDetailManager.saveClient(); }
 function goBack() { telegramDetailManager.goBack(); }
 function showDeleteModal() { telegramDetailManager.showDeleteModal(); }
 document.addEventListener('DOMContentLoaded', () => { telegramDetailManager = new TelegramClientDetailManager(); });
+
+page.expose({
+    get TelegramClientDetailManager() { return TelegramClientDetailManager; },
+    get goBack() { return goBack; },
+    get saveClient() { return saveClient; },
+    get showDeleteModal() { return showDeleteModal; },
+    get telegramDetailManager() { return telegramDetailManager; }
+});
+page.ready();
+return () => page.dispose();
+}

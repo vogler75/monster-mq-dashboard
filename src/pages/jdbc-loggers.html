@@ -9,10 +9,10 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         /* Connection column: keep the DSN on one line */
-        .data-table tbody td:nth-child(5) { text-align: left; white-space: nowrap; }
+        #loggers-table tbody td:nth-child(5) { text-align: left; white-space: nowrap; }
 
 
         
@@ -84,7 +84,7 @@
                 </div>
             </div>
 
-            <div id="loggers-table" class="data-table">
+            <div id="loggers-table" class="data-table" data-table-tools>
                 <div class="table-header">
                     <div class="table-title">
                         <h2>Logger Configuration</h2>
@@ -94,7 +94,7 @@
                         <a href="/pages/jdbc-logger-detail.html?new=true" class="btn btn-primary"><ix-icon name="add-circle" size="16"></ix-icon> Add Logger</a>
                     </div>
                 </div>
-                <table>
+                <div class="table-responsive"><table>
                     <thead>
                         <tr>
                             <th>Logger Name</th>
@@ -110,7 +110,7 @@
                     <tbody id="loggers-table-body">
                         <!-- Logger rows will be populated here -->
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             <div id="loading-indicator" class="loading-indicator" style="display: none;">
@@ -128,24 +128,9 @@
     </div>
 
     <!-- Confirm Delete Modal -->
-    <div id="confirm-delete-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Confirm Delete</h3>
-                <button class="modal-close" onclick="hideConfirmDeleteModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the logger "<span id="delete-logger-name"></span>"?</p>
-                <p>This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="hideConfirmDeleteModal()">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDeleteLogger()">Delete</button>
-            </div>
-        </div>
-    </div>
 
-    <script src="/js/jdbc-loggers.js"></script>
+
+    <script type="module" src="/js/jdbc-loggers.js"></script>
     </ix-application>
 </body>
 </html>

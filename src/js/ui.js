@@ -6,12 +6,9 @@
    re-invented per page: 42 hand-written confirm modals, 17 files calling the
    native alert()/confirm(), and a single page using a toast.
 
-   Available everywhere as `window.ui`. Every page loads it in its own <head>,
-   alongside storage.js / graphql-client.js / sidebar.js — a page opened
-   directly by URL or reloaded with F5 never runs index.html, so relying on the
-   shell to provide it left `ui` undefined and silently broke every confirm
-   dialog on that page. sidebar.js lists it in `sharedScripts`, so SPA
-   navigation does not load it a second time.
+   Shared by the SPA shell and standalone configuration/login entry points.
+   Page modules access the scoped page.ui helper so late responses from disposed
+   pages cannot change the next page's feedback or pending-edit state.
 
        await ui.confirm({ title: 'Delete client', message: '…', danger: true })
        ui.success('Client saved')
@@ -341,7 +338,7 @@
         node.style.display = 'flex';
 
         if (node.__mmqHideTimer) clearTimeout(node.__mmqHideTimer);
-        var delay = autoHideMs == null ? 8000 : autoHideMs;
+        var delay = autoHideMs == null ? 0 : autoHideMs;
         if (delay > 0) {
             node.__mmqHideTimer = setTimeout(clearError, delay);
         }
@@ -446,6 +443,115 @@
         });
     }
 
+    var pageEdits = null;
+    function trackPageEdits(root, options) {
+        var events = new AbortController();
+        var edits = { dirty: false, groups: new Set() };
+        var core = !options || options.core !== false;
+        pageEdits = edits;
+        var purgeClosed = function () {
+            edits.groups.forEach(function (group) {
+                if (!group.isConnected || !group.getClientRects().length) edits.groups.delete(group);
+            });
+        };
+        var changed = function (event) {
+            var target = event.target;
+            if (!target.closest || target.readOnly || target.disabled || target.matches('[type="search"], [data-ignore-dirty], [readonly]')) return;
+            var group = target.closest('.modal, [data-edit-section]');
+            if (group) edits.groups.add(group);
+            else if (core && root.contains(target)) edits.dirty = true;
+        };
+        document.addEventListener('input', changed, { signal: events.signal });
+        document.addEventListener('change', changed, { signal: events.signal });
+        var observer = new MutationObserver(purgeClosed);
+        observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'hidden'] });
+        var isDirty = function () { purgeClosed(); return edits.dirty || edits.groups.size > 0; };
+        window.registerPageDirtyCheck?.(isDirty);
+        var dispose = function () { events.abort(); observer.disconnect(); if (pageEdits === edits) pageEdits = null; };
+        dispose.isDirty = isDirty;
+        return dispose;
+    }
+    function markPageSaved() { if (pageEdits) pageEdits.dirty = false; }
+    function markPageDirty() { if (pageEdits) pageEdits.dirty = true; }
+
+    function initManagementTables(root) {
+        var cleanups = [];
+        root.querySelectorAll('[data-table-tools]').forEach(function (card) {
+            var table = card.querySelector('table');
+            var actions = card.querySelector('.table-actions');
+            if (!table || !actions) return;
+            var search = actions.querySelector('[type="search"]');
+            // Existing page-specific filters keep their behavior; avoid a second search field.
+            if (!search && !actions.querySelector('input')) {
+                search = document.createElement('input');
+                search.type = 'search';
+                search.className = 'form-control table-search';
+                search.placeholder = 'Search…';
+                search.setAttribute('aria-label', 'Search ' + (card.querySelector('h2')?.textContent || 'table'));
+                actions.prepend(search);
+            }
+            cleanups.push(enhanceTable(table, { search: search }));
+        });
+        return function () { cleanups.forEach(function (dispose) { dispose(); }); };
+    }
+
+    /** Search and sort rendered rows without replacing row event handlers. */
+    function enhanceTable(table, options) {
+        if (!table || !table.tBodies[0] || !table.tHead?.rows[0]) return function () {};
+        var body = table.tBodies[0];
+        var search = options && options.search;
+        var events = new AbortController();
+        var sortColumn = -1;
+        var direction = 1;
+        var collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+        var observer;
+        var headers = Array.from(table.tHead.rows[0].cells);
+        var empty = document.createElement('tr');
+        empty.className = 'table-search-empty';
+        empty.innerHTML = emptyRow(headers.length, 'No matching results', 'Try another search.').replace(/^<tr[^>]*>|<\/tr>$/g, '');
+        function apply() {
+            observer.disconnect();
+            empty.remove();
+            var query = search ? search.value.trim().toLocaleLowerCase() : '';
+            var rows = Array.from(body.rows).filter(function (row) {
+                return row.cells.length === headers.length && row.cells[0].colSpan === 1;
+            });
+            var matches = 0;
+            rows.forEach(function (row) {
+                row.hidden = !!query && !row.textContent.toLocaleLowerCase().includes(query);
+                if (!row.hidden) matches++;
+            });
+            if (sortColumn >= 0) {
+                rows.sort(function (a, b) {
+                    return direction * collator.compare(a.cells[sortColumn].textContent.trim(), b.cells[sortColumn].textContent.trim());
+                }).forEach(function (row) { body.appendChild(row); });
+            }
+            if (rows.length && !matches) body.appendChild(empty);
+            observer.observe(body, { childList: true, subtree: true, characterData: true });
+        }
+        headers.forEach(function (header, index) {
+            if (header.textContent.trim().toLowerCase() === 'actions' || header.querySelector('input, button, ix-checkbox')) return;
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'table-sort';
+            button.textContent = header.textContent.trim();
+            button.setAttribute('aria-label', 'Sort by ' + button.textContent);
+            header.replaceChildren(button);
+            header.setAttribute('aria-sort', 'none');
+            button.addEventListener('click', function () {
+                direction = sortColumn === index ? -direction : 1;
+                sortColumn = index;
+                headers.forEach(function (h) { if (h.hasAttribute('aria-sort')) h.setAttribute('aria-sort', 'none'); });
+                header.setAttribute('aria-sort', direction === 1 ? 'ascending' : 'descending');
+                apply();
+            }, { signal: events.signal });
+        });
+        observer = new MutationObserver(apply);
+        if (search) search.addEventListener('input', apply, { signal: events.signal });
+        apply();
+        return function () { events.abort(); observer.disconnect(); };
+    }
+
     // ------------------------------------------------------- breadcrumb sync
 
     var crumbObserver = null;
@@ -500,6 +606,11 @@
         showError: showError,
         clearError: clearError,
         emptyRow: emptyRow,
+        enhanceTable: enhanceTable,
+        initManagementTables: initManagementTables,
+        trackPageEdits: trackPageEdits,
+        markPageSaved: markPageSaved,
+        markPageDirty: markPageDirty,
         statusBadge: statusBadge,
         breadcrumb: breadcrumb,
         syncBreadcrumb: syncBreadcrumb,

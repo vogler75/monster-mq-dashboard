@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         
         .export-import-container {
@@ -337,8 +337,8 @@
                                 <select id="import-type-filter" onchange="filterImportList()">
                                     <option value="">All Types</option>
                                 </select>
-                                <button class="btn btn-secondary" onclick="selectAllImportDevices()" style="padding: 0.3rem 0.75rem; font-size: 0.8rem;">Select All</button>
-                                <button class="btn btn-secondary" onclick="deselectAllImportDevices()" style="padding: 0.3rem 0.75rem; font-size: 0.8rem;">Deselect All</button>
+                                <button class="btn btn-secondary" onclick="selectAllImportDevices()">Select All</button>
+                                <button class="btn btn-secondary" onclick="deselectAllImportDevices()">Deselect All</button>
                                 <div id="import-selection-info" class="selection-info" style="display: none;"><span id="import-selected-count">0</span> selected</div>
                             </div>
                             <div id="import-device-list" class="device-list"></div>
@@ -369,7 +369,7 @@
         </div>
     </div>
 
-    <script src="/js/device-config-export-import.js"></script>
+    <script type="module" src="/js/device-config-export-import.js"></script>
     </ix-application>
 </body>
 </html>

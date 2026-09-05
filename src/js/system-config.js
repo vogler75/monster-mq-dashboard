@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // System Configuration Page
 
 class SystemConfigManager {
@@ -170,3 +175,10 @@ class SystemConfigManager {
 document.addEventListener('DOMContentLoaded', () => {
     window.systemConfigManager = new SystemConfigManager();
 });
+
+page.expose({
+    get SystemConfigManager() { return SystemConfigManager; }
+});
+page.ready();
+return () => page.dispose();
+}

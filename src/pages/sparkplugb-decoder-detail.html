@@ -9,21 +9,8 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
-        .form-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .form-group .help-text {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-        input[type="checkbox"] {
-            width: auto;
-            accent-color: var(--monster-purple);
-            transform: scale(1.2);
-        }
         .rules-list {
             display: flex;
             flex-direction: column;
@@ -56,20 +43,6 @@
             grid-template-columns: 150px 1fr auto;
             gap: 0.5rem;
             align-items: start;
-        }
-        .btn-add {
-            background: var(--monster-purple);
-            color: white;
-        }
-        .btn-add:hover {
-            background: var(--monster-purple-hover);
-        }
-        .btn-remove {
-            background: var(--monster-red);
-            color: white;
-        }
-        .btn-remove:hover {
-            opacity: 0.9;
         }</style>
 </head>
 <body>
@@ -87,14 +60,12 @@
                                 <span class="breadcrumb-sep" aria-hidden="true">/</span>
                                 <span class="breadcrumb-current" aria-current="page" id="breadcrumb-name">&hellip;</span>
                             </nav>
-                            <h1 class="page-title" id="pageTitle">⚡ Create SparkplugB Decoder</h1>
+                            <h1 class="page-title" id="page-title">Create SparkplugB Decoder</h1>
                             <p class="page-subtitle">Configure SparkplugB message decoding rules</p>
                         </div>
                         <div class="page-header-actions">
-                            <button type="submit" form="decoderForm" class="btn btn-primary btn-small">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
-                                </svg>
+                            <button type="submit" form="decoderForm" class="btn btn-primary btn-sm">
+                                <ix-icon name="disk" size="16"></ix-icon>
                                 Save Decoder
                             </button>
                         </div>
@@ -110,18 +81,19 @@
 
                 <form id="decoderForm">
                     <!-- Basic Configuration -->
-                    <div class="form-section">
-                        <h2>Basic Configuration</h2>
+                    <div class="section-card">
+                        <div class="section-header"><h2>Basic Configuration</h2></div>
+<div class="section-content">
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="name">Name *</label>
                                 <input type="text" id="name" required>
-                                <span class="help-text">Unique identifier for this decoder</span>
+                                <span class="form-hint">Unique identifier for this decoder</span>
                             </div>
                             <div class="form-group">
                                 <label for="namespace">Group ID *</label>
                                 <input type="text" id="namespace" required>
-                                <span class="help-text">SparkplugB Group ID to subscribe to (use "+" for all groups, or specify a specific group name)</span>
+                                <span class="form-hint">SparkplugB Group ID to subscribe to (use "+" for all groups, or specify a specific group name)</span>
                             </div>
                             <div class="form-group">
                                 <label for="nodeId">Cluster Node *</label>
@@ -137,10 +109,12 @@
                             </div>
                         </div>
                     </div>
+</div>
 
                     <!-- Timestamps Section -->
-                    <div class="form-section" id="timestamps-section" style="display: none;">
-                        <h2>Timestamps</h2>
+                    <div class="section-card" id="timestamps-section" style="display: none;">
+                        <div class="section-header"><h2>Timestamps</h2></div>
+<div class="section-content">
                         <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
                             <div style="display: flex; justify-content: space-between; padding: 0.75rem; background: var(--dark-bg); border-radius: 8px; border: 1px solid var(--dark-border);">
                                 <span style="color: var(--text-secondary); font-size: 0.875rem; font-weight: 500;">Created At</span>
@@ -152,46 +126,49 @@
                             </div>
                         </div>
                     </div>
+</div>
 
                     <!-- SparkplugB Configuration -->
-                    <div class="form-section">
-                        <h2>SparkplugB Configuration</h2>
+                    <div class="section-card">
+                        <div class="section-header"><h2>SparkplugB Configuration</h2></div>
+<div class="section-content">
                         <div class="form-group">
                             <label for="sourceNamespace">Source Namespace</label>
                             <input type="text" id="sourceNamespace" value="spBv1.0">
-                            <span class="help-text">SparkplugB namespace to subscribe to (default: spBv1.0)</span>
+                            <span class="form-hint">SparkplugB namespace to subscribe to (default: spBv1.0)</span>
                         </div>
                     </div>
+</div>
 
                     <!-- Subscription Filters -->
-                    <div class="form-section">
-                        <h2>Subscription Filters</h2>
+                    <div class="section-card">
+                        <div class="section-header"><h2>Subscription Filters</h2></div>
+<div class="section-content">
                         <div id="subscriptionsList" class="rules-list"></div>
-                        <button type="button" class="btn btn-add" onclick="addSubscription()">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
+                        <button type="button" class="btn btn-primary" onclick="addSubscription()">
+                            <ix-icon name="add-circle" size="16"></ix-icon>
                             Add Subscription
                         </button>
                     </div>
+</div>
 
                     <!-- Decoder Rules -->
-                    <div class="form-section">
-                        <h2>Decoder Rules</h2>
+                    <div class="section-card">
+                        <div class="section-header"><h2>Decoder Rules</h2></div>
+<div class="section-content">
                         <div id="rulesList" class="rules-list"></div>
-                        <button type="button" class="btn btn-add" onclick="addRule()">
-                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
+                        <button type="button" class="btn btn-primary" onclick="addRule()">
+                            <ix-icon name="add-circle" size="16"></ix-icon>
                             Add Rule
                         </button>
                     </div>
+</div>
                 </form>
             </div>
         </div>
     </div>
 
-    <script src="/js/sparkplugb-decoder-detail.js"></script>
+    <script type="module" src="/js/sparkplugb-decoder-detail.js"></script>
     </ix-application>
 </body>
 </html>

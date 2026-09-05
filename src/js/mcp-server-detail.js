@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // MCP Server Detail Management JavaScript
 
 class McpServerDetailManager {
@@ -184,6 +189,7 @@ class McpServerDetailManager {
                 `;
                 const result = await this.client.query(mutation, { input: data });
                 if (result.mcpServer.create) {
+                    ui.markPageSaved();
                     this.showSuccess(`MCP Server "${data.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/mcp-server-detail.html?server=${encodeURIComponent(data.name)}`; }, 800);
                 } else {
@@ -209,6 +215,7 @@ class McpServerDetailManager {
             const result = await this.client.query(mutation, { name: this.serverName, input: inputData });
             if (result.mcpServer.update) {
                 await this.loadServerData();
+                ui.markPageSaved();
                 this.showSuccess('MCP Server updated successfully');
             } else {
                 this.showError('Failed to update MCP server');
@@ -223,6 +230,7 @@ class McpServerDetailManager {
             const mutation = `mutation DeleteMcpServer($name: String!) { mcpServer { delete(name: $name) } }`;
             const result = await this.client.query(mutation, { name: this.serverName });
             if (result.mcpServer.delete) {
+                ui.markPageSaved();
                 this.showSuccess('MCP Server deleted');
                 setTimeout(() => { window.spaLocation.href = '/pages/mcp-servers.html'; }, 800);
             } else {
@@ -297,3 +305,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Handle modal clicks (close on backdrop)
+
+page.expose({
+    get McpServerDetailManager() { return McpServerDetailManager; },
+    get goBack() { return goBack; },
+    get mcpServerDetailManager() { return mcpServerDetailManager; },
+    get saveServer() { return saveServer; },
+    get showDeleteModal() { return showDeleteModal; }
+});
+page.ready();
+return () => page.dispose();
+}

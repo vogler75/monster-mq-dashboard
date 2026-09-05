@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // SparkplugB Decoder Detail View
 
 let isEditMode = false;
@@ -24,12 +29,12 @@ async function init() {
 
     if (currentDecoderName) {
         isEditMode = true;
-        document.getElementById('pageTitle').textContent = '⚡ Edit SparkplugB Decoder';
+        document.getElementById('page-title').textContent = 'Edit SparkplugB Decoder';
         document.getElementById('name').disabled = true; // Name cannot be changed in edit mode
         await loadDecoder();
     } else {
         // Create mode - add one default rule
-        addRule();
+        addRule(false);
     }
 }
 
@@ -145,9 +150,7 @@ function renderSubscriptions() {
         container.innerHTML = `
             <div style="background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
                 <p style="color: var(--text-primary); margin: 0; display: flex; align-items: start; gap: 0.5rem;">
-                    <svg width="20" height="20" fill="var(--monster-purple)" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 2px;">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                    </svg>
+                    <ix-icon name="info" size="16"></ix-icon>
                     <span><strong>No subscriptions configured.</strong> The decoder will subscribe to ALL nodes and devices using wildcards. Add specific subscriptions below to filter which messages are received.</span>
                 </p>
             </div>
@@ -159,22 +162,20 @@ function renderSubscriptions() {
         <div class="rule-item">
             <div class="rule-header">
                 <h3>Subscription: ${escapeHtml(sub.nodeId || `Subscription ${index + 1}`)}</h3>
-                <button type="button" class="btn btn-icon btn-remove" onclick="removeSubscription(${index})" title="Remove Subscription">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
+                <button type="button" class="btn btn-icon btn-danger" onclick="removeSubscription(${index})" title="Remove Subscription">
+                    <ix-icon name="trashcan" size="16"></ix-icon>
                 </button>
             </div>
             <div class="rule-fields">
                 <div class="form-group">
                     <label>Node ID *</label>
                     <input type="text" value="${escapeHtml(sub.nodeId || '')}" oninput="updateSubscriptionNodeId(${index}, this.value)" required>
-                    <span class="help-text">Specific SparkplugB node ID to subscribe to</span>
+                    <span class="form-hint">Specific SparkplugB node ID to subscribe to</span>
                 </div>
                 <div class="form-group">
                     <label>Device IDs (optional)</label>
                     <input type="text" value="${escapeHtml((sub.deviceIds || []).join(', '))}" oninput="updateSubscriptionDeviceIds(${index}, this.value)" placeholder="Device1, Device2, Device3">
-                    <span class="help-text">Comma-separated device IDs. Leave empty to subscribe to all devices for this node.</span>
+                    <span class="form-hint">Comma-separated device IDs. Leave empty to subscribe to all devices for this node.</span>
                 </div>
             </div>
         </div>
@@ -182,6 +183,7 @@ function renderSubscriptions() {
 }
 
 function addSubscription() {
+    ui.markPageDirty();
     subscriptions.push({
         nodeId: '',
         deviceIds: []
@@ -191,6 +193,7 @@ function addSubscription() {
 
 async function removeSubscription(index) {
     if (await ui.confirm({ title: 'Remove subscription', message: 'This decoder will stop consuming that topic.', confirmLabel: 'Remove', danger: true })) {
+        ui.markPageDirty();
         subscriptions.splice(index, 1);
         renderSubscriptions();
     }
@@ -220,32 +223,30 @@ function renderRules() {
         <div class="rule-item">
             <div class="rule-header">
                 <h3>Rule: ${escapeHtml(rule.name || `Rule ${index + 1}`)}</h3>
-                <button type="button" class="btn btn-icon btn-remove" onclick="removeRule(${index})" title="Remove Rule">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
+                <button type="button" class="btn btn-icon btn-danger" onclick="removeRule(${index})" title="Remove Rule">
+                    <ix-icon name="trashcan" size="16"></ix-icon>
                 </button>
             </div>
             <div class="rule-fields">
                 <div class="form-group">
                     <label>Rule Name *</label>
                     <input type="text" value="${escapeHtml(rule.name || '')}" oninput="updateRuleName(${index}, this.value)" required>
-                    <span class="help-text">Unique identifier for this rule</span>
+                    <span class="form-hint">Unique identifier for this rule</span>
                 </div>
                 <div class="form-group">
                     <label>Node ID Regex *</label>
                     <input type="text" value="${escapeHtml(rule.nodeIdRegex || '')}" oninput="updateRuleField(${index}, 'nodeIdRegex', this.value)" required>
-                    <span class="help-text">Regex: "Siemens" (exact), ".*Siemens.*" (contains), "Siemens.*" (starts with), ".*" (all)</span>
+                    <span class="form-hint">Regex: "Siemens" (exact), ".*Siemens.*" (contains), "Siemens.*" (starts with), ".*" (all)</span>
                 </div>
                 <div class="form-group">
                     <label>Device ID Regex *</label>
                     <input type="text" value="${escapeHtml(rule.deviceIdRegex || '')}" oninput="updateRuleField(${index}, 'deviceIdRegex', this.value)" required>
-                    <span class="help-text">Regex: "Device1" (exact), ".*Device1.*" (contains), ".*" (all including empty)</span>
+                    <span class="form-hint">Regex: "Device1" (exact), ".*Device1.*" (contains), ".*" (all including empty)</span>
                 </div>
                 <div class="form-group">
                     <label>Destination Topic Template *</label>
                     <input type="text" value="${escapeHtml(rule.destinationTopic || '')}" oninput="updateRuleField(${index}, 'destinationTopic', this.value)" required>
-                    <span class="help-text">Topic template with variables: $nodeId, $deviceId (e.g., "factory/decoded/$nodeId/$deviceId")</span>
+                    <span class="form-hint">Topic template with variables: $nodeId, $deviceId (e.g., "factory/decoded/$nodeId/$deviceId")</span>
                 </div>
                 <div class="form-group">
                     <label>Transformations</label>
@@ -253,7 +254,7 @@ function renderRules() {
                         ${renderTransformations(rule.transformations || {}, index)}
                     </div>
                     <button type="button" class="btn btn-secondary" onclick="addTransformation(${index})">Add Transformation</button>
-                    <span class="help-text">Optional regex transformations on variables (e.g., s/\\./\\//g to convert dots to slashes)</span>
+                    <span class="form-hint">Optional regex transformations on variables (e.g., s/\\./\\//g to convert dots to slashes)</span>
                 </div>
             </div>
         </div>
@@ -274,16 +275,15 @@ function renderTransformations(transformations, ruleIndex) {
                 <option value="deviceId" ${key === 'deviceId' ? 'selected' : ''}>deviceId</option>
             </select>
             <input type="text" value="${escapeHtml(value)}" oninput="updateTransformationValue(${ruleIndex}, '${escapeHtml(key)}', this.value)" placeholder="s/pattern/replacement/flags">
-            <button type="button" class="btn btn-icon btn-remove" onclick="removeTransformation(${ruleIndex}, '${escapeHtml(key)}')">
-                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
+            <button type="button" class="btn btn-icon btn-danger" onclick="removeTransformation(${ruleIndex}, '${escapeHtml(key)}')">
+                <ix-icon name="trashcan" size="16"></ix-icon>
             </button>
         </div>
     `).join('');
 }
 
-function addRule() {
+function addRule(markDirty = true) {
+    if (markDirty) ui.markPageDirty();
     rules.push({
         name: `Rule ${rules.length + 1}`,
         nodeIdRegex: '.*',
@@ -296,6 +296,7 @@ function addRule() {
 
 async function removeRule(index) {
     if (await ui.confirm({ title: 'Remove rule', confirmLabel: 'Remove', danger: true })) {
+        ui.markPageDirty();
         rules.splice(index, 1);
         renderRules();
     }
@@ -310,6 +311,7 @@ function updateRuleField(index, field, value) {
 }
 
 function addTransformation(ruleIndex) {
+    ui.markPageDirty();
     if (!rules[ruleIndex].transformations) {
         rules[ruleIndex].transformations = {};
     }
@@ -325,6 +327,7 @@ function addTransformation(ruleIndex) {
 }
 
 function removeTransformation(ruleIndex, key) {
+    ui.markPageDirty();
     delete rules[ruleIndex].transformations[key];
     renderRules();
 }
@@ -430,9 +433,11 @@ async function saveDecoder(event) {
 
         if (response?.success) {
             if (isEditMode) {
+                ui.markPageSaved();
                 showSuccess('Decoder updated successfully');
                 await loadDecoder();
             } else {
+                ui.markPageSaved();
                 showSuccess(`Decoder "${input.name}" created successfully`);
                 setTimeout(() => { window.spaLocation.href = `/pages/sparkplugb-decoder-detail.html?name=${encodeURIComponent(input.name)}`; }, 800);
             }
@@ -464,3 +469,39 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
     document.getElementById('decoderForm').addEventListener('submit', saveDecoder);
 });
+
+page.expose({
+    get addRule() { return addRule; },
+    get addSubscription() { return addSubscription; },
+    get addTransformation() { return addTransformation; },
+    get currentDecoderName() { return currentDecoderName; },
+    get escapeGraphQL() { return escapeGraphQL; },
+    get escapeHtml() { return escapeHtml; },
+    get formatDateTime() { return formatDateTime; },
+    get graphqlQuery() { return graphqlQuery; },
+    get init() { return init; },
+    get isEditMode() { return isEditMode; },
+    get loadClusterNodes() { return loadClusterNodes; },
+    get loadDecoder() { return loadDecoder; },
+    get populateForm() { return populateForm; },
+    get removeRule() { return removeRule; },
+    get removeSubscription() { return removeSubscription; },
+    get removeTransformation() { return removeTransformation; },
+    get renderRules() { return renderRules; },
+    get renderSubscriptions() { return renderSubscriptions; },
+    get renderTransformations() { return renderTransformations; },
+    get rules() { return rules; },
+    get saveDecoder() { return saveDecoder; },
+    get showError() { return showError; },
+    get showSuccess() { return showSuccess; },
+    get subscriptions() { return subscriptions; },
+    get updateRuleField() { return updateRuleField; },
+    get updateRuleName() { return updateRuleName; },
+    get updateSubscriptionDeviceIds() { return updateSubscriptionDeviceIds; },
+    get updateSubscriptionNodeId() { return updateSubscriptionNodeId; },
+    get updateTransformationKey() { return updateTransformationKey; },
+    get updateTransformationValue() { return updateTransformationValue; }
+});
+page.ready();
+return () => page.dispose();
+}

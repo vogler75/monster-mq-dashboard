@@ -209,12 +209,6 @@
             padding-bottom: 0;
         }
 
-        .broker-actions .btn {
-            min-height: 36px;
-            padding: 0.55rem 0.75rem;
-            font-size: 0.85rem;
-        }
-
         .broker-row .broker-default-wrap {
             align-items: center;
             justify-self: center;
@@ -231,12 +225,6 @@
             height: 16px;
             margin-top: 9px;
             align-self: center;
-        }
-
-        .broker-row .form-control {
-            min-height: 36px;
-            padding: 0.5rem 0.6rem;
-            font-size: 0.88rem;
         }
 
         .page-actions {
@@ -293,19 +281,12 @@
             .settings-grid {
                 grid-template-columns: 1fr;
             }
-            .token-actions .btn,
-            .section-header-actions .btn {
-                width: 100%;
-            }
             .broker-grid { grid-template-columns: 1fr 1fr; }
             .broker-endpoint-wrap { grid-column: 1 / -1; }
             .broker-default-wrap { grid-column: 1 / -1; flex-direction: row; align-items: center; }
             .broker-actions {
                 justify-content: stretch;
                 flex-direction: column;
-            }
-            .broker-actions .btn {
-                width: 100%;
             }
         }</style>
 </head>
@@ -383,6 +364,6 @@
         </div>
     </div>
 
-    <script src="/js/broker-config.js"></script>
+    <script type="module" src="/js/broker-config-entry.js"></script>
 </body>
 </html>

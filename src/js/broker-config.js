@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Broker list configuration page
 
 var safeStorage = window.safeStorage;
@@ -469,6 +474,7 @@ class BrokerConfigManager {
     }
 
     addBrokerRow() {
+        ui.markPageDirty();
         var list = document.getElementById('broker-list');
         if (!list) return;
         var temp = document.createElement('div');
@@ -485,6 +491,7 @@ class BrokerConfigManager {
     }
 
     removeBrokerRow(row) {
+        ui.markPageDirty();
         if (!row) return;
         row.remove();
         this._syncDefaultState();
@@ -616,6 +623,7 @@ class BrokerConfigManager {
                 } else if (window.brokerManager && typeof window.brokerManager.refreshConfig === 'function') {
                     await window.brokerManager.refreshConfig();
                 }
+                ui.markPageSaved();
                 this.showStatus('Broker configuration saved locally.', 'success');
             } catch (error) {
                 console.error('Error saving local broker config:', error);
@@ -685,7 +693,8 @@ class BrokerConfigManager {
             } else if (window.brokerManager && typeof window.brokerManager.refreshConfig === 'function') {
                 await window.brokerManager.refreshConfig();
             }
-            this.showStatus('Broker configuration saved.', 'success');
+            ui.markPageSaved();
+                this.showStatus('Broker configuration saved.', 'success');
         } catch (error) {
             if (error && error.name === 'AbortError') {
                 return;
@@ -719,3 +728,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     brokerConfigManager = new BrokerConfigManager();
 });
+
+page.expose({
+    get BROKER_CONFIG_TOKEN_KEY() { return BROKER_CONFIG_TOKEN_KEY; },
+    get BrokerConfigManager() { return BrokerConfigManager; },
+    get brokerConfigManager() { return brokerConfigManager; }
+});
+page.ready();
+return () => page.dispose();
+}

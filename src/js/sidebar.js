@@ -9,6 +9,9 @@ class SidebarManager {
     constructor() {
         this._currentHref = null;
         this._pageCleanups = [];
+        this._pageDirtyChecks = [];
+        this._historyIndex = history.state?.dashboardIndex || 0;
+        history.replaceState({ ...history.state, dashboardIndex: this._historyIndex }, '');
         this.init();
     }
 
@@ -24,17 +27,21 @@ class SidebarManager {
             const client = window.graphqlClient || null;
             if (client) this._enabledFeatures = await client.getEnabledFeatures();
         } catch (e) { /* feature hiding is best-effort */ }
+        // Wait for hydration before changing menu properties watched by iX.
+        await customElements.whenDefined('ix-menu');
+        await document.querySelector('ix-menu')?.componentOnReady?.();
         this.renderMenu();
         this.setupUI();
         this.initLogViewer();
 
         // Expose navigateTo globally for page scripts
         window.navigateTo = (href) => this.navigateTo(href);
+        window.replacePageUrl = href => this.replaceCurrentUrl(href);
 
         // Intercept local <a> link clicks so they use SPA navigation instead of full reloads
         document.addEventListener('click', (e) => {
             const link = e.target.closest('a[href]');
-            if (!link) return;
+            if (!link || e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
             const href = link.getAttribute('href');
             if (!href || href.startsWith('http') || href.startsWith('//') ||
                 href.startsWith('mailto:') || href.startsWith('#')) return;
@@ -45,9 +52,22 @@ class SidebarManager {
         });
 
         // Handle browser back/forward
-        window.addEventListener('popstate', (e) => {
+        window.addEventListener('popstate', async (e) => {
+            if (this._restoringHistory) { this._restoringHistory = false; return; }
+            const previousIndex = this._historyIndex;
+            const targetIndex = e.state?.dashboardIndex ?? previousIndex;
             const page = e.state?.page || '/pages/dashboard.html';
-            this.navigateTo(page, false);
+            if (await this.navigateTo(page, false)) {
+                this._historyIndex = targetIndex;
+            } else if (previousIndex !== targetIndex) {
+                this._restoringHistory = true;
+                history.go(previousIndex - targetIndex);
+            }
+        });
+        window.addEventListener('beforeunload', (event) => {
+            if (!this._pageDirtyChecks.some(check => check())) return;
+            event.preventDefault();
+            event.returnValue = '';
         });
 
         // Load initial page based on current URL
@@ -577,12 +597,25 @@ class SidebarManager {
 
     // ===================== SPA Navigation =====================
 
-    async navigateTo(href, push = true) {
-        const hrefNoQuery = href.split('?')[0];
-        const currentNoQuery = this._currentHref?.split('?')[0];
+    replaceCurrentUrl(href) {
+        const url = new URL(href, window.location.href);
+        this._currentHref = url.pathname + url.search + url.hash;
+        history.replaceState({ ...history.state, page: this._currentHref, dashboardIndex: this._historyIndex }, '', this._currentHref);
+    }
 
+    async navigateTo(href, push = true) {
         // Skip if same page (but allow query string changes)
-        if (href === this._currentHref) return;
+        if (href === this._currentHref) return true;
+        if (this._navigationPending) return false;
+        this._navigationPending = true;
+        if (this._pageDirtyChecks.some(check => check())) {
+            const leave = await ui.confirm({
+                title: 'Discard unsaved changes?',
+                message: 'Your edits have not been saved.',
+                confirmLabel: 'Discard and leave', danger: true
+            });
+            if (!leave) { this._navigationPending = false; return false; }
+        }
 
         try {
             // Fetch the target page
@@ -614,18 +647,18 @@ class SidebarManager {
                 '/js/sidebar.js', '/js/log-viewer.js', '/js/ix-init.js', '/js/ui.js'
             ]);
             // Third-party bundles under /js/vendor/ are loaded as plain <script>
-            // tags, like CDN scripts: _loadPageScript() rewrites let/const/class
-            // to var, which is fine for our own page scripts but must never be
-            // applied to a minified vendor bundle.
+            // tags; application page modules use their explicit mount() entry point.
             const isVendor = (src) => src.startsWith('/js/vendor/');
 
             const newScripts = [];
             doc.querySelectorAll('head script[src], body script[src]').forEach(s => {
                 const src = s.getAttribute('src');
                 if (!src) return;
-                if (s.getAttribute('type') === 'module') return;
                 if (src.includes('cdn.jsdelivr') || src.startsWith('http') || isVendor(src)) return;
                 const srcPath = src.split('?')[0];
+                // Vite injects /@vite/client into fetched HTML. It belongs to the
+                // shell and has no page mount() entry point.
+                if (!this.isPageModuleSource(srcPath)) return;
                 if (sharedScripts.has(srcPath)) return;
                 newScripts.push(srcPath);
             });
@@ -706,24 +739,40 @@ class SidebarManager {
 
             // Update URL
             if (push) {
-                history.pushState({ page: href }, '', href);
+                if (this._currentHref) {
+                    history.pushState({ page: href, dashboardIndex: ++this._historyIndex }, '', href);
+                } else {
+                    history.replaceState({ page: href, dashboardIndex: this._historyIndex }, '', href);
+                }
             }
             this._currentHref = href;
 
             // Update active menu item
             this.setActiveNavItem();
 
+            // All pages track open editors; detail pages also track their primary form.
+            const editsCore = (/-detail\.html/.test(href) && !/monitor-detail/.test(href)) || /workflows-edit/.test(href);
+            this._pageCleanups.push(ui.trackPageEdits(mainContent, { core: editsCore }));
+
             // Load scripts
             for (const src of cdnScripts) await this._loadCdnScript(src);
             for (const src of newScripts) await this._loadPageScript(src);
 
+            this._pageCleanups.push(ui.initManagementTables(mainContent));
+
             // Detail pages mirror their <h1> into the breadcrumb tail
             if (window.ui) ui.syncBreadcrumb();
+            return true;
 
         } catch (error) {
             console.error('SPA navigation failed:', error);
-            // Fallback: full page load
-            window.location.replace(href);
+            // A standalone page redirects back to this shell. Reloading it on
+            // failure would repeat the same error forever and flash the screen.
+            if (this._currentHref === href) this._currentHref = null;
+            ui.showError(`Unable to open page: ${error.message}`);
+            return false;
+        } finally {
+            this._navigationPending = false;
         }
     }
 
@@ -732,61 +781,24 @@ class SidebarManager {
         if (window.ui) window.ui.closeAllModals();
 
         // Run registered cleanup callbacks
-        this._pageCleanups.forEach(fn => { try { fn(); } catch(e) {} });
+        this._pageCleanups.slice().reverse().forEach(fn => { try { fn(); } catch(e) {} });
         this._pageCleanups = [];
+        this._pageDirtyChecks = [];
 
-        // Clear tracked intervals/timeouts
-        if (window._pageIntervals) {
-            window._pageIntervals.forEach(id => clearInterval(id));
-        }
-        if (window._pageTimeouts) {
-            window._pageTimeouts.forEach(id => clearTimeout(id));
-        }
-        window._pageIntervals = [];
-        window._pageTimeouts = [];
+
+    }
+
+    isPageModuleSource(src) {
+        return src.startsWith('/js/') && !src.startsWith('/js/vendor/');
     }
 
     async _loadPageScript(src) {
-        try {
-            const resp = await fetch(src, { cache: 'no-store' });
-            if (!resp.ok) return;
-            let code = await resp.text();
-
-            // Rewrite let/const/class to var so they can be re-declared across navigations.
-            // function/async function are fine in sloppy mode IIFEs.
-            code = code.replace(/^class\s+(\w+)/gm, 'var $1 = class $1');
-            code = code.replace(/^(let |const )/gm, 'var ');
-
-            // Collect top-level identifiers for window export
-            const names = new Set();
-            code.replace(/^var\s+(\w+)/gm, (_, n) => names.add(n));
-            code.replace(/^(?:async\s+)?function\s+(\w+)/gm, (_, n) => names.add(n));
-            const exports = [...names].map(n =>
-                `if(typeof ${n}!=='undefined')window.${n}=${n};`
-            ).join('\n');
-
-            // IIFE wrapper: fresh scope + DOMContentLoaded shim
-            const wrapped = `(function(){
-var _orig=document.addEventListener;
-var _cbs=[];
-document.addEventListener=function(t,fn,o){
-  if(t==='DOMContentLoaded'){_cbs.push(fn);return;}
-  return _orig.call(document,t,fn,o);
-};
-try{
-${code}
-_cbs.forEach(function(fn){try{fn();}catch(e){console.error(e);}});
-${exports}
-}finally{document.addEventListener=_orig;}
-})();`;
-
-            const script = document.createElement('script');
-            script.textContent = wrapped;
-            document.body.appendChild(script);
-            script.remove();
-        } catch (e) {
-            console.warn('Failed to load page script:', src, e);
-        }
+        const { PageLifecycle } = await import('./page-lifecycle.js');
+        const module = await import(src);
+        if (typeof module.mount !== 'function') throw new Error(`Page module has no mount(): ${src}`);
+        const page = new PageLifecycle();
+        this._pageCleanups.push(() => page.dispose());
+        module.mount(page);
     }
 
     _loadCdnScript(src) {
@@ -834,42 +846,16 @@ ${exports}
     }
 }
 
-// ===================== Global interval/timeout tracking =====================
-// Wraps setInterval/setTimeout so page navigations can clean up stale timers.
-(function() {
-    window._pageIntervals = [];
-    window._pageTimeouts = [];
-    const _origSetInterval = window.setInterval.bind(window);
-    const _origSetTimeout = window.setTimeout.bind(window);
-    const _origClearInterval = window.clearInterval.bind(window);
-    const _origClearTimeout = window.clearTimeout.bind(window);
-    window.setInterval = function() {
-        const id = _origSetInterval.apply(window, arguments);
-        window._pageIntervals.push(id);
-        return id;
-    };
-    window.setTimeout = function() {
-        const id = _origSetTimeout.apply(window, arguments);
-        window._pageTimeouts.push(id);
-        return id;
-    };
-    window.clearInterval = function(id) {
-        _origClearInterval(id);
-        const idx = window._pageIntervals.indexOf(id);
-        if (idx !== -1) window._pageIntervals.splice(idx, 1);
-    };
-    window.clearTimeout = function(id) {
-        _origClearTimeout(id);
-        const idx = window._pageTimeouts.indexOf(id);
-        if (idx !== -1) window._pageTimeouts.splice(idx, 1);
-    };
-})();
-
 // ===================== Page cleanup registration =====================
 window.registerPageCleanup = function(fn) {
     if (window._sidebarManager) {
         window._sidebarManager._pageCleanups.push(fn);
     }
+};
+
+// Register a predicate for both in-app navigation and browser unload.
+window.registerPageDirtyCheck = function(check) {
+    window._sidebarManager?._pageDirtyChecks.push(check);
 };
 
 // ===================== Header auth status =====================

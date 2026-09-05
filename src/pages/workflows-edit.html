@@ -24,9 +24,9 @@
     <link rel="stylesheet" href="/css/script-editor-modal.css" />
     <script src="/js/storage.js"></script>
     <script src="/js/graphql-client.js"></script>
-    <script src="/js/sidebar.js"></script>
-    <script src="/js/script-editor-modal.js"></script>
-    <script src="/js/help-modal.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
+    <script type="module" src="/js/script-editor-modal.js"></script>
+    <script type="module" src="/js/help-modal.js"></script>
     <style>
 
         .page-header-info {
@@ -478,7 +478,7 @@
                     <button class="btn btn-secondary btn-small" id="topic-browser-floating-toggle" type="button" aria-expanded="false" onclick="TopicBrowserSidePanel.toggle()"><ix-icon name="folder-open" size="16"></ix-icon> Browse topics</button>
                 </div>
                 <div class="page-header-actions" id="header-actions" style="display:none;">
-                    <button class="btn btn-primary btn-small" style="min-width:90px;" onclick="FlowEdit.save()">Save</button>
+                    <button class="btn btn-primary btn-small" onclick="FlowEdit.save()">Save</button>
                     <button class="btn btn-danger btn-small" id="delete-button" style="display:none;" onclick="FlowEdit.deleteItem()">Delete</button>
                 </div>
             </div>
@@ -519,7 +519,7 @@
             <div class="section-card">
                 <div class="section-header">
                     <h2>Input Mappings
-                        <button onclick="openHelp('inputs')" class="btn-icon" style="margin-left: 0.5rem; width: 24px; height: 24px; font-size: 0.75rem; border: none; background: transparent; cursor: pointer;" title="Help: Input Mappings">?</button>
+                        <button onclick="openHelp('inputs')" class="btn-icon" style="margin-left: 0.5rem;" title="Help: Input Mappings">?</button>
                     </h2>
                     <button class="btn btn-secondary btn-small" onclick="FlowEdit.addInputMapping()">+ Add Input</button>
                 </div>
@@ -534,7 +534,7 @@
             <div class="section-card">
                 <div class="section-header">
                     <h2>Output Mappings
-                        <button onclick="openHelp('outputs')" class="btn-icon" style="margin-left: 0.5rem; width: 24px; height: 24px; font-size: 0.75rem; border: none; background: transparent; cursor: pointer;" title="Help: Output Mappings">?</button>
+                        <button onclick="openHelp('outputs')" class="btn-icon" style="margin-left: 0.5rem;" title="Help: Output Mappings">?</button>
                     </h2>
                     <button class="btn btn-secondary btn-small" onclick="FlowEdit.addOutputMapping()">+ Add Output</button>
                 </div>
@@ -549,7 +549,7 @@
             <div class="section-card">
                 <div class="section-header">
                     <h2>Variables
-                        <button onclick="openHelp('variables')" class="btn-icon" style="margin-left: 0.5rem; width: 24px; height: 24px; font-size: 0.75rem; border: none; background: transparent; cursor: pointer;" title="Help: Variables - How to use them in scripts">?</button>
+                        <button onclick="openHelp('variables')" class="btn-icon" style="margin-left: 0.5rem;" title="Help: Variables - How to use them in scripts">?</button>
                     </h2>
                     <button class="btn btn-secondary btn-small" onclick="FlowEdit.addVariable()">+ Add Variable</button>
                 </div>
@@ -596,8 +596,8 @@
 
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/workflows-edit.js"></script>
-    <script src="/js/topic-browser-side-panel.js"></script>
+    <script type="module" src="/js/workflows-edit.js"></script>
+    <script type="module" src="/js/topic-browser-side-panel.js"></script>
     <script>
         // Filter log viewer by Flow Instance when editing an instance
         (function() {

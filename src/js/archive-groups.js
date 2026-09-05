@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class ArchiveGroupsManager {
     constructor() {
         this.archiveGroups = [];
@@ -470,4 +475,11 @@ if (window.graphqlClient) {
         const result = await this.query(mutation, { name });
         return result.archiveGroup.disable;
     };
+}
+
+page.expose({
+    get ArchiveGroupsManager() { return ArchiveGroupsManager; }
+});
+page.ready();
+return () => page.dispose();
 }

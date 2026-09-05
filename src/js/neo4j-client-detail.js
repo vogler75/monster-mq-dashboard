@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Neo4j Client Detail Management JavaScript
 
 class Neo4jClientDetailManager {
@@ -230,6 +235,7 @@ class Neo4jClientDetailManager {
                 `;
                 const result = await this.client.query(mutation, { input });
                 if (result.neo4jClient.create.success) {
+                    ui.markPageSaved();
                     this.showSuccess('Neo4j client created successfully');
                     setTimeout(() => { window.spaLocation.href = `/pages/neo4j-client-detail.html?client=${encodeURIComponent(input.name)}`; }, 800);
                 } else {
@@ -260,7 +266,7 @@ class Neo4jClientDetailManager {
                     this.clientName = newName;
                     const url = new URL(window.location.href);
                     url.searchParams.set('client', newName);
-                    window.history.replaceState({}, '', url.toString());
+                    window.replacePageUrl(url.toString());
                 }
                 // Reload data first
                 await this.loadClientData();
@@ -268,6 +274,7 @@ class Neo4jClientDetailManager {
                 if (prevNodeId && input.nodeId && input.nodeId !== prevNodeId) {
                     await this.reassignClient(input.nodeId);
                 }
+                ui.markPageSaved();
                 this.showSuccess('Neo4j client updated successfully');
             } else {
                 const errors = result.neo4jClient.update.errors || ['Unknown error'];
@@ -332,6 +339,7 @@ class Neo4jClientDetailManager {
             const mutation = `mutation DeleteNeo4jClient($name: String!) { neo4jClient { delete(name: $name) } }`;
             const result = await this.client.query(mutation, { name: this.clientName });
             if (result.neo4jClient.delete) {
+                ui.markPageSaved();
                 this.showSuccess('Neo4j client deleted');
                 this.cleanup();
                 setTimeout(() => { window.spaLocation.href = '/pages/neo4j-clients.html'; }, 800);
@@ -371,3 +379,15 @@ function showDeleteModal() { neo4jClientDetailManager.showDeleteModal(); }
 // Initialize
 document.addEventListener('DOMContentLoaded', () => { neo4jClientDetailManager = new Neo4jClientDetailManager(); });
 
+
+page.expose({
+    get Neo4jClientDetailManager() { return Neo4jClientDetailManager; },
+    get goBack() { return goBack; },
+    get neo4jClientDetailManager() { return neo4jClientDetailManager; },
+    get saveClient() { return saveClient; },
+    get showDeleteModal() { return showDeleteModal; },
+    get toggleClient() { return toggleClient; }
+});
+page.ready();
+return () => page.dispose();
+}

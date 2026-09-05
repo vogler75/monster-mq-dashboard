@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
 
         
@@ -168,7 +168,7 @@
                             Select All
                         </label>
                     </div>
-                    <table>
+                    <div class="table-responsive"><table>
                         <thead>
                             <tr>
                                 <th width="50px">Select</th>
@@ -181,7 +181,7 @@
                         <tbody id="rejected-certificates-tbody">
                             <!-- Rejected certificate rows will be populated here -->
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
 
                 <div id="no-rejected-certificates" class="empty-state" style="display: none;">
@@ -219,7 +219,7 @@
                             Select All
                         </label>
                     </div>
-                    <table>
+                    <div class="table-responsive"><table>
                         <thead>
                             <tr>
                                 <th width="50px">Select</th>
@@ -232,7 +232,7 @@
                         <tbody id="trusted-certificates-tbody">
                             <!-- Trusted certificate rows will be populated here -->
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
 
                 <div id="no-trusted-certificates" class="empty-state" style="display: none;">
@@ -251,7 +251,7 @@
         </div>
     </div>
 
-    <script src="/js/opcua-server-certificates.js"></script>
+    <script type="module" src="/js/opcua-server-certificates.js"></script>
     </ix-application>
 </body>
 </html>

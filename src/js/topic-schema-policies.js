@@ -1,7 +1,11 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class TopicSchemaPoliciesManager {
     constructor() {
         this.policies = [];
-        this.deletePolicyName = null;
 
         this.init();
     }
@@ -12,22 +16,11 @@ class TopicSchemaPoliciesManager {
             return;
         }
 
-        this.setupEventListeners();
         this.loadPolicies();
     }
 
     isLoggedIn() {
         return window.isLoggedIn();
-    }
-
-    setupEventListeners() {
-        // Modal close on outside click
-        window.onclick = (event) => {
-            const deleteModal = document.getElementById('confirm-delete-modal');
-            if (event.target === deleteModal) {
-                this.hideConfirmDeleteModal();
-            }
-        };
     }
 
     async loadPolicies() {
@@ -89,22 +82,11 @@ class TopicSchemaPoliciesManager {
         }).join('');
     }
 
-    showConfirmDeleteModal(name) {
-        this.deletePolicyName = name;
-        document.getElementById('delete-policy-name').textContent = name;
-        document.getElementById('confirm-delete-modal').style.display = 'flex';
-    }
+    async showConfirmDeleteModal(name) {
+        const entityName = name;
+        if (!await ui.confirmDelete(entityName)) return;
 
-    hideConfirmDeleteModal() {
-        this.deletePolicyName = null;
-        document.getElementById('confirm-delete-modal').style.display = 'none';
-    }
-
-    async confirmDeletePolicy() {
-        if (!this.deletePolicyName) return;
-
-        const name = this.deletePolicyName;
-        this.hideConfirmDeleteModal();
+        if (!entityName) return;
 
         try {
             console.log('Deleting policy:', name);
@@ -127,6 +109,7 @@ class TopicSchemaPoliciesManager {
             console.error('Error deleting policy:', error);
             this.showError('Failed to delete policy: ' + error.message);
         }
+
     }
 
     showError(message) { ui.showError(message); }
@@ -144,10 +127,15 @@ class TopicSchemaPoliciesManager {
 
 // Global functions for onclick handlers
 window.refreshPolicies = () => policiesManager.loadPolicies();
-window.hideConfirmDeleteModal = () => policiesManager.hideConfirmDeleteModal();
-window.confirmDeletePolicy = () => policiesManager.confirmDeletePolicy();
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
     window.policiesManager = new TopicSchemaPoliciesManager();
 });
+
+page.expose({
+    get TopicSchemaPoliciesManager() { return TopicSchemaPoliciesManager; }
+});
+page.ready();
+return () => page.dispose();
+}

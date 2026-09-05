@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         .status-starting { background-color: rgba(249, 115, 22, 0.1); color: rgb(249, 115, 22); border: 1px solid rgba(249, 115, 22, 0.2); }
         .status-stopped { background-color: rgba(239, 68, 68, 0.1); color: rgb(239, 68, 68); border: 1px solid rgba(239, 68, 68, 0.2); }</style>
@@ -60,7 +60,7 @@
                 </div>
             </div>
 
-            <div id="servers-table" class="data-table">
+            <div id="servers-table" class="data-table" data-table-tools>
                 <div class="table-header">
                     <div class="table-title"><h2>Kafka Servers</h2></div>
                     <div class="table-actions">
@@ -68,7 +68,7 @@
                         <a href="/pages/kafka-server-detail.html?new=true" class="btn btn-primary"><ix-icon name="add-circle" size="16"></ix-icon> Add Server</a>
                     </div>
                 </div>
-                <table>
+                <div class="table-responsive"><table>
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -80,7 +80,7 @@
                         </tr>
                     </thead>
                     <tbody id="kafka-servers-table-body"></tbody>
-                </table>
+                </table></div>
             </div>
 
             <div id="loading-indicator" class="loading-indicator" style="display:none;">
@@ -99,7 +99,7 @@
 
     <!-- Confirm Delete Modal -->
 
-    <script src="/js/kafka-servers.js"></script>
+    <script type="module" src="/js/kafka-servers.js"></script>
     </ix-application>
 </body>
 </html>

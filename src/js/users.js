@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class UserManager {
     constructor() {
         this.users = [];
@@ -1280,3 +1285,11 @@ class AclTopicBrowser {
 document.addEventListener('DOMContentLoaded', () => {
     new UserManager();
 });
+
+page.expose({
+    get AclTopicBrowser() { return AclTopicBrowser; },
+    get UserManager() { return UserManager; }
+});
+page.ready();
+return () => page.dispose();
+}

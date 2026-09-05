@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class TopicBrowserSidePanel {
     constructor() {
         this.panel = document.getElementById('topic-browser-panel');
@@ -641,3 +646,10 @@ class TopicBrowserSidePanel {
 document.addEventListener('DOMContentLoaded', () => {
     window.topicBrowserSidePanel = new TopicBrowserSidePanel();
 });
+
+page.expose({
+    get TopicBrowserSidePanel() { return TopicBrowserSidePanel; }
+});
+page.ready();
+return () => page.dispose();
+}

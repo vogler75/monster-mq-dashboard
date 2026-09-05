@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 /**
  * Redfish Gateway Detail & Configuration Manager
  */
@@ -231,6 +236,7 @@ class RedfishDetailManager {
             });
 
             if (result?.saveRedfishMapping?.success) {
+                ui.markPageSaved();
                 window.ui.success(`Redfish Gateway "${name}" saved successfully`);
                 if (this.isNew) {
                     window.location.href = `/pages/redfish-gateway-detail.html?name=${encodeURIComponent(name)}`;
@@ -265,6 +271,7 @@ class RedfishDetailManager {
             `;
             const res = await window.graphqlClient.query(mutation, { name });
             if (res?.deleteRedfishMapping) {
+                ui.markPageSaved();
                 window.ui.success(`Gateway "${name}" deleted`);
                 window.location.href = '/pages/redfish-gateways.html';
             } else {
@@ -907,3 +914,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+page.expose({
+    get RedfishDetailManager() { return RedfishDetailManager; },
+    get addTopicFilterRow() { return addTopicFilterRow; },
+    get applyTemplate() { return applyTemplate; },
+    get closeTopicBrowser() { return closeTopicBrowser; },
+    get deleteGateway() { return deleteGateway; },
+    get formatJsonSchema() { return formatJsonSchema; },
+    get loadLiveSensors() { return loadLiveSensors; },
+    get openTopicBrowser() { return openTopicBrowser; },
+    get refreshTopicBrowser() { return refreshTopicBrowser; },
+    get removeTopicFilterRow() { return removeTopicFilterRow; },
+    get saveGateway() { return saveGateway; },
+    get searchTopicBrowser() { return searchTopicBrowser; },
+    get toggleTopicBrowser() { return toggleTopicBrowser; }
+});
+page.ready();
+return () => page.dispose();
+}

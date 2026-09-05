@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // i3X Client Detail Management JavaScript
 
 class I3xClientDetailManager {
@@ -346,6 +351,7 @@ class I3xClientDetailManager {
                 `;
                 const result = await this.client.query(mutation, { input: clientInput });
                 if (result.i3xClient.create.success) {
+                    ui.markPageSaved();
                     ui.success(`i3X Client "${name}" created successfully`);
                     setTimeout(() => {
                         window.spaLocation.href = `/pages/i3x-client-detail.html?client=${encodeURIComponent(name)}`;
@@ -367,6 +373,7 @@ class I3xClientDetailManager {
                 `;
                 const result = await this.client.query(mutation, { name: this.clientName, input: clientInput });
                 if (result.i3xClient.update.success) {
+                    ui.markPageSaved();
                     ui.success('i3X Client updated successfully');
                     await this.loadClientData();
                 } else {
@@ -396,6 +403,7 @@ class I3xClientDetailManager {
                 `;
                 const result = await this.client.query(mutation, { name: this.clientName });
                 if (result.i3xClient.delete) {
+                    ui.markPageSaved();
                     ui.success(`Client "${this.clientName}" deleted successfully`);
                     setTimeout(() => {
                         window.spaLocation.href = '/pages/i3x-clients.html';
@@ -692,3 +700,22 @@ document.addEventListener('DOMContentLoaded', () => {
     i3xClientDetailManager = new I3xClientDetailManager();
     window.i3xClientDetailManager = i3xClientDetailManager;
 });
+
+page.expose({
+    get I3xClientDetailManager() { return I3xClientDetailManager; },
+    get addAddress() { return addAddress; },
+    get addCustomHeader() { return addCustomHeader; },
+    get hideAddAddressModal() { return hideAddAddressModal; },
+    get hideEditAddressModal() { return hideEditAddressModal; },
+    get i3xClientDetailManager() { return i3xClientDetailManager; },
+    get removeCustomHeader() { return removeCustomHeader; },
+    get saveClient() { return saveClient; },
+    get showAddAddressModal() { return showAddAddressModal; },
+    get showDeleteModal() { return showDeleteModal; },
+    get showEditAddressModal() { return showEditAddressModal; },
+    get toggleAuthOptions() { return toggleAuthOptions; },
+    get updateAddress() { return updateAddress; }
+});
+page.ready();
+return () => page.dispose();
+}

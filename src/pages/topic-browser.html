@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         .topic-browser-layout {
             display: grid;
@@ -674,7 +674,7 @@
                                    id="search-input"
                                    class="search-input"
                                    placeholder="Search topics (e.g., sensor/+/temperature)..."
-                                   disabled>
+                                   disabled data-ignore-dirty>
                             <button id="browse-button" class="search-button">Browse Root</button>
                             <button id="search-button" class="search-button" style="display: none;">Search</button>
                         </div>
@@ -757,7 +757,7 @@
 
     <!-- Markdown parser for AI responses -->
     <script src="/js/vendor/marked.umd.js"></script>
-    <script src="/js/topic-browser.js"></script>
+    <script type="module" src="/js/topic-browser.js"></script>
     </ix-application>
 </body>
 </html>

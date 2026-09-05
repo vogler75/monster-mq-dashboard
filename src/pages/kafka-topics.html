@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         .filter-bar {
             background: rgba(24, 38, 45, 0.6);
@@ -153,11 +153,6 @@
             border-radius: 16px;
             overflow: hidden;
             box-shadow: var(--card-shadow);
-        }
-
-        .explorer-table-wrapper .data-table {
-            overflow-x: auto;
-            scrollbar-width: thin;
         }
 
         .explorer-table-wrapper table {
@@ -450,7 +445,7 @@
             <div class="explorer-layout">
                 <div class="explorer-table-wrapper">
                     <div class="data-table">
-                        <table>
+                        <div class="table-responsive"><table>
                             <thead>
                                 <tr>
                                     <th class="offset-cell" style="width: 120px;">Offset</th>
@@ -462,7 +457,7 @@
                             <tbody id="messages-table-body">
                                 <tr><td colspan="4" class="empty-cell"><div class="empty-state"><div class="empty-state-title">Select a server and topic</div><div class="empty-state-hint">Then use “Fetch Messages” to load records.</div></div></td></tr>
                             </tbody>
-                        </table>
+                        </table></div>
                     </div>
                     <div id="result-count-bar" class="result-count" style="display: none;">
                         Showing <span id="displayed-count">0</span> of <span id="total-count">0</span> loaded messages.
@@ -508,7 +503,7 @@
         </div>
     </div>
 
-    <script src="/js/kafka-topics.js"></script>
+    <script type="module" src="/js/kafka-topics.js"></script>
     </ix-application>
 </body>
 </html>

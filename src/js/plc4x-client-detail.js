@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // PLC4X Client Detail Management JavaScript
 
 class Plc4xClientDetailManager {
@@ -472,6 +477,7 @@ class Plc4xClientDetailManager {
         const result = await this.client.query(mutation, { input: clientData });
 
         if (result.plc4xDevice.create.success) {
+            ui.markPageSaved();
             this.showSuccess(`Client "${clientData.name}" created successfully. Redirecting to edit page...`);
             // Redirect to edit mode so the user can add addresses
             setTimeout(() => {
@@ -505,6 +511,7 @@ class Plc4xClientDetailManager {
         });
 
         if (result.plc4xDevice.update.success) {
+            ui.markPageSaved();
             this.showSuccess(`Client "${clientData.name}" updated successfully`);
             // Reload the client data
             await this.loadClient();
@@ -631,6 +638,7 @@ class Plc4xClientDetailManager {
             const mutation = `mutation DeletePlc4xDevice($name: String!) { plc4xDevice { delete(name: $name) } }`;
             const result = await this.client.query(mutation, { name: this.clientName });
             if (result.plc4xDevice.delete) {
+                ui.markPageSaved();
                 this.showSuccess('PLC4X client deleted');
                 setTimeout(() => { window.spaLocation.href = '/pages/plc4x-clients.html'; }, 800);
             } else {
@@ -694,3 +702,18 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+page.expose({
+    get Plc4xClientDetailManager() { return Plc4xClientDetailManager; },
+    get addAddress() { return addAddress; },
+    get clientDetailManager() { return clientDetailManager; },
+    get confirmDeleteAddress() { return confirmDeleteAddress; },
+    get goBack() { return goBack; },
+    get hideAddAddressModal() { return hideAddAddressModal; },
+    get saveClient() { return saveClient; },
+    get showAddAddressModal() { return showAddAddressModal; },
+    get showDeleteModal() { return showDeleteModal; }
+});
+page.ready();
+return () => page.dispose();
+}

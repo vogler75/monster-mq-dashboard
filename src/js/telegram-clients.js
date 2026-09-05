@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Telegram Client Management JavaScript
 
 class TelegramClientManager {
@@ -62,7 +67,7 @@ class TelegramClientManager {
             const botToken = cfg.botToken || '****';
             const statusClass = c.enabled ? 'status-enabled' : 'status-disabled';
             const statusText = c.enabled ? 'Enabled' : 'Disabled';
-            const nodeIndicator = c.isOnCurrentNode ? '\u{1F4CD} ' : '';
+            const nodeIndicator = c.isOnCurrentNode ? '<span class="status-badge badge-info">this node</span> ' : '';
             const metricsIn  = (c.metrics && c.metrics.length > 0) ? Math.round(c.metrics[0].messagesIn)  : 0;
             const metricsOut = (c.metrics && c.metrics.length > 0) ? Math.round(c.metrics[0].messagesOut) : 0;
             const chats = (c.metrics && c.metrics.length > 0) ? c.metrics[0].registeredChats : 0;
@@ -168,3 +173,12 @@ document.addEventListener('DOMContentLoaded', () => {
     telegramClientManager = new TelegramClientManager();
     window.telegramClientManager = telegramClientManager;
 });
+
+page.expose({
+    get TelegramClientManager() { return TelegramClientManager; },
+    get refreshTelegramClients() { return refreshTelegramClients; },
+    get telegramClientManager() { return telegramClientManager; }
+});
+page.ready();
+return () => page.dispose();
+}

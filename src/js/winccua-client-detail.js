@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // WinCC Unified Client Detail Management JavaScript
 
 class WinCCUaClientDetailManager {
@@ -17,14 +22,7 @@ class WinCCUaClientDetailManager {
     async init() {
         console.log('Initializing WinCC Unified Client Detail Manager...');
 
-        // Warn user before leaving page with unsaved changes
-        window.addEventListener('beforeunload', (e) => {
-            if (this.hasUnsavedChanges) {
-                e.preventDefault();
-                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-                return e.returnValue;
-            }
-        });
+        window.registerPageDirtyCheck(() => this.hasUnsavedChanges);
 
         // Check if authentication is required by testing a simple query
         try {
@@ -528,28 +526,20 @@ class WinCCUaClientDetailManager {
         }
     }
 
-    deleteAddress(index) {
-        if (index < 0 || index >= this.addresses.length) {
-            this.showError('Invalid address index');
-            return;
-        }
-
-        this.deleteAddressIndex = index;
-        const address = this.addresses[index];
-        document.getElementById('delete-address-name').textContent = address.topic;
-        this.showConfirmDeleteAddressModal();
+    async deleteAddress(index) {
+        return this.confirmDeleteAddress(index);
     }
 
-    async confirmDeleteAddress() {
-        if (this.deleteAddressIndex !== undefined && this.deleteAddressIndex !== null && this.deleteAddressIndex >= 0) {
-            const address = this.addresses[this.deleteAddressIndex];
+    async confirmDeleteAddress(index) {
+        if (index !== undefined && index !== null && index >= 0) {
+            const address = this.addresses[index];
             if (!address) {
                 this.showError('Subscription not found');
-                this.deleteAddressIndex = null;
+
                 return;
             }
 
-            this.hideConfirmDeleteAddressModal();
+            if (!await ui.confirmDelete(address.topic)) return;
 
             // Delete immediately on server using deleteWinCCUaClientAddress mutation
             try {
@@ -586,7 +576,7 @@ class WinCCUaClientDetailManager {
                 this.showError('Failed to delete subscription: ' + error.message);
             }
         }
-        this.deleteAddressIndex = null;
+
     }
 
     updateSaveButtonState() {
@@ -749,6 +739,7 @@ class WinCCUaClientDetailManager {
         if (result.winCCUaDevice.create.success) {
             this.hasUnsavedChanges = false;
             this.updateSaveButtonState();
+            ui.markPageSaved();
             this.showSuccess(`Client "${clientData.name}" created successfully. Redirecting to edit page...`);
             // Redirect to edit mode so the user can add subscriptions
             setTimeout(() => {
@@ -784,6 +775,7 @@ class WinCCUaClientDetailManager {
         if (result.winCCUaDevice.update.success) {
             this.hasUnsavedChanges = false;
             this.updateSaveButtonState();
+            ui.markPageSaved();
             this.showSuccess(`Client "${clientData.name}" updated successfully`);
             // Reload the client data
             await this.loadClient();
@@ -794,13 +786,7 @@ class WinCCUaClientDetailManager {
     }
 
     // UI Helper Methods
-    showConfirmDeleteAddressModal() {
-        document.getElementById('confirm-delete-address-modal').style.display = 'flex';
-    }
 
-    hideConfirmDeleteAddressModal() {
-        document.getElementById('confirm-delete-address-modal').style.display = 'none';
-    }
 
     showLoading(show) {
         const indicator = document.getElementById('loading-indicator');
@@ -841,6 +827,7 @@ class WinCCUaClientDetailManager {
             const mutation = `mutation DeleteWinCCUaClient($name: String!) { winCCUaDevice { delete(name: $name) } }`;
             const result = await this.client.query(mutation, { name: this.clientName });
             if (result.winCCUaDevice.delete) {
+                ui.markPageSaved();
                 this.showSuccess('WinCC Unified client deleted');
                 setTimeout(() => { window.spaLocation.href = '/pages/winccua-clients.html'; }, 800);
             } else {
@@ -860,14 +847,6 @@ class WinCCUaClientDetailManager {
     }
 
     async goBack() {
-        if (this.hasUnsavedChanges) {
-            const leave = await ui.confirm({
-                title: 'Discard unsaved changes?',
-                message: 'Your edits to this client have not been saved.',
-                confirmLabel: 'Discard and leave', danger: true
-            });
-            if (!leave) return;
-        }
         window.spaLocation.href = '/pages/winccua-clients.html';
     }
 }
@@ -885,13 +864,7 @@ function addAddress() {
     clientDetailManager.addAddress();
 }
 
-function hideConfirmDeleteAddressModal() {
-    clientDetailManager.hideConfirmDeleteAddressModal();
-}
 
-function confirmDeleteAddress() {
-    clientDetailManager.confirmDeleteAddress();
-}
 
 function saveClient() {
     clientDetailManager.saveClient();
@@ -913,8 +886,20 @@ document.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) {
         if (e.target.id === 'add-address-modal') {
             clientDetailManager.hideAddAddressModal();
-        } else if (e.target.id === 'confirm-delete-address-modal') {
-            clientDetailManager.hideConfirmDeleteAddressModal();
-        }
+                }
     }
 });
+
+page.expose({
+    get WinCCUaClientDetailManager() { return WinCCUaClientDetailManager; },
+    get addAddress() { return addAddress; },
+    get clientDetailManager() { return clientDetailManager; },
+    get goBack() { return goBack; },
+    get hideAddAddressModal() { return hideAddAddressModal; },
+    get saveClient() { return saveClient; },
+    get showAddAddressModal() { return showAddAddressModal; },
+    get showDeleteModal() { return showDeleteModal; }
+});
+page.ready();
+return () => page.dispose();
+}

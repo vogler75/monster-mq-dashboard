@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // OPC UA Device Detail Management JavaScript
 
 class OpcUaDeviceDetailManager {
@@ -776,6 +781,7 @@ class OpcUaDeviceDetailManager {
                 `;
                 const result = await this.client.query(mutation, { input: deviceData });
                 if (result.opcUaDevice.add.success) {
+                    ui.markPageSaved();
                     this.showSuccess(`Device "${deviceData.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/opcua-device-detail.html?device=${encodeURIComponent(deviceData.name)}`; }, 800);
                 } else {
@@ -811,6 +817,7 @@ class OpcUaDeviceDetailManager {
 
             if (result.opcUaDevice.update.success) {
                 await this.loadDevice();
+                ui.markPageSaved();
                 this.showSuccess(`Device "${this.deviceName}" updated successfully`);
             } else {
                 const errors = result.opcUaDevice.update.errors || ['Unknown error'];
@@ -873,6 +880,7 @@ class OpcUaDeviceDetailManager {
             const mutation = `mutation DeleteOpcUaDevice($name: String!) { opcUaDevice { delete(name: $name) } }`;
             const result = await this.client.query(mutation, { name: this.deviceName });
             if (result.opcUaDevice.delete) {
+                ui.markPageSaved();
                 this.showSuccess('OPC UA client deleted');
                 setTimeout(() => { window.spaLocation.href = '/pages/opcua-devices.html'; }, 800);
             } else {
@@ -946,3 +954,20 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+page.expose({
+    get OpcUaDeviceDetailManager() { return OpcUaDeviceDetailManager; },
+    get addAddress() { return addAddress; },
+    get confirmDeleteAddress() { return confirmDeleteAddress; },
+    get deviceDetailManager() { return deviceDetailManager; },
+    get goBack() { return goBack; },
+    get hideAddAddressModal() { return hideAddAddressModal; },
+    get hideEditAddressModal() { return hideEditAddressModal; },
+    get saveDevice() { return saveDevice; },
+    get saveEditedAddress() { return saveEditedAddress; },
+    get showAddAddressModal() { return showAddAddressModal; },
+    get showDeleteModal() { return showDeleteModal; }
+});
+page.ready();
+return () => page.dispose();
+}

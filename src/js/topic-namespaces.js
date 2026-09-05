@@ -1,7 +1,11 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class TopicNamespacesManager {
     constructor() {
         this.namespaces = [];
-        this.deleteNamespaceName = null;
 
         this.init();
     }
@@ -12,22 +16,11 @@ class TopicNamespacesManager {
             return;
         }
 
-        this.setupEventListeners();
         this.loadData();
     }
 
     isLoggedIn() {
         return window.isLoggedIn();
-    }
-
-    setupEventListeners() {
-        // Modal close on outside click
-        window.onclick = (event) => {
-            const deleteModal = document.getElementById('confirm-delete-modal');
-            if (event.target === deleteModal) {
-                this.hideConfirmDeleteModal();
-            }
-        };
     }
 
     async loadData() {
@@ -124,22 +117,11 @@ class TopicNamespacesManager {
         }
     }
 
-    showConfirmDeleteModal(name) {
-        this.deleteNamespaceName = name;
-        document.getElementById('delete-namespace-name').textContent = name;
-        document.getElementById('confirm-delete-modal').style.display = 'flex';
-    }
+    async showConfirmDeleteModal(name) {
+        const entityName = name;
+        if (!await ui.confirmDelete(entityName)) return;
 
-    hideConfirmDeleteModal() {
-        this.deleteNamespaceName = null;
-        document.getElementById('confirm-delete-modal').style.display = 'none';
-    }
-
-    async confirmDeleteNamespace() {
-        if (!this.deleteNamespaceName) return;
-
-        const name = this.deleteNamespaceName;
-        this.hideConfirmDeleteModal();
+        if (!entityName) return;
 
         try {
             console.log('Deleting namespace:', name);
@@ -162,6 +144,7 @@ class TopicNamespacesManager {
             console.error('Error deleting namespace:', error);
             this.showError('Failed to delete namespace: ' + error.message);
         }
+
     }
 
     showError(message) { ui.showError(message); }
@@ -179,10 +162,15 @@ class TopicNamespacesManager {
 
 // Global functions for onclick handlers
 window.refreshNamespaces = () => namespacesManager.loadData();
-window.hideConfirmDeleteModal = () => namespacesManager.hideConfirmDeleteModal();
-window.confirmDeleteNamespace = () => namespacesManager.confirmDeleteNamespace();
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
     window.namespacesManager = new TopicNamespacesManager();
 });
+
+page.expose({
+    get TopicNamespacesManager() { return TopicNamespacesManager; }
+});
+page.ready();
+return () => page.dispose();
+}

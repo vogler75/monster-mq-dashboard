@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // AI Agent Detail Management JavaScript
 
 class AgentDetailManager {
@@ -809,6 +814,7 @@ class AgentDetailManager {
                 `;
                 const result = await this.client.query(mutation, { input: data });
                 if (result.agent.create) {
+                    ui.markPageSaved();
                     this.showSuccess(`Agent "${data.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/agent-detail.html?agent=${encodeURIComponent(data.name)}`; }, 800);
                 } else {
@@ -833,6 +839,7 @@ class AgentDetailManager {
             const result = await this.client.query(mutation, { name: this.agentName, input: data });
             if (result.agent.update) {
                 await this.loadAgentData();
+                ui.markPageSaved();
                 this.showSuccess('Agent updated successfully');
             } else {
                 this.showError('Failed to update agent');
@@ -847,6 +854,7 @@ class AgentDetailManager {
             const mutation = `mutation DeleteAgent($name: String!) { agent { delete(name: $name) } }`;
             const result = await this.client.query(mutation, { name: this.agentName });
             if (result.agent.delete) {
+                ui.markPageSaved();
                 this.showSuccess('Agent deleted');
                 setTimeout(() => { window.spaLocation.href = '/pages/agents.html'; }, 800);
             } else {
@@ -1107,3 +1115,19 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Handle modal clicks (close on backdrop)
+
+page.expose({
+    get AgentDetailManager() { return AgentDetailManager; },
+    get agentDetailManager() { return agentDetailManager; },
+    get goBack() { return goBack; },
+    get onProviderNameChange() { return onProviderNameChange; },
+    get saveAgent() { return saveAgent; },
+    get setupContextDropZones() { return setupContextDropZones; },
+    get showDeleteModal() { return showDeleteModal; },
+    get toggleScheduleMode() { return toggleScheduleMode; },
+    get toggleTriggerFields() { return toggleTriggerFields; },
+    get updateModelPlaceholder() { return updateModelPlaceholder; }
+});
+page.ready();
+return () => page.dispose();
+}

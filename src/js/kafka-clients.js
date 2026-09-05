@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Kafka Client Management JavaScript
 
 class KafkaClientManager {
@@ -63,7 +68,7 @@ class KafkaClientManager {
             const row = document.createElement('tr');
             const statusClass = client.enabled ? 'status-enabled' : 'status-disabled';
             const statusText = client.enabled ? 'Enabled' : 'Disabled';
-            const nodeIndicator = client.isOnCurrentNode ? '📍 ' : '';
+            const nodeIndicator = client.isOnCurrentNode ? '<span class="status-badge badge-info">this node</span> ' : '';
             row.innerHTML = `
                 <td><div class="client-name">${this.escapeHtml(client.name)}</div></td>
                 <td><small class="client-namespace">${this.escapeHtml(client.namespace)}</small></td>
@@ -172,3 +177,12 @@ document.addEventListener('DOMContentLoaded', () => {
     kafkaClientManager = new KafkaClientManager();
     window.kafkaClientManager = kafkaClientManager;
 });
+
+page.expose({
+    get KafkaClientManager() { return KafkaClientManager; },
+    get kafkaClientManager() { return kafkaClientManager; },
+    get refreshKafkaClients() { return refreshKafkaClients; }
+});
+page.ready();
+return () => page.dispose();
+}

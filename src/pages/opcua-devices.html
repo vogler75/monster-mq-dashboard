@@ -9,31 +9,14 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
 
         .large-modal {
             max-width: 800px;
-        }
-
-        
-        .modal .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal .form-row.single {
-            grid-template-columns: 1fr;
         }@media (max-width: 768px) {
 
             .btn-icon.small { width:28px; height:28px; }
-
-            .modal .form-row {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
 }</style>
 </head>
 <body>
@@ -95,7 +78,7 @@
                         <a href="/pages/opcua-device-detail.html?new=true" class="btn btn-primary"><ix-icon name="add-circle" size="16"></ix-icon> Add Device</a>
                     </div>
                 </div>
-                <table>
+                <div class="table-responsive"><table>
                     <thead>
                         <tr>
                             <th>Device Name</th>
@@ -111,7 +94,7 @@
                     <tbody id="devices-table-body">
                         <!-- Device rows will be populated here -->
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             <div id="loading-indicator" class="loading-indicator" style="display: none;">
@@ -130,7 +113,7 @@
 
     <!-- Confirm Delete Modal -->
 
-    <script src="/js/opcua-devices.js"></script>
+    <script type="module" src="/js/opcua-devices.js"></script>
     </ix-application>
 </body>
 </html>

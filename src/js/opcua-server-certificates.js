@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // OPC UA Server Certificate Management JavaScript
 
 let serverName = '';
@@ -434,4 +439,38 @@ function escapeHtml(text) {
         "'": '&#039;'
     };
     return text.replace(/[&<>"']/g, function (m) { return map[m]; });
+}
+page.expose({
+    get checkAuthAndLoadData() { return checkAuthAndLoadData; },
+    get clearMessages() { return clearMessages; },
+    get deleteCertificates() { return deleteCertificates; },
+    get deleteSelectedRejectedCertificates() { return deleteSelectedRejectedCertificates; },
+    get deleteSelectedTrustedCertificates() { return deleteSelectedTrustedCertificates; },
+    get escapeHtml() { return escapeHtml; },
+    get hideLoading() { return hideLoading; },
+    get loadCertificates() { return loadCertificates; },
+    get refreshCertificates() { return refreshCertificates; },
+    get rejectedCertificates() { return rejectedCertificates; },
+    get renderCertificateRow() { return renderCertificateRow; },
+    get renderCertificates() { return renderCertificates; },
+    get renderRejectedCertificates() { return renderRejectedCertificates; },
+    get renderTrustedCertificates() { return renderTrustedCertificates; },
+    get selectedRejected() { return selectedRejected; },
+    get selectedTrusted() { return selectedTrusted; },
+    get serverName() { return serverName; },
+    get setupEventListeners() { return setupEventListeners; },
+    get showError() { return showError; },
+    get showLoading() { return showLoading; },
+    get showSuccess() { return showSuccess; },
+    get toggleCertificateSelection() { return toggleCertificateSelection; },
+    get toggleSelectAllRejected() { return toggleSelectAllRejected; },
+    get toggleSelectAllTrusted() { return toggleSelectAllTrusted; },
+    get trustSelectedCertificates() { return trustSelectedCertificates; },
+    get trustedCertificates() { return trustedCertificates; },
+    get updateButtonStates() { return updateButtonStates; },
+    get updateCounters() { return updateCounters; },
+    get updateSelectionCounters() { return updateSelectionCounters; }
+});
+page.ready();
+return () => page.dispose();
 }

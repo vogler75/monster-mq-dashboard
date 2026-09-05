@@ -9,14 +9,14 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         /* Column widths for the addresses table (paired with .data-table.is-fixed) */
-        .data-table thead th:nth-child(1) { width: 15%; } /* Type */
-        .data-table thead th:nth-child(2) { width: 25%; } /* MQTT Topic */
-        .data-table thead th:nth-child(3) { width: 25%; } /* Description */
-        .data-table thead th:nth-child(4) { width: 27%; } /* Options */
-        .data-table thead th:nth-child(5) { width: 8%; }  /* Actions */
+        #addresses-table thead th:nth-child(1) { width: 15%; } /* Type */
+        #addresses-table thead th:nth-child(2) { width: 25%; } /* MQTT Topic */
+        #addresses-table thead th:nth-child(3) { width: 25%; } /* Description */
+        #addresses-table thead th:nth-child(4) { width: 27%; } /* Options */
+        #addresses-table thead th:nth-child(5) { width: 8%; }  /* Actions */
 
         
 
@@ -104,18 +104,6 @@
             max-width: 800px;
         }
 
-        
-        .modal .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal .form-row.single {
-            grid-template-columns: 1fr;
-        }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -172,10 +160,6 @@
             .client-info-grid {
                 grid-template-columns: 1fr;
                 gap: 1.5rem;
-            }
-
-            .modal .form-row {
-                grid-template-columns: 1fr;
             }
 }</style>
 </head>
@@ -440,7 +424,7 @@
                     <div class="section-content">
                         <div id="addresses-container">
                             <div id="addresses-table" class="data-table is-fixed">
-                                <table>
+                                <div class="table-responsive"><table>
                                     <thead>
                                         <tr>
                                             <th>Type</th>
@@ -453,7 +437,7 @@
                                     <tbody id="addresses-table-body">
                                         <!-- Address rows will be populated here -->
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                             <div id="no-addresses" class="no-data" style="display: none;">
                                 <div class="no-data-content">
@@ -554,37 +538,10 @@
     </div>
 
     <!-- Confirm Delete Address Modal -->
-    <div id="confirm-delete-address-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Confirm Delete</h3>
-                <button class="modal-close" onclick="hideConfirmDeleteAddressModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the subscription "<span id="delete-address-name"></span>"?</p>
-                <p>This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="hideConfirmDeleteAddressModal()">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDeleteAddress()">Delete</button>
-            </div>
-        </div>
-    </div>
 
 
-    <script src="/js/winccua-client-detail.js"></script>
-    <script>
-        // Handle modal clicks (close when clicking outside)
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) {
-                if (e.target.id === 'add-address-modal') {
-                    clientDetailManager.hideAddAddressModal();
-                } else if (e.target.id === 'confirm-delete-address-modal') {
-                    clientDetailManager.hideConfirmDeleteAddressModal();
-                }
-            }
-        });
-    </script>
+
+    <script type="module" src="/js/winccua-client-detail.js"></script>
     </ix-application>
 </body>
 </html>

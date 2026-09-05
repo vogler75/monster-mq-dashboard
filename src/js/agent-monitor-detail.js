@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Agent Detail Monitor - Per-agent live monitoring
 
 var safeStorage = window.safeStorage;
@@ -797,3 +802,11 @@ let agentDetailMonitor;
 document.addEventListener('DOMContentLoaded', () => {
     agentDetailMonitor = new AgentDetailMonitorManager();
 });
+
+page.expose({
+    get AgentDetailMonitorManager() { return AgentDetailMonitorManager; },
+    get agentDetailMonitor() { return agentDetailMonitor; }
+});
+page.ready();
+return () => page.dispose();
+}

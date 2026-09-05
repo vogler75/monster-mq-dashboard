@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Agent Monitor - Live monitoring of all A2A agents
 
 var safeStorage = window.safeStorage;
@@ -516,4 +521,13 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAgentMonitor);
 } else {
     initAgentMonitor();
+}
+
+page.expose({
+    get AgentMonitorManager() { return AgentMonitorManager; },
+    get agentMonitor() { return agentMonitor; },
+    get initAgentMonitor() { return initAgentMonitor; }
+});
+page.ready();
+return () => page.dispose();
 }

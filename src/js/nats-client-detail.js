@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // NATS Client Detail Management JavaScript
 
 class NatsClientDetailManager {
@@ -480,6 +485,7 @@ class NatsClientDetailManager {
                 `;
                 const result = await this.client.query(mutation, { input: data });
                 if (result.natsClient.create.success) {
+                    ui.markPageSaved();
                     this.showSuccess(`NATS client "${data.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/nats-client-detail.html?client=${encodeURIComponent(data.name)}`; }, 800);
                 } else {
@@ -507,12 +513,13 @@ class NatsClientDetailManager {
                     this.clientName = newName;
                     const url = new URL(window.location.href);
                     url.searchParams.set('client', newName);
-                    window.history.replaceState({}, '', url.toString());
+                    window.replacePageUrl(url.toString());
                 }
                 await this.loadClientData();
                 if (prevNodeId && data.nodeId && data.nodeId !== prevNodeId) {
                     await this.reassignClient(data.nodeId);
                 }
+                ui.markPageSaved();
                 this.showSuccess('NATS client updated successfully');
             } else {
                 const errors = result.natsClient.update.errors || ['Unknown error'];
@@ -577,6 +584,7 @@ class NatsClientDetailManager {
             `;
             const result = await this.client.query(mutation, { name: this.clientName });
             if (result.natsClient.delete) {
+                ui.markPageSaved();
                 this.showSuccess('NATS client deleted');
                 this.cleanup();
                 setTimeout(() => { window.spaLocation.href = '/pages/nats-clients.html'; }, 800);
@@ -631,3 +639,18 @@ document.addEventListener('click', e => {
         natsDetailManager.hideAddAddressModal();
     }
 });
+
+page.expose({
+    get NatsClientDetailManager() { return NatsClientDetailManager; },
+    get goBack() { return goBack; },
+    get hideAddAddressModal() { return hideAddAddressModal; },
+    get natsDetailManager() { return natsDetailManager; },
+    get saveAddressMapping() { return saveAddressMapping; },
+    get saveClient() { return saveClient; },
+    get showAddAddressModal() { return showAddAddressModal; },
+    get showDeleteModal() { return showDeleteModal; },
+    get toggleClient() { return toggleClient; }
+});
+page.ready();
+return () => page.dispose();
+}

@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 /**
  * Redfish Gateways Management
  */
@@ -190,22 +195,11 @@ class RedfishGatewayManager {
         }
     }
 
-    showLoading(show) {
-        const el = document.getElementById('loading-indicator');
-        if (el) el.style.display = show ? 'flex' : 'none';
-    }
+    showLoading(show) { ui.setLoading(show); }
 
-    showError(msg) {
-        const el = document.getElementById('error-message');
-        const txt = document.getElementById('error-text');
-        if (txt) txt.textContent = msg;
-        if (el) el.style.display = 'block';
-    }
+    showError(msg) { ui.showError(msg); }
 
-    hideError() {
-        const el = document.getElementById('error-message');
-        if (el) el.style.display = 'none';
-    }
+    hideError() { ui.clearError(); }
 
     escapeHtml(str) {
         if (!str) return '';
@@ -233,3 +227,14 @@ function deleteGateway(name) {
 document.addEventListener('DOMContentLoaded', () => {
     gatewayManager = new RedfishGatewayManager();
 });
+
+page.expose({
+    get RedfishGatewayManager() { return RedfishGatewayManager; },
+    get deleteGateway() { return deleteGateway; },
+    get gatewayManager() { return gatewayManager; },
+    get refreshGateways() { return refreshGateways; },
+    get toggleGateway() { return toggleGateway; }
+});
+page.ready();
+return () => page.dispose();
+}

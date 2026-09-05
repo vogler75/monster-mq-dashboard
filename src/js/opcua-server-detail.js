@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // OPC UA Server Detail Management JavaScript
 
 class OpcUaServerDetailManager {
@@ -276,6 +281,7 @@ class OpcUaServerDetailManager {
                 `;
                 const result = await this.client.query(mutation, { config: serverInput });
                 if (result.opcUaServer.create.success) {
+                    ui.markPageSaved();
                     this.showSuccess(`OPC UA server "${serverInput.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/opcua-server-detail.html?server=${encodeURIComponent(serverInput.name)}`; }, 800);
                 } else {
@@ -311,7 +317,7 @@ class OpcUaServerDetailManager {
                     this.serverName = newName;
                     const url = new URL(window.location.href);
                     url.searchParams.set('server', newName);
-                    window.history.replaceState({}, '', url.toString());
+                    window.replacePageUrl(url.toString());
                 }
                 // Reload data first
                 await this.loadServerData();
@@ -319,6 +325,7 @@ class OpcUaServerDetailManager {
                 if (prevNodeId && updatedInput.nodeId && updatedInput.nodeId !== prevNodeId) {
                     await this.reassignServer(updatedInput.nodeId);
                 }
+                ui.markPageSaved();
                 this.showSuccess('OPC UA server updated successfully');
             } else {
                 const errors = result.opcUaServer.update.errors || ['Unknown error'];
@@ -400,6 +407,7 @@ class OpcUaServerDetailManager {
             `;
             const result = await this.client.query(mutation, { serverName: this.serverName });
             if (result.opcUaServer.delete.success) {
+                ui.markPageSaved();
                 this.showSuccess('OPC UA server deleted');
                 setTimeout(() => {
                     window.spaLocation.href = '/pages/opcua-servers.html';
@@ -682,3 +690,21 @@ document.addEventListener('click', e => {
         if (e.target.id === 'add-address-modal') opcUaServerDetailManager.hideAddAddressModal();
     }
 });
+
+page.expose({
+    get OpcUaServerDetailManager() { return OpcUaServerDetailManager; },
+    get addAddress() { return addAddress; },
+    get deleteAddress() { return deleteAddress; },
+    get goBack() { return goBack; },
+    get hideAddAddressModal() { return hideAddAddressModal; },
+    get opcUaServerDetailManager() { return opcUaServerDetailManager; },
+    get saveServer() { return saveServer; },
+    get showAddAddressModal() { return showAddAddressModal; },
+    get showDeleteModal() { return showDeleteModal; },
+    get showEditAddressModal() { return showEditAddressModal; },
+    get submitAddress() { return submitAddress; },
+    get toggleServer() { return toggleServer; }
+});
+page.ready();
+return () => page.dispose();
+}

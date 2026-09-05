@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class TopicSchemaPolicyDetailManager {
     constructor() {
         this.isNewPolicy = false;
@@ -203,6 +208,7 @@ class TopicSchemaPolicyDetailManager {
                 `, { input });
 
                 if (result.topicSchemaPolicy.create.success) {
+                    ui.markPageSaved();
                     ui.success(`Policy "${input.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/topic-schema-policy-detail.html?name=${encodeURIComponent(input.name)}`; }, 800);
                 } else {
@@ -226,6 +232,7 @@ class TopicSchemaPolicyDetailManager {
                 `, { name: this.policyName, input });
 
                 if (result.topicSchemaPolicy.update.success) {
+                    ui.markPageSaved();
                     ui.success('Policy updated successfully');
                     await this.loadPolicy();
                 } else {
@@ -302,17 +309,9 @@ class TopicSchemaPolicyDetailManager {
         }
     }
 
-    showDeleteModal() {
-        document.getElementById('delete-policy-name').textContent = this.policyName;
-        document.getElementById('delete-policy-modal').style.display = 'flex';
-    }
-
-    hideDeleteModal() {
-        document.getElementById('delete-policy-modal').style.display = 'none';
-    }
-
-    async confirmDeletePolicy() {
-        this.hideDeleteModal();
+    async showDeleteModal() {
+        const entityName = this.policyName;
+        if (!await ui.confirmDelete(entityName)) return;
 
         try {
             console.log('Deleting policy:', this.policyName);
@@ -326,6 +325,7 @@ class TopicSchemaPolicyDetailManager {
             `, { name: this.policyName });
 
             if (result.topicSchemaPolicy.delete) {
+                ui.markPageSaved();
                 console.log('Policy deleted successfully');
                 window.spaLocation.href = '/pages/topic-schema-policies.html';
             } else {
@@ -335,6 +335,7 @@ class TopicSchemaPolicyDetailManager {
             console.error('Error deleting policy:', error);
             this.showError('Failed to delete policy: ' + error.message);
         }
+
     }
 
     showError(message) { ui.showError(message); }
@@ -363,14 +364,6 @@ function showDeleteModal() {
     window.policyDetailManager.showDeleteModal();
 }
 
-function hideDeleteModal() {
-    window.policyDetailManager.hideDeleteModal();
-}
-
-function confirmDeletePolicy() {
-    window.policyDetailManager.confirmDeletePolicy();
-}
-
 function validatePayload() {
     window.policyDetailManager.validateTestPayload();
 }
@@ -381,9 +374,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Handle modal clicks (close when clicking outside)
-window.onclick = (event) => {
-    const deleteModal = document.getElementById('delete-policy-modal');
-    if (event.target === deleteModal) {
-        hideDeleteModal();
-    }
-};
+
+page.expose({
+    get TopicSchemaPolicyDetailManager() { return TopicSchemaPolicyDetailManager; },
+    get goBack() { return goBack; },
+    get savePolicy() { return savePolicy; },
+    get showDeleteModal() { return showDeleteModal; },
+    get validatePayload() { return validatePayload; }
+});
+page.ready();
+return () => page.dispose();
+}

@@ -186,47 +186,64 @@ Never load from a CDN. The broker is deployed into air-gapped plant networks.
 Add the package to `package.json`, register it in `VENDOR_BUNDLES` in
 `vite.config.js`, and reference it as `/js/vendor/<name>.js`.
 
+## Page lifecycle
+
+Page scripts are ES modules with an explicit `export function mount(page)` entry
+point. The router imports and mounts each module on navigation and disposes it
+before mounting the next page. Reference these scripts and `sidebar.js` with
+`type="module"`, including in standalone page templates. The Vite runtime belongs
+to the shell and is never mounted as a page.
+
+Use the page-provided `window`, `document`, timers, observers, and sockets so
+resources belong to the current visit. Register additional cleanup with
+`page.addCleanup(fn)`. For overlays inserted with `insertAdjacentHTML`, call
+`page.own(element)`; elements created through the page document are owned
+already. Return `() => page.dispose()` from `mount`.
+
+Existing inline HTML handlers use explicit getters in `page.expose({...})`.
+These bindings are restored on disposal; adding a declaration does not implicitly
+make it global. Prefer element event listeners for new controls. Shared services
+such as the GraphQL client and UI helpers remain shell-owned.
+
+## Edit tracking and tables
+
+The router tracks primary detail forms and open modal editors. Mark staged or
+programmatic changes with `ui.markPageDirty()`. Call `ui.markPageSaved()` only
+after a successful primary save; a failed save or subresource save must preserve
+pending primary edits. Use `data-edit-section` for inline editors on list pages
+and `data-ignore-dirty` for filters/search controls. Navigation, browser history,
+and browser unload use the same pending-edit state.
+
+Management lists opt into shared search and accessible sorting with
+`data-table-tools` on their `.data-table` card. Existing filters are preserved.
+Wrap tables in `.table-responsive` so dense columns scroll within the card.
+Specialized topic trees, explorers, and virtualized views retain their own
+filtering controls.
+
 ## Migration status
 
-All 70 pages now draw their components from `components.css`; the ~5,600 lines
-of duplicated component CSS that lived in page `<style>` blocks are gone. What
-remains in those blocks is genuinely page-specific (topic trees, the workflow
-canvas, the archive explorer grid, help-page typography).
+All remaining legacy delete dialogs use `ui.confirmDelete()`. Recurring controls,
+headers, metric cards, section cards, errors, and notifications use the shared
+components. Local styles are reserved for page-specific layouts such as topic
+trees, workflow canvases, and table-specific column widths scoped by table ID.
 
-Fully rebuilt on the concept — copy one of these when adding a page:
+Examples to follow:
 
 - list: `redis-clients`
 - detail: `nats-client-detail`
 - overview: `dashboard`, `sessions`
 
-27 of the 43 hand-written delete-confirmation modals are gone, replaced by
-`ui.confirmDelete()`. Two shapes were converted mechanically:
-
-- list pages — `deleteX(name)` → `showConfirmDeleteModal()` → `confirmDeleteX()`
-- detail pages — `showDeleteModal()` → `hideDeleteModal()` / `confirmDeleteX()`
-
-Still outstanding:
-
-- **16 delete modals remain**, on pages whose flow differs from those two shapes
-  (`archive-groups`, `jdbc-loggers`, `influxdb-loggers`, `timebase-loggers`,
-  `topic-namespaces`, `topic-schema-policies`, `opcua-servers`,
-  `kafka-server-detail`, and friends). They share styling and get
-  Escape/backdrop close from `ui`'s legacy-modal handler, so they behave
-  consistently — they are just more code than they need to be. Convert
-  opportunistically and exercise the delete path when you do.
-- A handful of pages still build key/value displays as two-column tables where
-  `.info-grid` would read better.
-
 ## Checking your work
 
-Two scripts guard the wiring these refactors can silently break. Both should
-report zero:
+Run `npm run check`, `npm test`, and `npm run build` after changes. Checks cover
+script syntax, module entry tags (including the shell), explicit handler bindings,
+duplicate IDs, removed-modal references, and shared component style invariants.
+Tests cover page resources, edit tracking, navigation failures, and cancellation
+and confirmation of migrated delete operations.
 
-- every inline `onclick="foo()"` resolves to something the page's scripts define
-- every `getElementById('…-modal')` / `e.target.id === '…-modal'` refers to a
-  modal that still exists in the page
-
-`node --check` on each file in `js/` is also worth running: `package.json` sets
-`"type": "module"`, so Node parses them strictly and catches duplicate
-declarations that the browser silently tolerates (that is how a shadowed
-`showSuccessMessage` stub on the OPC UA servers page was found).
+Also exercise affected pages in the browser under Vite: a production build alone
+does not exercise Vite's injected scripts or import transforms. The isolated
+fixture supports `DASHBOARD_FIXTURE_DEV=1 node tests/preview-server.js` on port
+5181 and built assets with `node tests/preview-server.js` on port 5180. It supplies
+synthetic data and permits only fixture-prefixed Redis mutations in memory.
+Real broker integration and desktop packaging need their own verification.

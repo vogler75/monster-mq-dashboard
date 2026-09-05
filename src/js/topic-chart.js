@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 /**
  * Topic Chart - Time series visualization for MQTT topics
  */
@@ -1370,3 +1375,13 @@ document.addEventListener('DOMContentLoaded', () => {
     topicChartManager = new TopicChartManager();
     TopicChartSidePanel.instance = new TopicChartSidePanel();
 });
+
+page.expose({
+    get CHART_COLORS() { return CHART_COLORS; },
+    get TopicChartManager() { return TopicChartManager; },
+    get TopicChartSidePanel() { return TopicChartSidePanel; },
+    get topicChartManager() { return topicChartManager; }
+});
+page.ready();
+return () => page.dispose();
+}

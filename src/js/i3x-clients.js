@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // i3X Client Management JavaScript
 
 class I3xClientManager {
@@ -127,7 +132,7 @@ class I3xClientManager {
             const addressCount = client.config?.addresses?.length || 0;
             const url = client.config?.url || '—';
             const authType = client.config?.authType || 'NONE';
-            const nodeIndicator = client.isOnCurrentNode ? '📍 ' : '';
+            const nodeIndicator = client.isOnCurrentNode ? '<span class="status-badge badge-info">this node</span> ' : '';
 
             row.innerHTML = `
                 <td>
@@ -285,3 +290,12 @@ document.addEventListener('DOMContentLoaded', () => {
     i3xClientManager = new I3xClientManager();
     window.i3xClientManager = i3xClientManager;
 });
+
+page.expose({
+    get I3xClientManager() { return I3xClientManager; },
+    get i3xClientManager() { return i3xClientManager; },
+    get refreshClients() { return refreshClients; }
+});
+page.ready();
+return () => page.dispose();
+}

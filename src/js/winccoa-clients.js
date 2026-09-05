@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // WinCC OA Client Management JavaScript
 
 class WinCCOaClientManager {
@@ -147,7 +152,7 @@ class WinCCOaClientManager {
 
             const statusClass = client.enabled ? 'status-enabled' : 'status-disabled';
             const statusText = client.enabled ? 'Enabled' : 'Disabled';
-            const nodeIndicator = client.isOnCurrentNode ? '📍 ' : '';
+            const nodeIndicator = client.isOnCurrentNode ? '<span class="status-badge badge-info">this node</span> ' : '';
 
             // Format metrics
             const metrics = client.metrics && client.metrics.length > 0 ? client.metrics[0] : null;
@@ -337,3 +342,13 @@ document.addEventListener('DOMContentLoaded', () => {
     winCCOaClientManager = new WinCCOaClientManager();
     window.winCCOaClientManager = winCCOaClientManager;
 });
+
+page.expose({
+    get WinCCOaClientManager() { return WinCCOaClientManager; },
+    get confirmDeleteClient() { return confirmDeleteClient; },
+    get refreshClients() { return refreshClients; },
+    get winCCOaClientManager() { return winCCOaClientManager; }
+});
+page.ready();
+return () => page.dispose();
+}

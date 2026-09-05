@@ -1,7 +1,11 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // SparkplugB Decoders List View
 
 let autoRefreshInterval = null;
-let pendingDeleteName = null;
 
 async function loadDecoders() {
     showLoading(true);
@@ -52,7 +56,7 @@ function renderDecoders(decoders) {
         const rules = config.rules || [];
         const statusClass = decoder.enabled ? 'status-enabled' : 'status-disabled';
         const statusText = decoder.enabled ? 'Enabled' : 'Disabled';
-        const nodeIndicator = decoder.isOnCurrentNode ? '📍 ' : '';
+        const nodeIndicator = decoder.isOnCurrentNode ? '<span class="status-badge badge-info">this node</span> ' : '';
         return `
             <tr>
                 <td><div class="client-name">${escapeHtml(decoder.name)}</div></td>
@@ -103,21 +107,12 @@ async function toggleDecoder(name, enabled) {
     }
 }
 
-function deleteDecoder(name) {
-    pendingDeleteName = name;
-    document.getElementById('delete-decoder-name').textContent = name;
-    document.getElementById('confirm-delete-modal').style.display = 'flex';
-}
+async function deleteDecoder(name) {
+    const entityName = name;
+    if (!await ui.confirmDelete(entityName)) return;
 
-function hideConfirmDeleteModal() {
-    document.getElementById('confirm-delete-modal').style.display = 'none';
-    pendingDeleteName = null;
-}
+    if (!entityName) return;
 
-async function confirmDeleteDecoder() {
-    if (!pendingDeleteName) return;
-    const name = pendingDeleteName;
-    hideConfirmDeleteModal();
     try {
         const mutation = `
             mutation DeleteDecoder($name: String!) {
@@ -136,6 +131,7 @@ async function confirmDeleteDecoder() {
         console.error('Error deleting decoder:', error);
         showError('Failed to delete decoder: ' + error.message);
     }
+
 }
 
 function formatNumber(value) {
@@ -164,9 +160,27 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener('click', e => {
-    if (e.target.classList.contains('modal') && e.target.id === 'confirm-delete-modal') hideConfirmDeleteModal();
 });
 
 window.addEventListener('beforeunload', () => {
     if (autoRefreshInterval) clearInterval(autoRefreshInterval);
 });
+
+page.expose({
+    get autoRefreshInterval() { return autoRefreshInterval; },
+    get deleteDecoder() { return deleteDecoder; },
+    get escapeHtml() { return escapeHtml; },
+    get formatNumber() { return formatNumber; },
+    get hideError() { return hideError; },
+    get loadDecoders() { return loadDecoders; },
+    get renderDecoders() { return renderDecoders; },
+    get showError() { return showError; },
+    get showLoading() { return showLoading; },
+    get showSuccess() { return showSuccess; },
+    get toggleDecoder() { return toggleDecoder; },
+    get updateMetrics() { return updateMetrics; },
+    get viewDecoder() { return viewDecoder; }
+});
+page.ready();
+return () => page.dispose();
+}

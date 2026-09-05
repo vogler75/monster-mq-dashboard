@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
 
         
@@ -71,7 +71,7 @@
                 <p class="page-subtitle">Bind topic filters to schema policies for enforcement</p>
             </div>
 
-            <div id="namespaces-table" class="data-table">
+            <div id="namespaces-table" class="data-table" data-table-tools>
                 <div class="table-header">
                     <div class="table-title">
                         <h2>Namespaces</h2>
@@ -81,7 +81,7 @@
                         <a href="/pages/topic-namespace-detail.html?new=true" class="btn btn-primary"><ix-icon name="add-circle" size="16"></ix-icon> Add Namespace</a>
                     </div>
                 </div>
-                <table>
+                <div class="table-responsive"><table>
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -95,7 +95,7 @@
                     <tbody id="namespaces-table-body">
                         <!-- Namespace rows will be populated here -->
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             <div id="loading-indicator" class="loading-indicator" style="display: none;">
@@ -113,24 +113,9 @@
     </div>
 
     <!-- Confirm Delete Modal -->
-    <div id="confirm-delete-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Confirm Delete</h3>
-                <button class="modal-close" onclick="hideConfirmDeleteModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the namespace "<span id="delete-namespace-name"></span>"?</p>
-                <p>This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="hideConfirmDeleteModal()">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDeleteNamespace()">Delete</button>
-            </div>
-        </div>
-    </div>
 
-    <script src="/js/topic-namespaces.js"></script>
+
+    <script type="module" src="/js/topic-namespaces.js"></script>
     </ix-application>
 </body>
 </html>

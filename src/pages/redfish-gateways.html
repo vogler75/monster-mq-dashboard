@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
 </head>
 <body>
     <ix-application force-breakpoint="lg">
@@ -60,7 +60,7 @@
                 </div>
             </div>
 
-            <div id="gateways-table" class="data-table">
+            <div id="gateways-table" class="data-table" data-table-tools>
                 <div class="table-header">
                     <div class="table-title">
                         <h2>Gateway Configurations</h2>
@@ -70,6 +70,7 @@
                         <a href="/pages/redfish-gateway-detail.html?new=true" class="btn btn-primary"><ix-icon name="add-circle" size="16"></ix-icon> Add Gateway</a>
                     </div>
                 </div>
+                <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
@@ -86,6 +87,7 @@
                     <tbody id="gateways-table-body">
                     </tbody>
                 </table>
+                </div>
             </div>
 
             <div id="loading-indicator" class="loading-indicator" style="display: none;">
@@ -96,7 +98,7 @@
             <div id="error-message" class="error-message" style="display: none;">
                 <div class="error-content">
                     <span class="error-icon">&#9888;</span>
-                    <span id="error-text"></span>
+                    <span id="error-text" class="error-text"></span>
                 </div>
             </div>
 
@@ -115,8 +117,8 @@
                     <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0; margin-bottom: 1.25rem;">
                         The broker exposes standard Redfish v1.18.0 REST endpoints over HTTP/HTTPS. Sensor telemetry ingested from MQTT topics is normalized and queryable through these standard paths:
                     </p>
-                    <div class="data-table" style="margin: 0; border: none; box-shadow: none;">
-                        <table>
+                    <div class="data-table" style="margin: 0; border: none; box-shadow: none;" data-table-tools>
+                        <div class="table-responsive"><table>
                             <thead>
                                 <tr>
                                     <th style="width: 80px;">Method</th>
@@ -199,7 +201,7 @@
                                     <td><a href="/redfish/v1/TelemetryService" target="_blank" class="btn btn-secondary btn-small"><ix-icon name="launch" size="12"></ix-icon> Open</a></td>
                                 </tr>
                             </tbody>
-                        </table>
+                        </table></div>
                     </div>
                 </div>
             </div>
@@ -208,6 +210,6 @@
     </div>
     </ix-application>
 
-    <script src="/js/redfish-gateways.js"></script>
+    <script type="module" src="/js/redfish-gateways.js"></script>
 </body>
 </html>

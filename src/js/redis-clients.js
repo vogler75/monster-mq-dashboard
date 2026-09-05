@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Redis Client Management
 
 class RedisClientManager {
@@ -154,3 +159,13 @@ document.addEventListener('DOMContentLoaded', () => {
     redisClientManager = new RedisClientManager();
     window.redisClientManager = redisClientManager;
 });
+
+
+page.expose({
+    get RedisClientManager() { return RedisClientManager; },
+    get redisClientManager() { return redisClientManager; },
+    get refreshRedisClients() { return refreshRedisClients; }
+});
+page.ready();
+return () => page.dispose();
+}

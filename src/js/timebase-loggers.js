@@ -1,7 +1,12 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class TimeBaseLoggersManager {
     constructor() {
         this.loggers = [];
-        this.deleteLoggerName = null;
+
         this.init();
     }
 
@@ -85,25 +90,21 @@ class TimeBaseLoggersManager {
         } catch (error) { this.showError('Failed to toggle logger: ' + error.message); }
     }
 
-    showConfirmDeleteModal(name) {
-        this.deleteLoggerName = name;
-        document.getElementById('delete-logger-name').textContent = name;
-        document.getElementById('confirm-delete-modal').style.display = 'flex';
-    }
+    async showConfirmDeleteModal(name) {
+        const entityName = name;
+        if (!await ui.confirmDelete(entityName)) return;
 
-    hideConfirmDeleteModal() { document.getElementById('confirm-delete-modal').style.display = 'none'; }
-
-    async confirmDeleteLogger() {
-        if (!this.deleteLoggerName) return;
+        if (!entityName) return;
         try {
             await window.graphqlClient.query(`
                 mutation DeleteTimeBaseLogger($name: String!) {
                     timebaseLogger { delete(name: $name) }
                 }
-            `, { name: this.deleteLoggerName });
-            this.hideConfirmDeleteModal();
+            `, { name: entityName });
+
             this.loadLoggers();
         } catch (error) { this.showError('Failed to delete logger: ' + error.message); }
+
     }
 
     showError(msg) { ui.showError(msg); }
@@ -111,5 +112,10 @@ class TimeBaseLoggersManager {
 
 window.timebaseLoggersManager = new TimeBaseLoggersManager();
 window.refreshLoggers = () => window.timebaseLoggersManager.loadLoggers();
-window.hideConfirmDeleteModal = () => window.timebaseLoggersManager.hideConfirmDeleteModal();
-window.confirmDeleteLogger = () => window.timebaseLoggersManager.confirmDeleteLogger();
+
+page.expose({
+    get TimeBaseLoggersManager() { return TimeBaseLoggersManager; }
+});
+page.ready();
+return () => page.dispose();
+}

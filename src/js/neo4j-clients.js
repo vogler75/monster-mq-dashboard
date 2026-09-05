@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Neo4j Client Management JavaScript
 
 class Neo4jClientManager {
@@ -67,7 +72,7 @@ class Neo4jClientManager {
             const row = document.createElement('tr');
             const statusClass = client.enabled ? 'status-enabled' : 'status-disabled';
             const statusText = client.enabled ? 'Enabled' : 'Disabled';
-            const nodeIndicator = client.isOnCurrentNode ? '📍 ' : '';
+            const nodeIndicator = client.isOnCurrentNode ? '<span class="status-badge badge-info">this node</span> ' : '';
             const metrics = client.metrics && client.metrics.length > 0 ? client.metrics[0] : null;
 
             row.innerHTML = `
@@ -179,3 +184,12 @@ document.addEventListener('DOMContentLoaded', () => {
     neo4jClientManager = new Neo4jClientManager();
     window.neo4jClientManager = neo4jClientManager;
 });
+
+page.expose({
+    get Neo4jClientManager() { return Neo4jClientManager; },
+    get neo4jClientManager() { return neo4jClientManager; },
+    get refreshNeo4jClients() { return refreshNeo4jClients; }
+});
+page.ready();
+return () => page.dispose();
+}

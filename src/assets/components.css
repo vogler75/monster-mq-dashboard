@@ -1532,3 +1532,26 @@ td.empty-cell,
         min-width: 0;
     }
 }
+
+/* Shared management table controls. */
+.table-actions .table-search { width: 16rem; max-width: 100%; min-width: 0; }
+.table-sort {
+    appearance: none;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: inherit;
+    cursor: pointer;
+}
+.table-sort:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 4px; }
+th[aria-sort="ascending"] .table-sort::after { content: ' ↑'; }
+th[aria-sort="descending"] .table-sort::after { content: ' ↓'; }
+
+.form-grid.is-single { grid-template-columns: 1fr; }
+
+/* Dense management tables keep readable columns and scroll as a unit. */
+.data-table table:has(thead th:nth-child(6)) { min-width: 48rem; }
+
+.modal.active { display: flex; }

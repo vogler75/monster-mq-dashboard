@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class ArchiveGroupDetailManager {
     constructor() {
         this.groupName = null;
@@ -185,7 +190,6 @@ class ArchiveGroupDetailManager {
 
         // Header buttons
         document.getElementById('delete-btn').style.display = 'inline-flex';
-        document.getElementById('delete-group-name').textContent = g.name;
 
         const toggleBtn = document.getElementById('toggle-btn');
         toggleBtn.style.display = 'inline-flex';
@@ -490,6 +494,7 @@ class ArchiveGroupDetailManager {
                 `, { input });
 
                 if (result.archiveGroup.create.success) {
+                    ui.markPageSaved();
                     this.showSuccess('Archive group created successfully.');
                     setTimeout(() => { window.spaLocation.href = '/pages/archive-group-detail.html?name=' + encodeURIComponent(data.name); }, 800);
                 } else {
@@ -513,6 +518,7 @@ class ArchiveGroupDetailManager {
                 `, { input });
 
                 if (result.archiveGroup.update.success) {
+                    ui.markPageSaved();
                     this.showSuccess('Archive group saved successfully.');
                     await this.loadData();
                     this.renderForm();
@@ -553,16 +559,10 @@ class ArchiveGroupDetailManager {
         }
     }
 
-    showDeleteModal() {
-        document.getElementById('delete-modal').style.display = 'flex';
-    }
+    async showDeleteModal() {
+        const entityName = this.groupName;
+        if (!await ui.confirmDelete(entityName)) return;
 
-    hideDeleteModal() {
-        document.getElementById('delete-modal').style.display = 'none';
-    }
-
-    async confirmDelete() {
-        this.hideDeleteModal();
         try {
             const result = await window.graphqlClient.query(`
                 mutation DeleteArchiveGroup($name: String!) {
@@ -576,6 +576,7 @@ class ArchiveGroupDetailManager {
             `, { name: this.groupName });
 
             if (result.archiveGroup.delete.success) {
+                ui.markPageSaved();
                 this.showSuccess('Archive group deleted.');
                 setTimeout(() => this.goBack(), 800);
             } else {
@@ -584,6 +585,7 @@ class ArchiveGroupDetailManager {
         } catch (error) {
             this.showError('Failed to delete archive group: ' + error.message);
         }
+
     }
 
     goBack() {
@@ -884,3 +886,10 @@ class ArchiveGroupDetailManager {
 document.addEventListener('DOMContentLoaded', () => {
     window.archiveGroupDetail = new ArchiveGroupDetailManager();
 });
+
+page.expose({
+    get ArchiveGroupDetailManager() { return ArchiveGroupDetailManager; }
+});
+page.ready();
+return () => page.dispose();
+}

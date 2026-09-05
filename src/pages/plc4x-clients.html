@@ -9,23 +9,11 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
 
         .large-modal {
             max-width: 800px;
-        }
-
-        
-        .modal .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal .form-row.single {
-            grid-template-columns: 1fr;
         }
 
         
@@ -37,11 +25,6 @@
         }@media (max-width: 768px) {
 
             .btn-icon.small { width:28px; height:28px; }
-
-            .modal .form-row {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
 }</style>
 </head>
 <body>
@@ -93,7 +76,7 @@
                 </div>
             </div>
 
-            <div id="clients-table" class="data-table">
+            <div id="clients-table" class="data-table" data-table-tools>
                 <div class="table-header">
                     <div class="table-title">
                         <h2>Client Configuration</h2>
@@ -103,7 +86,7 @@
                         <a href="/pages/plc4x-client-detail.html?new=true" class="btn btn-primary"><ix-icon name="add-circle" size="16"></ix-icon> Add Client</a>
                     </div>
                 </div>
-                <table>
+                <div class="table-responsive"><table>
                     <thead>
                         <tr>
                             <th>Client Name</th>
@@ -120,7 +103,7 @@
                     <tbody id="clients-table-body">
                         <!-- Client rows will be populated here -->
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             <div id="loading-indicator" class="loading-indicator" style="display: none;">
@@ -139,7 +122,7 @@
 
     <!-- Confirm Delete Modal -->
 
-    <script src="/js/plc4x-clients.js"></script>
+    <script type="module" src="/js/plc4x-clients.js"></script>
     </ix-application>
 </body>
 </html>

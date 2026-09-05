@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 var safeStorage = window.safeStorage;
 class DashboardManager {
     constructor() {
@@ -797,3 +802,10 @@ class DashboardManager {
 document.addEventListener('DOMContentLoaded', () => {
     window.dashboardManager = new DashboardManager();
 });
+
+page.expose({
+    get DashboardManager() { return DashboardManager; }
+});
+page.ready();
+return () => page.dispose();
+}

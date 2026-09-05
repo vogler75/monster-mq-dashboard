@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         .main-content {
             transition: margin-right 0.3s ease;
@@ -471,7 +471,7 @@
                     </div>
                     <div class="section-content">
                         <div class="data-table" style="margin:0; box-shadow:none; border:none;">
-                            <table>
+                            <div class="table-responsive"><table>
                                 <thead>
                                     <tr>
                                         <th>Sensor ID</th>
@@ -487,7 +487,7 @@
                                 <tbody id="live-sensors-tbody">
                                     <tr><td colspan="8" style="text-align:center; color:var(--text-muted); padding:2rem;">Loading sensor registry&hellip;</td></tr>
                                 </tbody>
-                            </table>
+                            </table></div>
                         </div>
                     </div>
                 </div>
@@ -525,7 +525,7 @@
             </select>
         </div>
         <div style="padding: 0.5rem 1rem; display: flex; gap: 0.5rem;">
-            <input type="text" id="side-search-input" placeholder="Search topic pattern (e.g. sensors/+/temp)..." style="flex:1; padding:0.4rem 0.6rem; font-size:0.85rem; background:var(--dark-bg); border:1px solid var(--dark-border); border-radius:4px; color:var(--text-primary);">
+            <input type="text" id="side-search-input" placeholder="Search topic pattern (e.g. sensors/+/temp)..." style="flex:1; padding:0.4rem 0.6rem; font-size:0.85rem; background:var(--dark-bg); border:1px solid var(--dark-border); border-radius:4px; color:var(--text-primary);" data-ignore-dirty>
             <button class="btn btn-secondary btn-small" id="side-search-btn" onclick="searchTopicBrowser()">Search</button>
             <button class="btn btn-secondary btn-small" onclick="refreshTopicBrowser()">Browse Root</button>
         </div>
@@ -542,6 +542,6 @@
     </div>
     </ix-application>
 
-    <script src="/js/redfish-gateway-detail.js"></script>
+    <script type="module" src="/js/redfish-gateway-detail.js"></script>
 </body>
 </html>

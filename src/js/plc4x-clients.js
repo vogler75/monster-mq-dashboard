@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // PLC4X Clients Management JavaScript
 
 class Plc4xClientManager {
@@ -107,7 +112,7 @@ class Plc4xClientManager {
 
             const statusClass = client.enabled ? 'status-enabled' : 'status-disabled';
             const statusText = client.enabled ? 'Enabled' : 'Disabled';
-            const nodeIndicator = client.isOnCurrentNode ? '📍 ' : '';
+            const nodeIndicator = client.isOnCurrentNode ? '<span class="status-badge badge-info">this node</span> ' : '';
 
             // Format protocol for display
             const protocolDisplay = this.formatProtocol(client.config.protocol);
@@ -331,3 +336,13 @@ document.addEventListener('DOMContentLoaded', () => {
     plc4xManager = new Plc4xClientManager();
     window.plc4xManager = plc4xManager;
 });
+
+page.expose({
+    get Plc4xClientManager() { return Plc4xClientManager; },
+    get confirmDeleteClient() { return confirmDeleteClient; },
+    get plc4xManager() { return plc4xManager; },
+    get refreshClients() { return refreshClients; }
+});
+page.ready();
+return () => page.dispose();
+}

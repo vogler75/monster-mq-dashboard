@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // State persistence keys
 const STATE_KEYS = {
     SELECTED_TOPIC: 'monstermq_topic_browser_selected_topic',
@@ -1759,3 +1764,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 500);
 });
+page.expose({
+    get STATE_KEYS() { return STATE_KEYS; },
+    get TopicBrowser() { return TopicBrowser; },
+    get TopicBrowserAI() { return TopicBrowserAI; }
+});
+page.ready();
+return () => page.dispose();
+}

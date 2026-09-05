@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // HMI Screen Detail Page Manager
 
 class HmiScreenDetailManager {
@@ -275,6 +280,7 @@ class HmiScreenDetailManager {
             const res = this.isNew ? result?.hmi?.create : result?.hmi?.update;
 
             if (res && res.success) {
+                ui.markPageSaved();
                 window.ui.success(`HMI screen "${name}" saved successfully`);
                 if (this.isNew) {
                     (window.spaLocation || window.location).href = `/pages/hmi-screen-detail.html?name=${encodeURIComponent(name)}`;
@@ -313,6 +319,7 @@ class HmiScreenDetailManager {
             const res = result?.hmi?.delete;
 
             if (res && res.success) {
+                ui.markPageSaved();
                 window.ui.success(`HMI screen "${this.hmiName}" deleted successfully`);
                 (window.spaLocation || window.location).href = '/pages/hmi-screens.html';
             } else {
@@ -441,3 +448,10 @@ class HmiScreenDetailManager {
 document.addEventListener('DOMContentLoaded', () => {
     window.hmiDetailManager = new HmiScreenDetailManager();
 });
+
+page.expose({
+    get HmiScreenDetailManager() { return HmiScreenDetailManager; }
+});
+page.ready();
+return () => page.dispose();
+}

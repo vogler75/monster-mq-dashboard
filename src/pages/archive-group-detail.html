@@ -10,7 +10,7 @@
     <script src="/js/vendor/echarts.min.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         textarea { resize: vertical; min-height: 100px; font-family: 'JetBrains Mono', monospace; }
         input:disabled, select:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -275,7 +275,7 @@
                                     <label for="stats-end-date" style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem;">End Date</label>
                                     <input type="date" id="stats-end-date" class="form-control" style="padding: 0.4rem 0.75rem;">
                                 </div>
-                                <button class="btn btn-secondary" id="btn-apply-range" onclick="archiveGroupDetail.loadStats()" style="padding: 0.6rem 1.25rem; margin-top: 1.25rem; font-size: 0.85rem; height: 38px; display: inline-flex; align-items: center; justify-content: center;">Apply Range</button>
+                                <button class="btn btn-secondary" id="btn-apply-range" onclick="archiveGroupDetail.loadStats()" style="margin-top: 1.25rem;display: inline-flex;align-items: center;justify-content: center;">Apply Range</button>
                             </div>
                         </div>
 
@@ -303,24 +303,9 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div id="delete-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Confirm Delete</h3>
-                <button class="modal-close" onclick="archiveGroupDetail.hideDeleteModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the archive group "<strong id="delete-group-name"></strong>"?</p>
-                <p style="margin-top: 0.75rem;">This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="archiveGroupDetail.hideDeleteModal()">Cancel</button>
-                <button class="btn btn-danger" onclick="archiveGroupDetail.confirmDelete()">Delete</button>
-            </div>
-        </div>
-    </div>
 
-    <script src="/js/archive-group-detail.js"></script>
+
+    <script type="module" src="/js/archive-group-detail.js"></script>
     </ix-application>
 </body>
 </html>

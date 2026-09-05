@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         .logger-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
         .json-schema-section { grid-row: span 2; }
@@ -506,24 +506,9 @@ We only need temperature and humidity, ignore the rest.
 <div id="schema-help-modal" class="modal help-modal" style="display: none;"></div>
 
 <!-- Confirm Delete Modal -->
-<div id="delete-logger-modal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Confirm Delete</h3>
-            <button class="modal-close" onclick="hideDeleteModal()">×</button>
-        </div>
-        <div class="modal-body">
-            <p>Are you sure you want to delete this JDBC logger "<span id="delete-logger-name"></span>"?</p>
-            <p>This action cannot be undone.</p>
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="hideDeleteModal()">Cancel</button>
-            <button type="button" class="btn btn-danger" onclick="confirmDeleteLogger()">Delete</button>
-        </div>
-    </div>
-</div>
 
-<script src="/js/jdbc-logger-detail.js"></script>
+
+<script type="module" src="/js/jdbc-logger-detail.js"></script>
     </ix-application>
 </body>
 </html>

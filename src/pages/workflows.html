@@ -7,8 +7,8 @@
     <script type="module" src="/js/ix-init.js"></script>
     <script src="/js/storage.js"></script>
     <script src="/js/graphql-client.js"></script>
-    <script src="/js/sidebar.js"></script>
-    <script src="/js/help-modal.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
+    <script type="module" src="/js/help-modal.js"></script>
     <style>
         .tabs {
             display: flex;
@@ -96,9 +96,6 @@
             margin-top: 1rem;
             padding-top: 1rem;
             border-top: 1px solid var(--border-color);
-        }
-        .modal.active {
-            display: flex;
         }
         .modal-title {
             font-size: 1.5rem;
@@ -314,18 +311,18 @@
     .main-content .container { max-width: 100%; }
     #classes-section { margin-right: 0; }
     #classes-section .table-wrapper { width: 100%; padding-right: 1.25rem; box-sizing: border-box; }
-    #classes-section table.data-table { width: 100%; table-layout: auto; }
+    #classes-table { width: 100%; table-layout: auto; }
     
     #classes-section .table-wrapper { overflow-x: auto; }
     
-    #classes-section table.data-table th:last-child,
-    #classes-section table.data-table td:last-child { padding-right: 0.75rem; }
+    #classes-table th:last-child,
+    #classes-table td:last-child { padding-right: 0.75rem; }
     
     #instances-section { margin-right: 0; }
     #instances-section .table-wrapper { width: 100%; padding-right: 1.25rem; box-sizing: border-box; overflow-x:auto; }
-    #instances-section table.data-table { width: 100%; table-layout: auto; }
-    #instances-section table.data-table th:last-child,
-    #instances-section table.data-table td:last-child { padding-right: 0.75rem; }
+    #instances-table { width: 100%; table-layout: auto; }
+    #instances-table th:last-child,
+    #instances-table td:last-child { padding-right: 0.75rem; }
 
     .section-container {
         background: var(--dark-surface);
@@ -342,7 +339,7 @@
         padding: 0;
     }
 
-    .section-container table.data-table {
+    .section-container .table-wrapper > table {
         margin: 0;
         border-radius: 0;
         border: none;
@@ -460,7 +457,7 @@
 
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/workflows.js"></script>
+    <script type="module" src="/js/workflows.js"></script>
     <script>
         // Filter log viewer to show only FlowEngine logs on workflows page
         window.onLogViewerReady(function(logViewer) {

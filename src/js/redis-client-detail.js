@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Redis Client Detail Management JavaScript
 
 class RedisClientDetailManager {
@@ -452,6 +457,7 @@ class RedisClientDetailManager {
                 `;
                 const result = await this.client.query(mutation, { input: data });
                 if (result.redisClient.create.success) {
+                    ui.markPageSaved();
                     this.showSuccess(`Redis client "${data.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/redis-client-detail.html?client=${encodeURIComponent(data.name)}`; }, 800);
                 } else {
@@ -478,12 +484,13 @@ class RedisClientDetailManager {
                     this.clientName = newName;
                     const url = new URL(window.location.href);
                     url.searchParams.set('client', newName);
-                    window.history.replaceState({}, '', url.toString());
+                    window.replacePageUrl(url.toString());
                 }
                 await this.loadClientData();
                 if (prevNodeId && data.nodeId && data.nodeId !== prevNodeId) {
                     await this.reassignClient(data.nodeId);
                 }
+                ui.markPageSaved();
                 this.showSuccess('Redis client updated successfully');
             } else {
                 this.showError('Failed to update Redis client: ' + (result.redisClient.update.errors || []).join(', '));
@@ -523,6 +530,7 @@ class RedisClientDetailManager {
             `;
             const result = await this.client.query(mutation, { name: this.clientName });
             if (result.redisClient.delete) {
+                ui.markPageSaved();
                 this.showSuccess('Redis client deleted');
                 this.cleanup();
                 setTimeout(() => { window.spaLocation.href = '/pages/redis-clients.html'; }, 800);
@@ -595,3 +603,19 @@ document.addEventListener('click', e => {
         if (e.target.id === 'add-address-modal') redisDetailManager.hideAddAddressModal();
     }
 });
+
+page.expose({
+    get RedisClientDetailManager() { return RedisClientDetailManager; },
+    get goBack() { return goBack; },
+    get hideAddAddressModal() { return hideAddAddressModal; },
+    get onAddrModeChange() { return onAddrModeChange; },
+    get redisDetailManager() { return redisDetailManager; },
+    get saveAddressMapping() { return saveAddressMapping; },
+    get saveClient() { return saveClient; },
+    get showAddAddressModal() { return showAddAddressModal; },
+    get showDeleteModal() { return showDeleteModal; },
+    get toggleClient() { return toggleClient; }
+});
+page.ready();
+return () => page.dispose();
+}

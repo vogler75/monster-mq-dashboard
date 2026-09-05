@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         .form-group select option { background: var(--dark-surface-2); }
         .action-bar {
@@ -128,13 +128,13 @@
                 <div class="action-bar">
                     <button class="btn btn-primary" id="save-btn" onclick="providerDetailManager.save()">Save Provider</button>
                     <button class="btn btn-secondary" onclick="window.navigateTo('/pages/genai-providers.html')">Cancel</button>
-                    <button class="btn btn-danger" id="delete-btn" style="display:none; margin-left:auto;" onclick="providerDetailManager.deleteProvider()">Delete</button>
+                    <button class="btn btn-danger" id="delete-btn" style="display:none;margin-left:auto;" onclick="providerDetailManager.deleteProvider()">Delete</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="/js/genai-provider-detail.js"></script>
+    <script type="module" src="/js/genai-provider-detail.js"></script>
     </ix-application>
 </body>
 </html>

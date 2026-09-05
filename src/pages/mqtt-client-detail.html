@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         
         .user-property-row {
@@ -92,11 +92,9 @@
         }
         .client-id-row { display: flex; gap: 0.5rem; align-items: stretch; }
         .client-id-row input { flex: 1 1 auto; min-width: 0; }
-        .client-id-row .btn { flex: 0 0 auto; padding-left: 1rem; padding-right: 1rem; }
         code { background: var(--dark-bg); padding: 0.2rem 0.4rem; border-radius: 4px; font-family: 'Courier New', monospace; color: var(--monster-teal); }@media (max-width: 1000px) { .form-grid, .info-grid, .buffer-settings-grid { grid-template-columns: 1fr; }
 }@media (max-width: 520px) {
             .client-id-row { flex-direction: column; }
-            .client-id-row .btn { justify-content: center; }
 }</style>
 </head>
 <body>
@@ -639,7 +637,7 @@
     <!-- Confirm Delete Address Modal -->
 
 
-    <script src="/js/mqtt-client-detail.js"></script>
+    <script type="module" src="/js/mqtt-client-detail.js"></script>
     </ix-application>
 </body>
 </html>

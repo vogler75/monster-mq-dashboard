@@ -9,9 +9,9 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
-        .data-table tbody tr.clickable-row { cursor: pointer; }
+        .clickable-row { cursor: pointer; }
         .type-badge {
             display: inline-flex;
             align-items: center;
@@ -71,7 +71,7 @@
                 <p class="page-subtitle">Manage GenAI provider configurations</p>
             </div>
 
-            <div class="data-table">
+            <div class="data-table" data-table-tools>
                 <div class="table-header">
                     <div class="table-title"><h2>Configured Providers</h2></div>
                     <div class="table-actions">
@@ -79,7 +79,7 @@
                         <a href="/pages/genai-provider-detail.html?new=true" class="btn btn-primary"><ix-icon name="add-circle" size="16"></ix-icon> Add Provider</a>
                     </div>
                 </div>
-                <table>
+                <div class="table-responsive"><table>
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -94,24 +94,15 @@
                     <tbody id="providers-tbody">
                         <tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 2rem;">Loading&hellip;</td></tr>
                     </tbody>
-                </table>
+                </table></div>
             </div>
         </div>
     </div>
 
     <!-- Delete confirmation modal -->
-    <div class="modal" id="delete-modal" style="display: none;">
-        <div class="modal-card">
-            <h3 class="modal-title">Delete Provider</h3>
-            <p class="modal-body">Are you sure you want to delete <strong id="delete-provider-name"></strong>? This cannot be undone. Any agents referencing this provider will fall back to their own configuration.</p>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="genAiProviderManager.cancelDelete()">Cancel</button>
-                <button class="btn btn-danger" onclick="genAiProviderManager.confirmDelete()">Delete</button>
-            </div>
-        </div>
-    </div>
 
-    <script src="/js/genai-providers.js"></script>
+
+    <script type="module" src="/js/genai-providers.js"></script>
     </ix-application>
 </body>
 </html>

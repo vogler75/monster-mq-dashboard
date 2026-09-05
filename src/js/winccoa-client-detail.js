@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // WinCC OA Client Detail Management JavaScript
 
 class WinCCOaClientDetailManager {
@@ -17,14 +22,7 @@ class WinCCOaClientDetailManager {
     async init() {
         console.log('Initializing WinCC OA Client Detail Manager...');
 
-        // Warn user before leaving page with unsaved changes
-        window.addEventListener('beforeunload', (e) => {
-            if (this.hasUnsavedChanges) {
-                e.preventDefault();
-                e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
-                return e.returnValue;
-            }
-        });
+        window.registerPageDirtyCheck(() => this.hasUnsavedChanges);
 
         // Check if authentication is required by testing a simple query
         try {
@@ -412,28 +410,20 @@ class WinCCOaClientDetailManager {
         }
     }
 
-    deleteQuery(index) {
-        if (index < 0 || index >= this.queries.length) {
-            this.showError('Invalid query index');
-            return;
-        }
-
-        this.deleteQueryIndex = index;
-        const query = this.queries[index];
-        document.getElementById('delete-query-name').textContent = query.query;
-        this.showConfirmDeleteQueryModal();
+    async deleteQuery(index) {
+        return this.confirmDeleteQuery(index);
     }
 
-    async confirmDeleteQuery() {
-        if (this.deleteQueryIndex !== undefined && this.deleteQueryIndex !== null && this.deleteQueryIndex >= 0) {
-            const query = this.queries[this.deleteQueryIndex];
+    async confirmDeleteQuery(index) {
+        if (index !== undefined && index !== null && index >= 0) {
+            const query = this.queries[index];
             if (!query) {
                 this.showError('Query not found');
-                this.deleteQueryIndex = null;
+
                 return;
             }
 
-            this.hideConfirmDeleteQueryModal();
+            if (!await ui.confirmDelete(query.query)) return;
 
             // Delete immediately on server using deleteWinCCOaClientAddress mutation
             try {
@@ -470,7 +460,7 @@ class WinCCOaClientDetailManager {
                 this.showError('Failed to delete query: ' + error.message);
             }
         }
-        this.deleteQueryIndex = null;
+
     }
 
     updateSaveButtonState() {
@@ -578,6 +568,7 @@ class WinCCOaClientDetailManager {
         if (result.winCCOaDevice.create.success) {
             this.hasUnsavedChanges = false;
             this.updateSaveButtonState();
+            ui.markPageSaved();
             this.showSuccess(`Client "${clientData.name}" created successfully. Redirecting to edit page...`);
             // Redirect to edit mode so the user can add queries
             setTimeout(() => {
@@ -613,6 +604,7 @@ class WinCCOaClientDetailManager {
         if (result.winCCOaDevice.update.success) {
             this.hasUnsavedChanges = false;
             this.updateSaveButtonState();
+            ui.markPageSaved();
             this.showSuccess(`Client "${clientData.name}" updated successfully`);
             // Reload the client data
             await this.loadClient();
@@ -623,13 +615,7 @@ class WinCCOaClientDetailManager {
     }
 
     // UI Helper Methods
-    showConfirmDeleteQueryModal() {
-        document.getElementById('confirm-delete-query-modal').style.display = 'flex';
-    }
 
-    hideConfirmDeleteQueryModal() {
-        document.getElementById('confirm-delete-query-modal').style.display = 'none';
-    }
 
     showLoading(show) {
         const indicator = document.getElementById('loading-indicator');
@@ -665,6 +651,7 @@ class WinCCOaClientDetailManager {
             const mutation = `mutation DeleteWinCCOaClient($name: String!) { winCCOaDevice { delete(name: $name) } }`;
             const result = await this.client.query(mutation, { name: this.clientName });
             if (result.winCCOaDevice.delete) {
+                ui.markPageSaved();
                 this.showSuccess('WinCC OA client deleted');
                 setTimeout(() => { window.spaLocation.href = '/pages/winccoa-clients.html'; }, 800);
             } else {
@@ -684,14 +671,6 @@ class WinCCOaClientDetailManager {
     }
 
     async goBack() {
-        if (this.hasUnsavedChanges) {
-            const leave = await ui.confirm({
-                title: 'Discard unsaved changes?',
-                message: 'Your edits to this client have not been saved.',
-                confirmLabel: 'Discard and leave', danger: true
-            });
-            if (!leave) return;
-        }
         window.spaLocation.href = '/pages/winccoa-clients.html';
     }
 }
@@ -709,13 +688,7 @@ function addQuery() {
     clientDetailManager.addQuery();
 }
 
-function hideConfirmDeleteQueryModal() {
-    clientDetailManager.hideConfirmDeleteQueryModal();
-}
 
-function confirmDeleteQuery() {
-    clientDetailManager.confirmDeleteQuery();
-}
 
 function saveClient() {
     clientDetailManager.saveClient();
@@ -764,9 +737,7 @@ document.addEventListener('click', function(e) {
     if (e.target.classList.contains('modal')) {
         if (e.target.id === 'add-query-modal' && window.clientDetailManager) {
             window.clientDetailManager.hideAddQueryModal();
-        } else if (e.target.id === 'confirm-delete-query-modal' && window.clientDetailManager) {
-            window.clientDetailManager.hideConfirmDeleteQueryModal();
-        } else if (e.target.id === 'query-examples-modal') {
+                } else if (e.target.id === 'query-examples-modal') {
             hideQueryExamplesModal();
         }
     }
@@ -777,3 +748,21 @@ var clientDetailManager;
 document.addEventListener('DOMContentLoaded', function() {
     clientDetailManager = new WinCCOaClientDetailManager();
 });
+
+page.expose({
+    get QUERY_EXAMPLES() { return QUERY_EXAMPLES; },
+    get WinCCOaClientDetailManager() { return WinCCOaClientDetailManager; },
+    get addQuery() { return addQuery; },
+    get clientDetailManager() { return clientDetailManager; },
+    get copyQueryExample() { return copyQueryExample; },
+    get goBack() { return goBack; },
+    get hideAddQueryModal() { return hideAddQueryModal; },
+    get hideQueryExamplesModal() { return hideQueryExamplesModal; },
+    get saveClient() { return saveClient; },
+    get showAddQueryModal() { return showAddQueryModal; },
+    get showDeleteModal() { return showDeleteModal; },
+    get showQueryExamplesModal() { return showQueryExamplesModal; }
+});
+page.ready();
+return () => page.dispose();
+}

@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         
         .filter-bar {
@@ -214,11 +214,6 @@
             border-radius: 16px;
             overflow: hidden;
             box-shadow: var(--card-shadow);
-        }
-
-        .explorer-table-wrapper .data-table {
-            overflow-x: auto;
-            scrollbar-width: thin;
         }
 
         .explorer-table-wrapper table {
@@ -810,7 +805,7 @@
             <div class="explorer-layout">
                 <div class="explorer-table-wrapper">
                     <div class="data-table">
-                        <table>
+                        <div class="table-responsive"><table>
                             <thead>
                                 <tr id="table-header-row">
                                     <!-- populated by JS -->
@@ -819,7 +814,7 @@
                             <tbody id="table-body">
                                 <tr><td colspan="10" class="empty-cell"><div class="empty-state"><div class="empty-state-title">Set filters and run a query</div><div class="empty-state-hint">Archived messages will appear here.</div></div></td></tr>
                             </tbody>
-                        </table>
+                        </table></div>
                     </div>
                     <div class="result-count" id="result-count"></div>
                 </div>
@@ -868,7 +863,7 @@
         </div>
     </div>
 
-    <script src="/js/archive-explorer.js"></script>
+    <script type="module" src="/js/archive-explorer.js"></script>
     </ix-application>
 </body>
 </html>

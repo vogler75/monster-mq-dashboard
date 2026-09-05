@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         .namespace-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
         .section-icon { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: var(--gradient-primary); color: white; }
@@ -207,24 +207,9 @@
     </div>
 
     <!-- Confirm Delete Modal -->
-    <div id="delete-namespace-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Confirm Delete</h3>
-                <button class="modal-close" onclick="hideDeleteModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the namespace "<span id="delete-namespace-name"></span>"?</p>
-                <p>This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="hideDeleteModal()">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDeleteNamespace()">Delete</button>
-            </div>
-        </div>
-    </div>
 
-    <script src="/js/topic-namespace-detail.js"></script>
+
+    <script type="module" src="/js/topic-namespace-detail.js"></script>
     </ix-application>
 </body>
 </html>

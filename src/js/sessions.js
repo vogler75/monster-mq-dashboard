@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 var safeStorage = window.safeStorage;
 class SessionManager {
     constructor() {
@@ -46,7 +51,7 @@ class SessionManager {
         }
 
         const newUrl = `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
-        window.history.replaceState({}, '', newUrl);
+        window.replacePageUrl(newUrl);
     }
 
     isLoggedIn() {
@@ -678,3 +683,10 @@ class SessionManager {
 document.addEventListener('DOMContentLoaded', () => {
     new SessionManager();
 });
+
+page.expose({
+    get SessionManager() { return SessionManager; }
+});
+page.ready();
+return () => page.dispose();
+}

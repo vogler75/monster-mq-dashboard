@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Agent Online Graph - Live network visualization of agent interactions
 
 var safeStorage = window.safeStorage;
@@ -612,4 +617,13 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initAgentGraph);
 } else {
     initAgentGraph();
+}
+
+page.expose({
+    get AgentOnlineGraphManager() { return AgentOnlineGraphManager; },
+    get agentGraph() { return agentGraph; },
+    get initAgentGraph() { return initAgentGraph; }
+});
+page.ready();
+return () => page.dispose();
 }

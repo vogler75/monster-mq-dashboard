@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         
 
@@ -135,13 +135,6 @@
             color: var(--text-secondary);
         }
 
-        .modal .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -179,10 +172,6 @@
             .client-info-grid {
                 grid-template-columns: 1fr;
                 gap: 1.5rem;
-            }
-
-            .modal .form-row {
-                grid-template-columns: 1fr;
             }
 }@media (max-width: 768px) {
             .timestamps-grid {
@@ -372,7 +361,7 @@
                     <div class="section-content">
                         <div id="addresses-container">
                             <div id="addresses-table" class="data-table is-fixed">
-                                <table>
+                                <div class="table-responsive"><table>
                                     <thead>
                                         <tr>
                                             <th>PLC Address</th>
@@ -388,7 +377,7 @@
                                     <tbody id="addresses-table-body">
                                         <!-- Address rows will be populated here -->
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                             <div id="no-addresses" class="no-data" style="display: none;">
                                 <div class="no-data-content">
@@ -432,7 +421,7 @@
                         <input type="text" id="address-topic" placeholder="Auto-generated if empty">
                         <div class="helper-text">Leave empty to auto-generate from namespace/address</div>
                     </div>
-                    <div class="form-row">
+                    <div class="form-grid">
                         <div class="form-group">
                             <label for="address-qos">QoS Level</label>
                             <select id="address-qos">
@@ -449,7 +438,7 @@
                         </div>
                     </div>
                     <h4 style="margin: 1.5rem 0 1rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid var(--dark-border);">Value Transformation</h4>
-                    <div class="form-row">
+                    <div class="form-grid">
                         <div class="form-group">
                             <label for="address-scaling">Scaling Factor</label>
                             <input type="number" id="address-scaling" step="any" placeholder="1.0">
@@ -513,7 +502,7 @@
     <!-- Confirm Delete Address Modal -->
 
 
-    <script src="/js/plc4x-client-detail.js"></script>
+    <script type="module" src="/js/plc4x-client-detail.js"></script>
     </ix-application>
 </body>
 </html>

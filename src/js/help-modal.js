@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 /**
  * Help Modal System
  * Displays workflow help documentation in an overlay modal
@@ -32,7 +37,7 @@ const HelpModal = (() => {
     }
 
     // Get references
-    overlay = document.getElementById('help-modal-overlay');
+    overlay = page.own(document.getElementById('help-modal-overlay'));
     iframe = document.getElementById('help-modal-iframe');
 
     // Setup event listeners
@@ -219,3 +224,10 @@ window.HelpModal = HelpModal;
 window.openHelp = function(section) {
   HelpModal.open('/pages/workflow-help.html', section);
 };
+
+page.expose({
+    get HelpModal() { return HelpModal; }
+});
+page.ready();
+return () => page.dispose();
+}

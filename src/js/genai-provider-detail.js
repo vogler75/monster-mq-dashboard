@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // GenAI Provider Detail Page
 
 class GenAiProviderDetailManager {
@@ -177,6 +182,7 @@ class GenAiProviderDetailManager {
                     }
                 `, { name, input });
                 if (result.genAiProvider?.create) {
+                    ui.markPageSaved();
                     this.showAlert('Provider "' + name + '" created successfully.', 'success');
                     setTimeout(() => window.navigateTo('/pages/genai-provider-detail.html?name=' + encodeURIComponent(name)), 800);
                 }
@@ -187,6 +193,7 @@ class GenAiProviderDetailManager {
                     }
                 `, { name: this.providerName, input });
                 if (result.genAiProvider?.update) {
+                    ui.markPageSaved();
                     this.showAlert('Provider updated successfully.', 'success');
                     await this.loadProvider();
                 }
@@ -205,6 +212,7 @@ class GenAiProviderDetailManager {
                 }
             `, { name: this.providerName });
             if (result.genAiProvider?.delete) {
+                ui.markPageSaved();
                 window.navigateTo('/pages/genai-providers.html');
             }
         } catch (e) {
@@ -213,12 +221,17 @@ class GenAiProviderDetailManager {
     }
 
     showAlert(msg, type) {
-        document.getElementById('alert-area').innerHTML =
-            '<div class="alert alert-' + type + '">' + msg + '</div>';
-        if (type === 'success') {
-            setTimeout(() => { document.getElementById('alert-area').innerHTML = ''; }, 3000);
-        }
+        if (type === 'success') ui.success(msg);
+        else ui.showError(msg);
     }
 }
 
 const providerDetailManager = new GenAiProviderDetailManager();
+
+page.expose({
+    get GenAiProviderDetailManager() { return GenAiProviderDetailManager; },
+    get providerDetailManager() { return providerDetailManager; }
+});
+page.ready();
+return () => page.dispose();
+}

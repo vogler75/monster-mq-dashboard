@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Workflows Edit Page Script
 // Handles create/update for Flow Classes and Flow Instances without modals.
 
@@ -301,7 +306,7 @@ const FlowEdit = (() => {
       </td></tr>`).join('');
   }
 
-  function addConnectionRow() {
+  function addConnectionRow() { ui.markPageDirty();
     state.connections.push({ fromNode:'', fromOutput:'', toNode:'', toInput:'' });
     renderConnectionsTable();
     // make editable inputs by converting cells
@@ -369,6 +374,7 @@ const FlowEdit = (() => {
     state.editingNodeId = null;
     qs('#node-inline-editor').style.display='none';
     renderNodesTable();
+    ui.markPageDirty();
     notify('Node saved','success');
   }
 
@@ -401,8 +407,8 @@ const FlowEdit = (() => {
     state.editingNodeId = null;
     qs('#node-inline-editor').style.display='none';
   }
-  function removeNode(id){ state.nodes = state.nodes.filter(n=>n.id!==id); renderNodesTable(); cancelNodeEdit(); }
-  function removeConnection(idx){ state.connections.splice(idx,1); renderConnectionsTable(); }
+  function removeNode(id){ ui.markPageDirty(); state.nodes = state.nodes.filter(n=>n.id!==id); renderNodesTable(); cancelNodeEdit(); }
+  function removeConnection(idx){ ui.markPageDirty(); state.connections.splice(idx,1); renderConnectionsTable(); }
 
   function renderInputMappings() {
     const tbody = qs('#input-mappings-table tbody');
@@ -464,16 +470,16 @@ const FlowEdit = (() => {
     </tr>`).join('');
   }
 
-  function addInputMapping(){ state.inputMappings.push({ nodeInput:'', type:'TOPIC', value:'' }); renderInputMappings(); }
+  function addInputMapping(){ ui.markPageDirty(); state.inputMappings.push({ nodeInput:'', type:'TOPIC', value:'' }); renderInputMappings(); }
   function updateInputMapping(i,f,val){ const m=state.inputMappings[i]; if(m){ m[f]=val; }}
-  function removeInputMapping(i){ state.inputMappings.splice(i,1); renderInputMappings(); }
-  function addOutputMapping(){ state.outputMappings.push({ nodeOutput:'', topic:'' }); renderOutputMappings(); }
+  function removeInputMapping(i){ ui.markPageDirty(); state.inputMappings.splice(i,1); renderInputMappings(); }
+  function addOutputMapping(){ ui.markPageDirty(); state.outputMappings.push({ nodeOutput:'', topic:'' }); renderOutputMappings(); }
   function updateOutputMapping(i,f,val){ const m=state.outputMappings[i]; if(m){ m[f]=val; }}
-  function removeOutputMapping(i){ state.outputMappings.splice(i,1); renderOutputMappings(); }
-  function addVariable(){ state.variables['key_'+Date.now()]=''; renderVariables(); }
+  function removeOutputMapping(i){ ui.markPageDirty(); state.outputMappings.splice(i,1); renderOutputMappings(); }
+  function addVariable(){ ui.markPageDirty(); state.variables['key_'+Date.now()]=''; renderVariables(); }
   function updateVariableKey(index,newKey){ const oldKey=Object.keys(state.variables)[index]; if(!oldKey) return; const val=state.variables[oldKey]; delete state.variables[oldKey]; state.variables[newKey]=val; renderVariables(); }
   function updateVariableVal(key,val){ if(key in state.variables) state.variables[key]=val; }
-  function removeVariable(key){ delete state.variables[key]; renderVariables(); }
+  function removeVariable(key){ ui.markPageDirty(); delete state.variables[key]; renderVariables(); }
 
   function save() {
     // If a node is being edited, save it first
@@ -504,6 +510,7 @@ const FlowEdit = (() => {
     const mutation = isUpdate ? `mutation($name:String!,$input:FlowClassInput!){ flow { updateClass(name:$name,input:$input){ name } } }` : `mutation($input:FlowClassInput!){ flow { createClass(input:$input){ name } } }`;
     const vars = isUpdate? { name, input } : { input };
     await graphql(mutation, vars);
+    ui.markPageSaved();
     notify('Saved flow class','success');
     // Stay on the page instead of navigating away
   }
@@ -530,19 +537,21 @@ const FlowEdit = (() => {
     const mutation = isUpdate ? `mutation($name:String!,$input:FlowInstanceInput!){ flow { updateInstance(name:$name,input:$input){ name } } }` : `mutation($input:FlowInstanceInput!){ flow { createInstance(input:$input){ name } } }`;
     const vars = isUpdate? { name, input } : { input };
     await graphql(mutation, vars);
+    ui.markPageSaved();
     notify('Saved flow instance','success');
     window.spaLocation.href = '/pages/workflows.html';
   }
 
   async function deleteItem() {
     const itemType = state.type === 'class' ? 'flow class' : 'flow instance';
-    showConfirmModal('Confirm Delete', `Are you sure you want to delete this ${itemType} "<b>${escape(state.name)}</b>"?<br><br>This action cannot be undone.`, async () => {
+    showConfirmModal('Confirm Delete', `Are you sure you want to delete this ${itemType} "${state.name}"?\n\nThis action cannot be undone.`, async () => {
       if(state.type==='class') {
         await graphql(`mutation($name:String!){ flow { deleteClass(name:$name) } }`, { name: state.name });
       } else {
         await graphql(`mutation($name:String!){ flow { deleteInstance(name:$name) } }`, { name: state.name });
       }
-      notify('Deleted','success');
+      ui.markPageSaved();
+    notify('Deleted','success');
       window.spaLocation.href = '/pages/workflows.html';
     });
   }
@@ -577,49 +586,15 @@ const FlowEdit = (() => {
   }
 
   function cancel(){
-    // Cancel should not ask for confirmation per new UX requirement.
-    state.dirty = false; // prevent any beforeunload handler (if added later) from prompting
     window.spaLocation.href = '/pages/workflows.html';
   }
 
-  function notify(msg,type='info') {
-    const div = document.createElement('div');
-    div.textContent = msg;
-    div.style.cssText = `position:fixed;top:20px;right:20px;background:${type==='error'?'#dc3545':type==='success'?'#28a745':'#17a2b8'};color:#fff;padding:.6rem 1rem;border-radius:4px;z-index:10000;font-size:.75rem;opacity:1;transition:opacity .3s;animation:notify-dismiss 2.8s forwards;`;
-    document.body.appendChild(div);
-    div.addEventListener('animationend', () => div.remove());
-    if (!document.getElementById('notify-keyframes')) {
-      const style = document.createElement('style');
-      style.id = 'notify-keyframes';
-      style.textContent = '@keyframes notify-dismiss{0%,85%{opacity:1}100%{opacity:0}}';
-      document.head.appendChild(style);
-    }
-  }
+  function notify(message, type = 'info') { return ui.toast(message, type); }
 
   function escape(str){ return (str??'').replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
 
-  function showConfirmModal(title, message, onConfirm, confirmLabel) {
-    confirmLabel = confirmLabel || 'Delete';
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;z-index:9999;padding:2rem;box-sizing:border-box;';
-    overlay.innerHTML = `
-      <div style="background:var(--dark-surface);border-radius:12px;border:1px solid var(--dark-border);max-width:500px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.5);">
-        <div style="padding:1.5rem 2rem;border-bottom:1px solid var(--dark-border);display:flex;justify-content:space-between;align-items:center;">
-          <h3 style="margin:0;color:var(--text-primary);font-size:1.25rem;font-weight:600;">${title}</h3>
-          <button class="modal-close-btn" style="background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.25rem;line-height:1;">×</button>
-        </div>
-        <div style="padding:2rem;color:var(--text-primary);">${message}</div>
-        <div style="padding:1.5rem 2rem;border-top:1px solid var(--dark-border);display:flex;justify-content:flex-end;gap:1rem;">
-          <button class="btn btn-secondary modal-cancel-btn">Cancel</button>
-          <button class="btn btn-danger modal-confirm-btn">${confirmLabel}</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-    const close = () => overlay.remove();
-    overlay.querySelector('.modal-close-btn').onclick = close;
-    overlay.querySelector('.modal-cancel-btn').onclick = close;
-    overlay.querySelector('.modal-confirm-btn').onclick = () => { close(); onConfirm(); };
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  async function showConfirmModal(title, message, onConfirm, confirmLabel = 'Delete') {
+    if (await ui.confirm({ title, message, confirmLabel, danger: true })) return onConfirm();
   }
 
   function goBack(){
@@ -649,3 +624,10 @@ const FlowEdit = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', () => FlowEdit.init());
+
+page.expose({
+    get FlowEdit() { return FlowEdit; }
+});
+page.ready();
+return () => page.dispose();
+}

@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // OPC UA Devices Management JavaScript
 
 class OpcUaDeviceManager {
@@ -120,7 +125,7 @@ class OpcUaDeviceManager {
 
             const statusClass = device.enabled ? 'status-enabled' : 'status-disabled';
             const statusText = device.enabled ? 'Enabled' : 'Disabled';
-            const nodeIndicator = device.isOnCurrentNode ? '📍 ' : '';
+            const nodeIndicator = device.isOnCurrentNode ? '<span class="status-badge badge-info">this node</span> ' : '';
 
             row.innerHTML = `
                 <td>
@@ -305,3 +310,13 @@ document.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) {
     }
 });
+
+page.expose({
+    get OpcUaDeviceManager() { return OpcUaDeviceManager; },
+    get confirmDeleteDevice() { return confirmDeleteDevice; },
+    get opcuaManager() { return opcuaManager; },
+    get refreshDevices() { return refreshDevices; }
+});
+page.ready();
+return () => page.dispose();
+}

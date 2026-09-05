@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // MonsterMQ Dashboard — Archive Explorer
 
 var ArchiveExplorerManager = class ArchiveExplorerManager {
@@ -840,3 +845,11 @@ document.addEventListener('DOMContentLoaded', function() {
     window.archiveExplorer.init();
     window.explorerTopicBrowser = new ExplorerTopicBrowser();
 });
+
+page.expose({
+    get ArchiveExplorerManager() { return ArchiveExplorerManager; },
+    get ExplorerTopicBrowser() { return ExplorerTopicBrowser; }
+});
+page.ready();
+return () => page.dispose();
+}

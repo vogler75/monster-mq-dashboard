@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // MQTT Client Detail Management JavaScript
 
 class MqttClientDetailManager {
@@ -386,6 +391,7 @@ class MqttClientDetailManager {
                 `;
                 const result = await this.client.query(mutation, { input: data });
                 if (result.mqttClient.create.success) {
+                    ui.markPageSaved();
                     this.showSuccess(`Bridge "${data.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/mqtt-client-detail.html?client=${encodeURIComponent(data.name)}`; }, 800);
                 } else {
@@ -413,6 +419,7 @@ class MqttClientDetailManager {
             const result = await this.client.query(mutation, { name: this.clientName, input: data });
             if (result.mqttClient.update.success) {
                 await this.loadClientData();
+                ui.markPageSaved();
                 this.showSuccess('Bridge updated successfully');
             } else {
                 const errors = result.mqttClient.update.errors || ['Unknown error'];
@@ -816,6 +823,7 @@ class MqttClientDetailManager {
             const mutation = `mutation DeleteMqttClient($name: String!) { mqttClient { delete(name: $name) } }`;
             const result = await this.client.query(mutation, { name: name });
             if (result && result.mqttClient && result.mqttClient.delete) {
+                ui.markPageSaved();
                 this.showSuccess('MQTT client deleted');
                 setTimeout(() => { window.spaLocation.href = '/pages/mqtt-clients.html'; }, 800);
             } else {
@@ -1021,12 +1029,6 @@ function addEditUserProperty() {
         .appendChild(userPropertyRow('edit-user-property-key', 'edit-user-property-value'));
 }
 
-function goBack() {
-    mqttClientDetailManager.goBack();
-}
-
-function showDeleteModal() { mqttClientDetailManager.showDeleteModal(); }
-function generateClientId() { mqttClientDetailManager.generateClientId(); }
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -1043,3 +1045,34 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+page.expose({
+    get MqttClientDetailManager() { return MqttClientDetailManager; },
+    get addAddress() { return addAddress; },
+    get addAddressUserProperty() { return addAddressUserProperty; },
+    get addEditAddressUserProperty() { return addEditAddressUserProperty; },
+    get addEditUserProperty() { return addEditUserProperty; },
+    get addUserProperty() { return addUserProperty; },
+    get confirmDeleteAddress() { return confirmDeleteAddress; },
+    get generateClientId() { return generateClientId; },
+    get goBack() { return goBack; },
+    get hideAddAddressModal() { return hideAddAddressModal; },
+    get hideEditAddressModal() { return hideEditAddressModal; },
+    get mqttClientDetailManager() { return mqttClientDetailManager; },
+    get saveAddress() { return saveAddress; },
+    get saveClient() { return saveClient; },
+    get showAddAddressModal() { return showAddAddressModal; },
+    get showDeleteModal() { return showDeleteModal; },
+    get toggleClient() { return toggleClient; },
+    get toggleMqtt5MessageProperties() { return toggleMqtt5MessageProperties; },
+    get toggleMqtt5Options() { return toggleMqtt5Options; },
+    get toggleMqtt5SubscriptionOptions() { return toggleMqtt5SubscriptionOptions; },
+    get toggleQosKeepOriginOptions() { return toggleQosKeepOriginOptions; },
+    get updateAddress() { return updateAddress; },
+    get updateQosKeepOriginOption() { return updateQosKeepOriginOption; },
+    get updateTopicDirection() { return updateTopicDirection; },
+    get userPropertyRow() { return userPropertyRow; }
+});
+page.ready();
+return () => page.dispose();
+}

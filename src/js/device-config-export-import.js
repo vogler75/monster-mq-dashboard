@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Device Configuration Export/Import Page
 // Handles all device types generically
 
@@ -428,75 +433,36 @@ function resetImportForm() {
 }
 
 // Show error message
-function showErrorMessage(message) {
-    const errorDiv = document.getElementById('error-message');
-    if (errorDiv) {
-        const errorText = errorDiv.querySelector('.error-text');
-        if (errorText) {
-            errorText.textContent = message;
-            errorDiv.style.display = 'flex';
-            setTimeout(() => {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
-    }
-}
+function showErrorMessage(message) { ui.showError(message); }
 
 // Show success message
-function showSuccessMessage(message) {
-    const successDiv = document.createElement('div');
-    successDiv.style.cssText = `
-        position: fixed;
-        top: 1rem;
-        right: 1rem;
-        background: rgba(16, 185, 129, 0.9);
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        z-index: 10000;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        animation: slideIn 0.3s ease;
-    `;
-    successDiv.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <span style="font-size: 1.25rem;">✓</span>
-            <span>${message}</span>
-        </div>
-    `;
+function showSuccessMessage(message) { ui.success(message); }
 
-    document.body.appendChild(successDiv);
-
-    setTimeout(() => {
-        successDiv.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => {
-            document.body.removeChild(successDiv);
-        }, 300);
-    }, 3000);
+page.expose({
+    get allDevices() { return allDevices; },
+    get deselectAllDevices() { return deselectAllDevices; },
+    get deselectAllImportDevices() { return deselectAllImportDevices; },
+    get exportSelectedDevices() { return exportSelectedDevices; },
+    get filterDeviceList() { return filterDeviceList; },
+    get filterImportList() { return filterImportList; },
+    get handleDragLeave() { return handleDragLeave; },
+    get handleDragOver() { return handleDragOver; },
+    get handleDrop() { return handleDrop; },
+    get handleFileSelect() { return handleFileSelect; },
+    get importDevices() { return importDevices; },
+    get importedConfigs() { return importedConfigs; },
+    get loadExportDevices() { return loadExportDevices; },
+    get renderDeviceList() { return renderDeviceList; },
+    get renderImportList() { return renderImportList; },
+    get resetImportForm() { return resetImportForm; },
+    get selectAllDevices() { return selectAllDevices; },
+    get selectAllImportDevices() { return selectAllImportDevices; },
+    get selectedFile() { return selectedFile; },
+    get showErrorMessage() { return showErrorMessage; },
+    get showSuccessMessage() { return showSuccessMessage; },
+    get updateImportSelectionCount() { return updateImportSelectionCount; },
+    get updateSelectionCount() { return updateSelectionCount; }
+});
+page.ready();
+return () => page.dispose();
 }
-
-// Add animation styles
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-
-    @keyframes slideOut {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(style);

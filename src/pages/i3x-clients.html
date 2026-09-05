@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
 </head>
 <body>
     <ix-application force-breakpoint="lg">
@@ -60,7 +60,7 @@
                 </div>
             </div>
 
-            <div id="clients-table" class="data-table">
+            <div id="clients-table" class="data-table" data-table-tools>
                 <div class="table-header">
                     <div class="table-title">
                         <h2>Client Configuration</h2>
@@ -70,7 +70,7 @@
                         <a href="/pages/i3x-client-detail.html?new=true" class="btn btn-primary"><ix-icon name="add-circle" size="16"></ix-icon> Add Client</a>
                     </div>
                 </div>
-                <table>
+                <div class="table-responsive"><table>
                     <thead>
                         <tr>
                             <th>Client Name</th>
@@ -86,7 +86,7 @@
                     </thead>
                     <tbody id="clients-table-body">
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             <div id="loading-indicator" class="loading-indicator" style="display: none;">
@@ -103,7 +103,7 @@
         </div>
     </div>
 
-    <script src="/js/i3x-clients.js"></script>
+    <script type="module" src="/js/i3x-clients.js"></script>
     </ix-application>
 </body>
 </html>

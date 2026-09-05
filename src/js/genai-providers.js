@@ -1,10 +1,15 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // GenAI Provider List Page
 
 class GenAiProviderManager {
     constructor() {
         this.client = new GraphQLDashboardClient();
         this.providers = [];
-        this.pendingDeleteName = null;
+
         this.init();
     }
 
@@ -94,21 +99,10 @@ class GenAiProviderManager {
         window.navigateTo('/pages/genai-provider-detail.html?new=true');
     }
 
-    deleteProvider(name) {
-        this.pendingDeleteName = name;
-        document.getElementById('delete-provider-name').textContent = name;
-        document.getElementById('delete-modal').style.display = 'flex';
-    }
+    async deleteProvider(name) {
+        const entityName = name;
+        if (!await ui.confirmDelete(entityName)) return;
 
-    cancelDelete() {
-        this.pendingDeleteName = null;
-        document.getElementById('delete-modal').style.display = 'none';
-    }
-
-    async confirmDelete() {
-        const name = this.pendingDeleteName;
-        document.getElementById('delete-modal').style.display = 'none';
-        this.pendingDeleteName = null;
         try {
             const result = await this.client.query(`
                 mutation DeleteProvider($name: String!) {
@@ -122,7 +116,17 @@ class GenAiProviderManager {
             console.error('Delete error:', e);
             ui.error('Failed to delete provider: ' + e.message);
         }
+
     }
+
 }
 
 const genAiProviderManager = new GenAiProviderManager();
+
+page.expose({
+    get GenAiProviderManager() { return GenAiProviderManager; },
+    get genAiProviderManager() { return genAiProviderManager; }
+});
+page.ready();
+return () => page.dispose();
+}

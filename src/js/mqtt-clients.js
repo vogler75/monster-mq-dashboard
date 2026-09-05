@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // MQTT Bridge Management JavaScript
 
 class MqttClientManager {
@@ -104,7 +109,7 @@ class MqttClientManager {
 
             const statusClass = client.enabled ? 'status-enabled' : 'status-disabled';
             const statusText = client.enabled ? 'Enabled' : 'Disabled';
-            const nodeIndicator = client.isOnCurrentNode ? '📍 ' : '';
+            const nodeIndicator = client.isOnCurrentNode ? '<span class="status-badge badge-info">this node</span> ' : '';
             const brokerUrl = client.config.brokerUrl;
 
             row.innerHTML = `
@@ -309,3 +314,14 @@ document.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) {
     }
 });
+
+
+page.expose({
+    get MqttClientManager() { return MqttClientManager; },
+    get confirmDeleteClient() { return confirmDeleteClient; },
+    get mqttClientManager() { return mqttClientManager; },
+    get refreshClients() { return refreshClients; }
+});
+page.ready();
+return () => page.dispose();
+}

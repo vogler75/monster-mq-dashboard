@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class JDBCLoggerDetailManager {
     constructor() {
         this.isNewLogger = false;
@@ -610,6 +615,7 @@ class JDBCLoggerDetailManager {
                 `, { input });
 
                 if (result.jdbcLogger.create.success) {
+                    ui.markPageSaved();
                     ui.success(`Logger "${input.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/jdbc-logger-detail.html?name=${encodeURIComponent(input.name)}`; }, 800);
                 } else {
@@ -635,6 +641,7 @@ class JDBCLoggerDetailManager {
                 `, { name: this.loggerName, input });
 
                 if (result.jdbcLogger.update.success) {
+                    ui.markPageSaved();
                     ui.success('Logger updated successfully');
                     await this.loadLogger();
                 } else {
@@ -649,17 +656,9 @@ class JDBCLoggerDetailManager {
         }
     }
 
-    showDeleteModal() {
-        document.getElementById('delete-logger-name').textContent = this.loggerName;
-        document.getElementById('delete-logger-modal').style.display = 'flex';
-    }
-
-    hideDeleteModal() {
-        document.getElementById('delete-logger-modal').style.display = 'none';
-    }
-
-    async confirmDeleteLogger() {
-        this.hideDeleteModal();
+    async showDeleteModal() {
+        const entityName = this.loggerName;
+        if (!await ui.confirmDelete(entityName)) return;
 
         try {
             console.log('Deleting logger:', this.loggerName);
@@ -673,6 +672,7 @@ class JDBCLoggerDetailManager {
             `, { name: this.loggerName });
 
             if (result.jdbcLogger.delete) {
+                ui.markPageSaved();
                 console.log('Logger deleted successfully');
                 window.spaLocation.href = '/pages/jdbc-loggers.html';
             } else {
@@ -682,7 +682,9 @@ class JDBCLoggerDetailManager {
             console.error('Error deleting logger:', error);
             this.showError('Failed to delete logger: ' + error.message);
         }
+
     }
+
 }
 
 // Global functions
@@ -696,14 +698,6 @@ function saveLogger() {
 
 function showDeleteModal() {
     window.loggerDetailManager.showDeleteModal();
-}
-
-function hideDeleteModal() {
-    window.loggerDetailManager.hideDeleteModal();
-}
-
-function confirmDeleteLogger() {
-    window.loggerDetailManager.confirmDeleteLogger();
 }
 
 async function showSchemaHelp() {
@@ -815,14 +809,17 @@ function refreshMetrics() {
 }
 
 // Handle modal clicks (close when clicking outside)
-window.onclick = (event) => {
-    const deleteModal = document.getElementById('delete-logger-modal');
-    const helpModal = document.getElementById('schema-help-modal');
 
-    if (event.target === deleteModal) {
-        hideDeleteModal();
-    }
-    if (event.target === helpModal) {
-        hideSchemaHelp();
-    }
-};
+page.expose({
+    get JDBCLoggerDetailManager() { return JDBCLoggerDetailManager; },
+    get generateSchemaFromExample() { return generateSchemaFromExample; },
+    get goBack() { return goBack; },
+    get hideSchemaHelp() { return hideSchemaHelp; },
+    get refreshMetrics() { return refreshMetrics; },
+    get saveLogger() { return saveLogger; },
+    get showDeleteModal() { return showDeleteModal; },
+    get showSchemaHelp() { return showSchemaHelp; }
+});
+page.ready();
+return () => page.dispose();
+}

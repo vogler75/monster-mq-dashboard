@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // MonsterMQ Dashboard — OPC UA Browser Orchestrator
 //
 // Manages interactive, lazy-loaded tree navigation of OPC UA Server Address Spaces
@@ -536,3 +541,11 @@ var opcuaBrowserManager = new OPCUABrowserManager();
 window.registerPageCleanup(() => {
     opcuaBrowserManager = null;
 });
+
+page.expose({
+    get OPCUABrowserManager() { return OPCUABrowserManager; },
+    get opcuaBrowserManager() { return opcuaBrowserManager; }
+});
+page.ready();
+return () => page.dispose();
+}

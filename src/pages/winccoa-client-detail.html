@@ -9,14 +9,14 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         /* Column widths for the queries table (paired with .data-table.is-fixed) */
-        .data-table thead th:nth-child(1) { width: 40%; } /* GraphQL Query */
-        .data-table thead th:nth-child(2) { width: 15%; } /* MQTT Topic */
-        .data-table thead th:nth-child(3) { width: 25%; } /* Description */
-        .data-table thead th:nth-child(4) { width: 12%; } /* Options */
-        .data-table thead th:nth-child(5) { width: 8%; }  /* Actions */
+        #queries-table thead th:nth-child(1) { width: 40%; } /* GraphQL Query */
+        #queries-table thead th:nth-child(2) { width: 15%; } /* MQTT Topic */
+        #queries-table thead th:nth-child(3) { width: 25%; } /* Description */
+        #queries-table thead th:nth-child(4) { width: 12%; } /* Options */
+        #queries-table thead th:nth-child(5) { width: 8%; }  /* Actions */
 
         
 
@@ -104,18 +104,6 @@
             max-width: 800px;
         }
 
-        
-        .modal .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal .form-row.single {
-            grid-template-columns: 1fr;
-        }
-
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -163,10 +151,6 @@
             .client-info-grid {
                 grid-template-columns: 1fr;
                 gap: 1.5rem;
-            }
-
-            .modal .form-row {
-                grid-template-columns: 1fr;
             }
 }</style>
 </head>
@@ -419,7 +403,7 @@
                     <div class="section-content">
                         <div id="queries-container">
                             <div id="queries-table" class="data-table is-fixed">
-                                <table>
+                                <div class="table-responsive"><table>
                                     <thead>
                                         <tr>
                                             <th>GraphQL Query</th>
@@ -432,7 +416,7 @@
                                     <tbody id="queries-table-body">
                                         <!-- Query rows will be populated here -->
                                     </tbody>
-                                </table>
+                                </table></div>
                             </div>
                             <div id="no-queries" class="no-data" style="display: none;">
                                 <div class="no-data-content">
@@ -469,7 +453,7 @@
                     <div class="form-group">
                         <label for="query-query">
                             WinCC OA Query *
-                            <button type="button" class="btn btn-secondary" onclick="showQueryExamplesModal()" style="margin-left: 0.5rem; padding: 0.25rem 0.75rem; font-size: 0.75rem;">
+                            <button type="button" class="btn btn-secondary" onclick="showQueryExamplesModal()" style="margin-left: 0.5rem;">
                                 View Examples
                             </button>
                         </label>
@@ -511,22 +495,7 @@
     </div>
 
     <!-- Confirm Delete Query Modal -->
-    <div id="confirm-delete-query-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Confirm Delete</h3>
-                <button class="modal-close" onclick="hideConfirmDeleteQueryModal()">×</button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the query "<span id="delete-query-name"></span>"?</p>
-                <p>This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="hideConfirmDeleteQueryModal()">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDeleteQuery()">Delete</button>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Query Examples Modal -->
     <div id="query-examples-modal" class="modal" style="display: none;">
@@ -541,7 +510,7 @@
                     <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.75rem;">Subscribe to datapoint values with timestamp and status information.</p>
                     <div style="position: relative;">
                         <pre style="background: var(--dark-bg); border: 1px solid var(--dark-border); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-primary);"><code>SELECT '_original.._value', '_original.._stime', '_original.._status' FROM '*.**' WHERE _DPT = "ExampleDP_Float"</code></pre>
-                        <button type="button" class="btn btn-secondary" onclick="copyQueryExample(0)" style="position: absolute; top: 0.5rem; right: 0.5rem; padding: 0.25rem 0.75rem; font-size: 0.75rem;">
+                        <button type="button" class="btn btn-secondary" onclick="copyQueryExample(0)" style="position: absolute;top: 0.5rem;right: 0.5rem;">
                             Copy
                         </button>
                     </div>
@@ -552,7 +521,7 @@
                     <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.75rem;">Subscribe to alert/alarm notifications with comprehensive alert information.</p>
                     <div style="position: relative;">
                         <pre style="background: var(--dark-bg); border: 1px solid var(--dark-border); border-radius: 8px; padding: 1rem; overflow-x: auto; margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-primary);"><code>SELECT ALERT '_alert_hdl.._last','_alert_hdl.._abbr','_alert_hdl.._prior','_alert_hdl.._text','_alert_hdl.._direction','_alert_hdl.._value','_alert_hdl.._ack_state','_alert_hdl.._ackable','_alert_hdl.._oldest_ack','_alert_hdl.._ack_oblig','_alert_hdl.._ack_time','_alert_hdl.._comment','_alert_hdl.._panel','_alert_hdl.._partner','_alert_hdl.._alert_color','_alert_hdl.._visible','_alert_hdl.._dest','_alert_hdl.._ack_user','_alert_hdl.._class','_alert_hdl.._alert_fore_color' FROM '{*}'</code></pre>
-                        <button type="button" class="btn btn-secondary" onclick="copyQueryExample(1)" style="position: absolute; top: 0.5rem; right: 0.5rem; padding: 0.25rem 0.75rem; font-size: 0.75rem;">
+                        <button type="button" class="btn btn-secondary" onclick="copyQueryExample(1)" style="position: absolute;top: 0.5rem;right: 0.5rem;">
                             Copy
                         </button>
                     </div>
@@ -572,7 +541,7 @@
     </div>
 
 
-    <script src="/js/winccoa-client-detail.js"></script>
+    <script type="module" src="/js/winccoa-client-detail.js"></script>
     </ix-application>
 </body>
 </html>

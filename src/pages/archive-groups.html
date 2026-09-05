@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
 
         .topic-filters {
@@ -75,7 +75,7 @@
                 <p class="page-subtitle">Manage MQTT message archiving configurations</p>
             </div>
 
-            <div class="data-table">
+            <div class="data-table" data-table-tools>
                 <div class="table-header">
                     <div class="table-title">
                         <h2>Archive Groups</h2>
@@ -86,7 +86,7 @@
                         <a href="/pages/archive-group-detail.html?new=true" class="btn btn-primary"><ix-icon name="add-circle" size="16"></ix-icon> Create Archive Group</a>
                     </div>
                 </div>
-                <table>
+                <div class="table-responsive"><table>
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -107,12 +107,12 @@
                             </td>
                         </tr>
                     </tbody>
-                </table>
+                </table></div>
             </div>
         </div>
     </div>
 
-    <script src="/js/archive-groups.js"></script>
+    <script type="module" src="/js/archive-groups.js"></script>
     </ix-application>
 </body>
 </html>

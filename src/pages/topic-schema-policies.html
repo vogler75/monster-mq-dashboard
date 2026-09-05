@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
 
         
@@ -66,7 +66,7 @@
                 <p class="page-subtitle">Manage reusable JSON Schema definitions</p>
             </div>
 
-            <div id="policies-table" class="data-table">
+            <div id="policies-table" class="data-table" data-table-tools>
                 <div class="table-header">
                     <div class="table-title">
                         <h2>Schema Policies</h2>
@@ -76,7 +76,7 @@
                         <a href="/pages/topic-schema-policy-detail.html?new=true" class="btn btn-primary"><ix-icon name="add-circle" size="16"></ix-icon> Add Policy</a>
                     </div>
                 </div>
-                <table>
+                <div class="table-responsive"><table>
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -89,7 +89,7 @@
                     <tbody id="policies-table-body">
                         <!-- Policy rows will be populated here -->
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             <div id="loading-indicator" class="loading-indicator" style="display: none;">
@@ -107,24 +107,9 @@
     </div>
 
     <!-- Confirm Delete Modal -->
-    <div id="confirm-delete-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Confirm Delete</h3>
-                <button class="modal-close" onclick="hideConfirmDeleteModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete the policy "<span id="delete-policy-name"></span>"?</p>
-                <p>This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="hideConfirmDeleteModal()">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDeletePolicy()">Delete</button>
-            </div>
-        </div>
-    </div>
 
-    <script src="/js/topic-schema-policies.js"></script>
+
+    <script type="module" src="/js/topic-schema-policies.js"></script>
     </ix-application>
 </body>
 </html>

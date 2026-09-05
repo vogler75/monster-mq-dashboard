@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Kafka Client Detail Management JavaScript
 
 class KafkaClientDetailManager {
@@ -270,6 +275,7 @@ class KafkaClientDetailManager {
                 const mutation = `mutation CreateKafkaClient($input: KafkaClientInput!) { kafkaClient { create(input: $input) { success errors client { name } } } }`;
                 const result = await this.client.query(mutation, { input: data });
                 if (result.kafkaClient.create.success) {
+                    ui.markPageSaved();
                     this.showSuccess(`Kafka client "${data.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/kafka-client-detail.html?client=${encodeURIComponent(data.name)}`; }, 800);
                 } else {
@@ -292,12 +298,13 @@ class KafkaClientDetailManager {
                     this.clientName = newName;
                     const url = new URL(window.location.href);
                     url.searchParams.set('client', newName);
-                    window.history.replaceState({}, '', url.toString());
+                    window.replacePageUrl(url.toString());
                 }
                 await this.loadClientData();
                 if (prevNodeId && data.nodeId && data.nodeId !== prevNodeId) {
                     await this.reassignClient(data.nodeId);
                 }
+                ui.markPageSaved();
                 this.showSuccess('Kafka client updated successfully');
             } else {
                 const errors = result.kafkaClient.update.errors || ['Unknown error'];
@@ -349,6 +356,7 @@ class KafkaClientDetailManager {
             const mutation = `mutation DeleteKafkaClient($name: String!) { kafkaClient { delete(name: $name) } }`;
             const result = await this.client.query(mutation, { name: this.clientName });
             if (result.kafkaClient.delete) {
+                ui.markPageSaved();
                 this.showSuccess('Kafka client deleted');
                 setTimeout(() => { window.spaLocation.href = '/pages/kafka-clients.html'; }, 800);
             } else {
@@ -398,3 +406,17 @@ function toggleInboundFields(checked) {
 // Initialize
 document.addEventListener('DOMContentLoaded', () => { kafkaClientDetailManager = new KafkaClientDetailManager(); });
 
+
+page.expose({
+    get KafkaClientDetailManager() { return KafkaClientDetailManager; },
+    get goBack() { return goBack; },
+    get kafkaClientDetailManager() { return kafkaClientDetailManager; },
+    get saveClient() { return saveClient; },
+    get showDeleteModal() { return showDeleteModal; },
+    get toggleClient() { return toggleClient; },
+    get toggleInboundFields() { return toggleInboundFields; },
+    get toggleOutboundFields() { return toggleOutboundFields; }
+});
+page.ready();
+return () => page.dispose();
+}

@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // OPC UA Servers Management JavaScript
 
 let servers = [];
@@ -108,7 +113,7 @@ function createServerRow(server) {
 
     const serverStatus = server.status ? server.status.status : (server.enabled ? 'UNKNOWN' : 'DISABLED');
     const statusBadge = createStatusBadge(serverStatus);
-    const nodeIndicator = server.isOnCurrentNode ? '📍 ' : '';
+    const nodeIndicator = server.isOnCurrentNode ? '<span class="status-badge badge-info">this node</span> ' : '';
 
     row.innerHTML = `
         <td>
@@ -224,21 +229,11 @@ async function stopServer(serverName) {
     }
 }
 
-let deleteServerName = null;
+async function deleteServer(serverName) {
+    const entityName = serverName;
+    if (!await ui.confirmDelete(entityName)) return;
 
-function deleteServer(serverName) {
-    deleteServerName = serverName;
-    document.getElementById('delete-server-name').textContent = serverName;
-    document.getElementById('confirm-delete-modal').style.display = 'flex';
-}
-
-function hideConfirmDeleteModal() {
-    document.getElementById('confirm-delete-modal').style.display = 'none';
-}
-
-async function confirmDeleteServer() {
-    if (!deleteServerName) return;
-    hideConfirmDeleteModal();
+    if (!entityName) return;
 
     try {
         const mutation = `
@@ -252,11 +247,11 @@ async function confirmDeleteServer() {
             }
         `;
 
-        const response = await window.graphqlClient.query(mutation, { serverName: deleteServerName });
+        const response = await window.graphqlClient.query(mutation, { serverName: entityName });
 
         if (response && response.opcUaServer.delete.success) {
             await loadServers();
-            showSuccessMessage(`Server '${deleteServerName}' deleted successfully`);
+            showSuccessMessage(`Server '${entityName}' deleted successfully`);
         } else {
             throw new Error(response?.opcUaServer?.delete?.message || 'Failed to delete server');
         }
@@ -266,7 +261,6 @@ async function confirmDeleteServer() {
         showErrorMessage('Failed to delete server: ' + error.message);
     }
 
-    deleteServerName = null;
 }
 
 function editServer(serverName) {
@@ -320,9 +314,31 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Close modals on backdrop click
-document.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal')) {
-        if (e.target.id === 'confirm-delete-modal') hideConfirmDeleteModal();
-    }
+
+page.expose({
+    get checkAuthAndLoadData() { return checkAuthAndLoadData; },
+    get clusterNodes() { return clusterNodes; },
+    get createServerRow() { return createServerRow; },
+    get createStatusBadge() { return createStatusBadge; },
+    get deleteServer() { return deleteServer; },
+    get editServer() { return editServer; },
+    get escapeHtml() { return escapeHtml; },
+    get getCurrentNodeId() { return getCurrentNodeId; },
+    get hideErrorMessage() { return hideErrorMessage; },
+    get hideLoadingIndicator() { return hideLoadingIndicator; },
+    get loadServers() { return loadServers; },
+    get manageCertificates() { return manageCertificates; },
+    get refreshServers() { return refreshServers; },
+    get servers() { return servers; },
+    get setupEventListeners() { return setupEventListeners; },
+    get showErrorMessage() { return showErrorMessage; },
+    get showLoadingIndicator() { return showLoadingIndicator; },
+    get showSuccessMessage() { return showSuccessMessage; },
+    get startServer() { return startServer; },
+    get stopServer() { return stopServer; },
+    get updateMetrics() { return updateMetrics; },
+    get updateServerTable() { return updateServerTable; }
 });
+page.ready();
+return () => page.dispose();
+}

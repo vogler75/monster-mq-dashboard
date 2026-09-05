@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         .logger-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
         .json-schema-section { grid-column: 1 / -1; }
@@ -240,7 +240,7 @@ Each topic publishes a single numeric value.
         </div>
     </div>
     <div id="schema-help-modal" class="modal help-modal" style="display: none;"></div>
-    <script src="/js/timebase-logger-detail.js"></script>
+    <script type="module" src="/js/timebase-logger-detail.js"></script>
     </ix-application>
 </body>
 </html>

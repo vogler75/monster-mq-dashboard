@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class InfluxDBLoggerDetail {
     constructor() {
         const params = new URLSearchParams(window.location.search);
@@ -135,9 +140,11 @@ class InfluxDBLoggerDetail {
 
             if (res.success) {
                 if (this.isNew) {
+                    ui.markPageSaved();
                     ui.success(`Logger "${input.name}" created successfully`);
                     setTimeout(() => { window.spaLocation.href = `/pages/influxdb-logger-detail.html?name=${encodeURIComponent(input.name)}`; }, 800);
                 } else {
+                    ui.markPageSaved();
                     ui.success('Logger updated successfully');
                     await this.loadLogger();
                 }
@@ -246,4 +253,14 @@ async function generateSchemaFromExample() {
     } finally {
         btn.disabled = false;
     }
+}
+
+page.expose({
+    get InfluxDBLoggerDetail() { return InfluxDBLoggerDetail; },
+    get generateSchemaFromExample() { return generateSchemaFromExample; },
+    get hideSchemaHelp() { return hideSchemaHelp; },
+    get showSchemaHelp() { return showSchemaHelp; }
+});
+page.ready();
+return () => page.dispose();
 }

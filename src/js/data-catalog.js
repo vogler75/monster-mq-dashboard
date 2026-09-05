@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 class DataCatalogManager {
     constructor() {
         this.types = [];
@@ -416,3 +421,11 @@ function startDataCatalogPage() {
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startDataCatalogPage, { once: true });
 else startDataCatalogPage();
+
+page.expose({
+    get DataCatalogManager() { return DataCatalogManager; },
+    get startDataCatalogPage() { return startDataCatalogPage; }
+});
+page.ready();
+return () => page.dispose();
+}

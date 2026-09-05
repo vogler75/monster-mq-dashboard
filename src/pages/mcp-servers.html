@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         .transport-badge {
             display: inline-flex;
@@ -55,7 +55,7 @@
                 </div>
             </div>
 
-            <div id="mcp-servers-table" class="data-table">
+            <div id="mcp-servers-table" class="data-table" data-table-tools>
                 <div class="table-header">
                     <div class="table-title">
                         <h2>MCP Server Configuration</h2>
@@ -65,7 +65,7 @@
                         <a href="/pages/mcp-server-detail.html?new=true" class="btn btn-primary"><ix-icon name="add-circle" size="16"></ix-icon> Add MCP Server</a>
                     </div>
                 </div>
-                <table>
+                <div class="table-responsive"><table>
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -77,7 +77,7 @@
                     </thead>
                     <tbody id="mcp-servers-table-body">
                     </tbody>
-                </table>
+                </table></div>
             </div>
 
             <div id="loading-indicator" class="loading-indicator" style="display: none;">
@@ -96,7 +96,7 @@
 
     <!-- Confirm Delete Modal -->
 
-    <script src="/js/mcp-servers.js"></script>
+    <script type="module" src="/js/mcp-servers.js"></script>
     </ix-application>
 </body>
 </html>

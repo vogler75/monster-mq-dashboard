@@ -9,12 +9,12 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     
     <style>
         /* Actions column sits right */
-        .data-table thead th:last-child,
-        .data-table tbody td:last-child { text-align: right; }
+        #addresses-table thead th:last-child,
+        #addresses-table tbody td:last-child { text-align: right; }
     </style>
 </head>
 <body>
@@ -138,7 +138,7 @@
             </div>
             <div class="section-content">
                 <div id="addresses-table" class="data-table">
-                    <table>
+                    <div class="table-responsive"><table>
                         <thead>
                             <tr>
                                 <th>MQTT Topic</th>
@@ -151,7 +151,7 @@
                         <tbody id="addresses-table-body">
                             <!-- Address rows will be populated here -->
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
                 <div id="no-addresses" class="no-data" style="display: none;">
                     <h3>No addresses configured</h3>
@@ -235,7 +235,7 @@
 
 <!-- Confirm Delete Modal -->
 
-<script src="/js/opcua-server-detail.js"></script>
+<script type="module" src="/js/opcua-server-detail.js"></script>
     </ix-application>
 </body>
 </html>

@@ -1,3 +1,8 @@
+// Mounted by the SPA router; resources and handler bindings belong to this visit.
+export function mount(page) {
+const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
+    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
+    IntersectionObserver, WebSocket, EventSource } = page;
 // Kafka Consumer Groups Dashboard JavaScript
 
 class KafkaGroupsManager {
@@ -5,7 +10,7 @@ class KafkaGroupsManager {
         this.client = new GraphQLDashboardClient();
         this.groups = [];
         this.filteredList = [];
-        this.deleteGroupId = null;
+
         this.refreshInterval = null;
         this.init();
     }
@@ -159,14 +164,11 @@ class KafkaGroupsManager {
         });
     }
 
-    deleteGroup(groupId) {
-        this.deleteGroupId = groupId;
-        document.getElementById('delete-group-name').textContent = groupId;
-        document.getElementById('confirm-delete-group-modal').style.display = 'flex';
-    }
+    async deleteGroup(groupId) {
+        const entityName = groupId;
+        if (!await ui.confirmDelete(entityName)) return;
 
-    async confirmDelete() {
-        if (!this.deleteGroupId) return;
+        if (!entityName) return;
         
         this.showLoading(true);
         try {
@@ -177,11 +179,11 @@ class KafkaGroupsManager {
                     }
                 }
             `;
-            const variables = { groupId: this.deleteGroupId };
+            const variables = { groupId: entityName };
             const result = await this.client.query(mutation, variables);
             
             if (result && result.kafkaServer && result.kafkaServer.deleteConsumerGroup) {
-                console.log(`Successfully deleted consumer group: ${this.deleteGroupId}`);
+                console.log(`Successfully deleted consumer group: ${entityName}`);
                 this.loadGroups(true);
             } else {
                 throw new Error('Deletion request returned failure');
@@ -190,14 +192,8 @@ class KafkaGroupsManager {
             console.error('Failed to delete consumer group:', e);
             this.showError('Failed to remove consumer group: ' + e.message);
             this.showLoading(false);
-        } finally {
-            this.hideDeleteModal();
         }
-    }
 
-    hideDeleteModal() {
-        this.deleteGroupId = null;
-        document.getElementById('confirm-delete-group-modal').style.display = 'none';
     }
 
     formatNumber(num) {
@@ -271,14 +267,11 @@ function refreshKafkaGroups() {
     }
 }
 
-function hideConfirmDeleteGroupModal() {
-    if (kafkaGroupsManager) {
-        kafkaGroupsManager.hideDeleteModal();
-    }
-}
-
-function confirmDeleteGroup() {
-    if (kafkaGroupsManager) {
-        kafkaGroupsManager.confirmDelete();
-    }
+page.expose({
+    get KafkaGroupsManager() { return KafkaGroupsManager; },
+    get kafkaGroupsManager() { return kafkaGroupsManager; },
+    get refreshKafkaGroups() { return refreshKafkaGroups; }
+});
+page.ready();
+return () => page.dispose();
 }

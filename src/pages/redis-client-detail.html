@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         
         .addresses-table { width:100%; border-collapse:collapse; }
@@ -157,7 +157,7 @@
         <div class="section-card" id="addresses-section" style="display:none;">
             <div class="section-header">
                 <div class="section-title"><h2>Address Mappings</h2></div>
-                <button class="btn btn-primary" style="padding:0.5rem 1rem;font-size:0.85rem;" onclick="showAddAddressModal()">
+                <button class="btn btn-primary" onclick="showAddAddressModal()">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                     Add Mapping
                 </button>
@@ -271,7 +271,7 @@
 
 <!-- Delete Client Modal -->
 
-<script src="/js/redis-client-detail.js"></script>
+<script type="module" src="/js/redis-client-detail.js"></script>
     </ix-application>
 </body>
 </html>

@@ -9,7 +9,7 @@
     <script src="/js/graphql-client.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/log-viewer.js"></script>
-    <script src="/js/sidebar.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
     <style>
         .back-link {
             display: inline-flex;
@@ -22,23 +22,6 @@
             cursor: pointer;
         }
         .back-link:hover { color: var(--text-primary); }
-
-        .agent-header {
-            background: var(--dark-surface);
-            border: 1px solid var(--dark-border);
-            border-radius: 12px;
-            padding: 1.5rem 2rem;
-            margin-bottom: 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 2rem;
-        }
-        .agent-header-left h1 {
-            margin: 0 0 0.25rem 0;
-            font-size: 1.5rem;
-            color: var(--text-primary);
-        }
         .agent-header-meta {
             display: flex;
             gap: 1rem;
@@ -64,22 +47,6 @@
         }
         .type-internal { background: rgba(124,58,237,0.15); color: var(--monster-purple); border: 1px solid rgba(124,58,237,0.3); }
         .type-external { background: rgba(20,184,166,0.15); color: var(--monster-teal); border: 1px solid rgba(20,184,166,0.3); }
-
-        .health-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .health-card {
-            background: var(--dark-surface);
-            border: 1px solid var(--dark-border);
-            border-radius: 10px;
-            padding: 1.25rem;
-            text-align: center;
-        }
-        .health-card .label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.4rem; }
-        .health-card .value { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
         .log-tabs {
             display: flex;
@@ -441,10 +408,10 @@
                 <span class="breadcrumb-current" aria-current="page" id="breadcrumb-name">&hellip;</span>
             </nav>
 
-            <div class="agent-header" id="agent-header">
-                <div class="agent-header-left">
-                    <h1 id="page-title">Loading&hellip;</h1>
-                    <div id="agent-description" style="color:var(--text-muted); font-size:0.9rem;"></div>
+            <div class="page-header" id="agent-header">
+                <div>
+                    <h1 class="page-title" id="page-title">Loading&hellip;</h1>
+                    <div id="agent-description" class="page-subtitle"></div>
                     <div class="agent-header-meta">
                         <span id="agent-org-site"></span>
                         <span id="agent-version"></span>
@@ -460,34 +427,34 @@
             </div>
 
             <!-- Health Metrics -->
-            <div class="health-grid" id="health-grid">
-                <div class="health-card">
-                    <div class="label">Status</div>
-                    <div class="value" id="health-status">-</div>
+            <div class="metrics-grid" id="health-grid">
+                <div class="metric-card">
+                    <div class="metric-title">Status</div>
+                    <div class="metric-value" id="health-status">-</div>
                 </div>
-                <div class="health-card">
-                    <div class="label">Messages Processed</div>
-                    <div class="value" id="health-messages">-</div>
+                <div class="metric-card">
+                    <div class="metric-title">Messages Processed</div>
+                    <div class="metric-value" id="health-messages">-</div>
                 </div>
-                <div class="health-card">
-                    <div class="label">LLM Calls</div>
-                    <div class="value" id="health-llm">-</div>
+                <div class="metric-card">
+                    <div class="metric-title">LLM Calls</div>
+                    <div class="metric-value" id="health-llm">-</div>
                 </div>
-                <div class="health-card">
-                    <div class="label">Errors</div>
-                    <div class="value" id="health-errors">-</div>
+                <div class="metric-card">
+                    <div class="metric-title">Errors</div>
+                    <div class="metric-value" id="health-errors">-</div>
                 </div>
-                <div class="health-card">
-                    <div class="label">Input Tokens</div>
-                    <div class="value" id="health-input-tokens">-</div>
+                <div class="metric-card">
+                    <div class="metric-title">Input Tokens</div>
+                    <div class="metric-value" id="health-input-tokens">-</div>
                 </div>
-                <div class="health-card">
-                    <div class="label">Output Tokens</div>
-                    <div class="value" id="health-output-tokens">-</div>
+                <div class="metric-card">
+                    <div class="metric-title">Output Tokens</div>
+                    <div class="metric-value" id="health-output-tokens">-</div>
                 </div>
-                <div class="health-card">
-                    <div class="label">Total Tokens</div>
-                    <div class="value" id="health-total-tokens">-</div>
+                <div class="metric-card">
+                    <div class="metric-title">Total Tokens</div>
+                    <div class="metric-value" id="health-total-tokens">-</div>
                 </div>
             </div>
 
@@ -611,6 +578,6 @@
     </div>
     </ix-application>
 
-    <script src="/js/agent-monitor-detail.js"></script>
+    <script type="module" src="/js/agent-monitor-detail.js"></script>
 </body>
 </html>
