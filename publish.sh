@@ -165,50 +165,11 @@ fi
 
 shopt -u nullglob
 
-# If no files found and build was not run, prompt to build
+# If no files found, fail with error
 if [ ${#RELEASE_FILES[@]} -eq 0 ]; then
-  echo -e "${YELLOW}No desktop artifacts found in dist-desktop/.${NC}"
-  if [ "$AUTO_CONFIRM" = false ]; then
-    read -p "Would you like to build desktop apps now? (y/n) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-      if [ "$PUBLISH_MAC" = true ] && [ "$PUBLISH_WIN" = true ]; then
-        ./build.sh --desktop
-      elif [ "$PUBLISH_MAC" = true ]; then
-        ./build.sh --mac
-      elif [ "$PUBLISH_WIN" = true ]; then
-        ./build.sh --win
-      fi
-    else
-      echo -e "${RED}No artifacts to publish. Exiting.${NC}"
-      exit 1
-    fi
-  else
-    if [ "$PUBLISH_MAC" = true ] && [ "$PUBLISH_WIN" = true ]; then
-      ./build.sh --desktop
-    elif [ "$PUBLISH_MAC" = true ]; then
-      ./build.sh --mac
-    elif [ "$PUBLISH_WIN" = true ]; then
-      ./build.sh --win
-    fi
-  fi
-
-  shopt -s nullglob
-  if [ "$PUBLISH_MAC" = true ]; then
-    for f in dist-desktop/MonsterMQ-Dashboard*.dmg; do
-      if [[ "$f" != *.blockmap ]]; then
-        RELEASE_FILES+=("$f")
-      fi
-    done
-  fi
-  if [ "$PUBLISH_WIN" = true ]; then
-    for f in dist-desktop/MonsterMQ-Dashboard*-setup.exe dist-desktop/MonsterMQ-Dashboard*.exe; do
-      if [[ "$f" != *.blockmap ]]; then
-        RELEASE_FILES+=("$f")
-      fi
-    done
-  fi
-  shopt -u nullglob
+  echo -e "${RED}Error: No desktop artifacts found in dist-desktop/.${NC}"
+  echo -e "${YELLOW}Please build desktop apps first with: ./build.sh --desktop (or ./build.sh --all)${NC}"
+  exit 1
 fi
 
 # Deduplicate
