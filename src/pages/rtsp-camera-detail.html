@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonsterMQ - MJPEG Camera Detail</title>
+    <script type="module" src="/js/ix-init.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/graphql-client.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/log-viewer.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
+    <style>
+        .live-snap-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 240px;
+            background: rgba(0,0,0,0.3);
+            border: 1px dashed var(--dark-border, rgba(255,255,255,0.15));
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+        .live-snap-preview img {
+            max-width: 100%;
+            max-height: 400px;
+            object-fit: contain;
+        }
+        .camera-stream-examples {
+            display: grid;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .camera-stream-example {
+            padding: 8px 10px;
+            border-left: 3px solid var(--monster-teal, #14b8a6);
+            background: var(--dark-surface-2, rgba(255,255,255,0.04));
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+        .camera-stream-example code {
+            display: block;
+            margin-top: 4px;
+            color: var(--text-primary);
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+<body>
+    <ix-application force-breakpoint="lg">
+    <ix-menu application-name="MonsterMQ" pinned start-expanded>
+    </ix-menu>
+    <div class="main-content" id="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div class="page-header-content">
+                    <div>
+                        <nav class="breadcrumb" aria-label="Breadcrumb">
+                            <a href="/pages/rtsp-cameras.html">MJPEG Cameras</a>
+                            <span class="breadcrumb-sep" aria-hidden="true">/</span>
+                            <span class="breadcrumb-current" aria-current="page" id="breadcrumb-name">New Camera</span>
+                        </nav>
+                        <h1 class="page-title" id="page-title">MJPEG Camera</h1>
+                        <p class="page-subtitle" id="page-subtitle">Configure an MJPEG stream over RTSP or HTTP and publish round-robin snapshots</p>
+                    </div>
+                    <div class="page-header-actions">
+                        <button class="btn btn-secondary" id="trigger-btn" type="button" data-requires-auth style="display:none;">
+                            <ix-icon name="photo-camera" size="16"></ix-icon> Trigger Snapshot
+                        </button>
+                        <button class="btn btn-danger" id="delete-btn" type="button" data-requires-auth style="display:none;">
+                            <ix-icon name="trashcan" size="16"></ix-icon> Delete
+                        </button>
+                        <button class="btn btn-primary" id="save-camera-btn" type="button" data-requires-auth>
+                            <ix-icon name="disk" size="16"></ix-icon> Save Camera
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-message" class="error-message" style="display:none;">
+                <div class="error-content">
+                    <span class="error-icon">&#9888;</span>
+                    <span class="error-text"></span>
+                </div>
+            </div>
+
+            <form id="camera-form">
+                <!-- Section 1: Connection -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-title"><h2>Stream Connection</h2></div>
+                        <span class="status-badge" id="camera-status-badge">New</span>
+                    </div>
+                    <div class="section-content">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="camera-name">Camera Name *</label>
+                                <input type="text" id="camera-name" required placeholder="e.g. front_gate">
+                                <span class="form-hint">Unique identifier for this camera bridge.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="camera-node">Cluster Node *</label>
+                                <select id="camera-node" required>
+                                    <option value="">Select Node...</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label for="camera-url">MJPEG Stream URL *</label>
+                                <input type="text" id="camera-url" required placeholder="rtsp://camera/mjpeg or http://host:8080/camera">
+                                <span class="form-hint">Supports MJPEG over RTSP (RTP/JPEG) and HTTP(S) multipart MJPEG. H.264 and H.265 require conversion to MJPEG.</span>
+                                <div class="camera-stream-examples" aria-label="Supported stream examples">
+                                    <div class="camera-stream-example">
+                                        <strong>Example 1 — Camera with native MJPEG over RTSP</strong>
+                                        <code>rtsp://user:password@192.168.1.50:554/mjpeg</code>
+                                    </div>
+                                    <div class="camera-stream-example">
+                                        <strong>Example 2 — H.264 camera converted by FFmpeg to HTTP multipart MJPEG</strong>
+                                        <code>http://192.168.1.20:8080/c310</code>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="camera-transport">RTSP Transport (ignored for HTTP)</label>
+                                <select id="camera-transport">
+                                    <option value="TCP" selected>TCP (Interleaved — recommended)</option>
+                                    <option value="UDP">UDP</option>
+                                </select>
+                                <span class="form-hint" id="camera-transport-hint">Used only for RTSP URLs.</span>
+                            </div>
+                            <div class="form-group" style="display:flex; align-items:center; gap:8px; margin-top:24px;">
+                                <input type="checkbox" id="camera-enabled" checked style="width:auto;">
+                                <label for="camera-enabled" style="margin-bottom:0; cursor:pointer;">Enable Camera Bridge</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Round-Robin Snapshot Settings -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <div class="section-title"><h2>Round-Robin Snapshot Publishing</h2></div>
+                    </div>
+                    <div class="section-content">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="camera-topic-prefix">Topic Prefix *</label>
+                                <input type="text" id="camera-topic-prefix" required value="cameras/front_gate">
+                                <span class="form-hint">Base topic for snapshots (e.g. <code>cameras/front_gate</code>).</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="camera-mode">Capture Mode</label>
+                                <select id="camera-mode">
+                                    <option value="CONTINUOUS" selected>Continuous (Interval timer)</option>
+                                    <option value="TRIGGERED">Triggered (MQTT topic command)</option>
+                                    <option value="BOTH">Both (Continuous + Topic trigger)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="camera-slots">Snapshot Slots (Round Robin)</label>
+                                <input type="number" id="camera-slots" min="1" max="100" value="5" required>
+                                <span class="form-hint">Number of round-robin slots to rotate through (1..N).</span>
+                            </div>
+                            <div class="form-group" id="interval-group">
+                                <label for="camera-interval">Capture Interval (ms)</label>
+                                <input type="number" id="camera-interval" min="50" step="50" value="1000" required>
+                                <span class="form-hint">Milliseconds between snapshots in continuous mode (1000ms = 1 fps).</span>
+                            </div>
+                            <div class="form-group" id="trigger-group" style="grid-column: 1 / -1;">
+                                <label for="camera-trigger-topic">Trigger Topic</label>
+                                <input type="text" id="camera-trigger-topic" placeholder="cameras/front_gate/trigger">
+                                <span class="form-hint">Inbound topic that commands an immediate snapshot into the next round-robin slot.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="camera-qos">MQTT QoS</label>
+                                <select id="camera-qos">
+                                    <option value="0" selected>0 — At most once (recommended for video/pictures)</option>
+                                    <option value="1">1 — At least once</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <input type="checkbox" id="camera-retain" checked style="width:auto;">
+                                    <label for="camera-retain" style="margin-bottom:0; cursor:pointer;">Retain snapshots on MQTT topics</label>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <input type="checkbox" id="camera-publish-meta" checked style="width:auto;">
+                                    <label for="camera-publish-meta" style="margin-bottom:0; cursor:pointer;">Publish <code>latest</code> companion pointer</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Live Status & Latest Picture -->
+                <div class="section-card" id="status-card" style="display:none;">
+                    <div class="section-header">
+                        <div class="section-title"><h2>Live Status & Latest Picture</h2></div>
+                    </div>
+                    <div class="section-content">
+                        <div class="metrics-grid" style="margin-bottom:1.5rem;">
+                            <div class="metric-card">
+                                <div class="metric-header"><span class="metric-title">Connection</span></div>
+                                <div class="metric-value" id="metric-connected" style="font-size:1.2rem;">Disconnected</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-header"><span class="metric-title">Frames Received</span></div>
+                                <div class="metric-value" id="metric-frames" style="font-size:1.2rem;">0</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-header"><span class="metric-title">Snapshots Published</span></div>
+                                <div class="metric-value" id="metric-snaps" style="font-size:1.2rem;">0</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-header"><span class="metric-title">Last Snapshot</span></div>
+                                <div class="metric-value" id="metric-last-time" style="font-size:1rem; word-break:break-all;">—</div>
+                            </div>
+                        </div>
+
+                        <div id="live-error-box" class="error-message" style="display:none; margin-bottom:1rem;">
+                            <div class="error-content">
+                                <span class="error-icon">&#9888;</span>
+                                <span class="error-text" id="live-error-text"></span>
+                            </div>
+                        </div>
+
+                        <div class="live-snap-preview" id="live-snap-box">
+                            <ix-icon name="photo-camera" size="48" style="opacity:0.3; margin-bottom:8px;"></ix-icon>
+                            <p style="color:var(--text-muted); font-size:0.875rem;">Waiting for the latest picture...</p>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div id="loading-indicator" class="loading-indicator" style="display:none;">
+                <div class="loading-content">
+                    <ix-spinner size="large"></ix-spinner>
+                    <p>Loading camera configuration...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    </ix-application>
+    <script type="module" src="/js/rtsp-camera-detail.js"></script>
+</body>
+</html>

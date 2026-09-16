@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonsterMQ - MJPEG Cameras</title>
+    <script type="module" src="/js/ix-init.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/graphql-client.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/log-viewer.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
+</head>
+<body>
+    <ix-application force-breakpoint="lg">
+    <ix-menu application-name="MonsterMQ" pinned start-expanded>
+    </ix-menu>
+    <div class="main-content" id="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div class="page-header-content">
+                    <div>
+                        <h1 class="page-title">MJPEG Cameras</h1>
+                        <p class="page-subtitle">Capture MJPEG streams over RTSP or HTTP and publish round-robin snapshots to MQTT topics</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-message" class="error-message" style="display:none;">
+                <div class="error-content">
+                    <span class="error-icon">&#9888;</span>
+                    <span class="error-text"></span>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Total Cameras</span>
+                        <div class="metric-icon"><ix-icon name="video-camera" size="12"></ix-icon></div>
+                    </div>
+                    <div class="metric-value" id="total-cameras">0</div>
+                    <div class="metric-label">Configured Cameras</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Enabled</span>
+                        <div class="metric-icon is-ok"><ix-icon name="success" size="12"></ix-icon></div>
+                    </div>
+                    <div class="metric-value" id="enabled-cameras">0</div>
+                    <div class="metric-label">Active Cameras</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Local Cameras</span>
+                        <div class="metric-icon is-info"><ix-icon name="rack-ipc" size="12"></ix-icon></div>
+                    </div>
+                    <div class="metric-value" id="current-node-cameras">0</div>
+                    <div class="metric-label">On This Node</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Snapshots Published</span>
+                        <div class="metric-icon"><ix-icon name="barchart" size="12"></ix-icon></div>
+                    </div>
+                    <div class="metric-value" id="total-snapshots">0</div>
+                    <div class="metric-label">Total Captures</div>
+                </div>
+            </div>
+
+            <div id="cameras-table" class="data-table" data-table-tools>
+                <div class="table-header">
+                    <div class="table-title"><h2>MJPEG Cameras</h2></div>
+                    <div class="table-actions">
+                        <input type="search" class="form-control table-search" id="camera-search" placeholder="Search cameras…" aria-label="Search cameras" data-ignore-dirty>
+                        <ix-icon-button icon="refresh" variant="subtle-tertiary" id="refresh-cameras-btn" title="Refresh"></ix-icon-button>
+                        <a href="/pages/rtsp-camera-detail.html?new=true" class="btn btn-primary" data-requires-auth>
+                            <ix-icon name="add-circle" size="16"></ix-icon> Add Camera
+                        </a>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Stream URL</th>
+                                <th>Topic Prefix</th>
+                                <th>Mode</th>
+                                <th class="num">Slots</th>
+                                <th class="num">Interval</th>
+                                <th>Status</th>
+                                <th class="num">Active Slot</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rtsp-cameras-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="loading-indicator" class="loading-indicator" style="display:none;">
+                <div class="loading-content">
+                    <ix-spinner size="large"></ix-spinner>
+                    <p>Loading MJPEG cameras...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    </ix-application>
+    <script type="module" src="/js/rtsp-cameras.js"></script>
+</body>
+</html>
