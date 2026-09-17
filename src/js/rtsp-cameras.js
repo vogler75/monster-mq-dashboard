@@ -236,7 +236,7 @@ class RtspCameraManager {
 
     async deleteCamera(name) {
         const confirmed = await ui.confirm({
-            title: 'Delete MJPEG Camera',
+            title: 'Delete RTSP Camera',
             message: `Are you sure you want to delete camera "${name}"? This action cannot be undone.`,
             confirmText: 'Delete',
             confirmClass: 'btn-danger',

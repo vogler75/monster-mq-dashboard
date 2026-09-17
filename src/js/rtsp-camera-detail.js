@@ -183,7 +183,7 @@ class RtspCameraDetailManager {
             document.getElementById('camera-interval').value = cfg.intervalMs || 1000;
             document.getElementById('camera-trigger-topic').value = cfg.triggerTopic || '';
             document.getElementById('camera-qos').value = cfg.qos ?? 0;
-            document.getElementById('camera-retain').checked = cfg.retain ?? true;
+            document.getElementById('camera-retain').checked = cfg.retain ?? false;
             document.getElementById('camera-publish-meta').checked = cfg.publishMetadata ?? true;
 
             this.updateCaptureSettings();
@@ -439,7 +439,7 @@ class RtspCameraDetailManager {
 
     async deleteCamera() {
         const confirmed = await ui.confirm({
-            title: 'Delete MJPEG Camera',
+            title: 'Delete RTSP Camera',
             message: `Are you sure you want to delete camera "${this.cameraName}"?`,
             confirmText: 'Delete',
             confirmClass: 'btn-danger',

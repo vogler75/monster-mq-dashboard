@@ -257,7 +257,7 @@ class SidebarManager {
                     { href: '/pages/telegram-clients.html', icon: 'send-top-right', text: 'Telegram Clients', feature: 'Telegram' },
                     { href: '/pages/winccoa-clients.html', icon: 'rack-ipc', text: 'WinCC OA Clients', feature: 'WinCCOa' },
                     { href: '/pages/winccua-clients.html', icon: 'rack-ipc', text: 'WinCC Unified Clients', feature: 'WinCCUa' },
-                    { href: '/pages/rtsp-cameras.html', icon: 'video-camera', text: 'MJPEG Cameras', feature: 'RtspCamera' },
+                    { href: '/pages/rtsp-cameras.html', icon: 'video-camera', text: 'RTSP Cameras', feature: 'RtspCamera' },
                     { href: '/pages/redfish-gateways.html', icon: 'server-rack', text: 'Redfish Gateways', feature: 'Redfish' },
                     { href: '/pages/i3x-clients.html', icon: 'link', text: 'i3X Clients', feature: 'I3xClient' },
                     { href: '/pages/plc4x-clients.html', icon: 'solid-state-drive', text: 'PLC4X Clients', feature: 'Plc4x' },

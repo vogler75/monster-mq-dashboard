@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MonsterMQ - MJPEG Camera Detail</title>
+    <title>MonsterMQ - RTSP Camera Detail</title>
     <script type="module" src="/js/ix-init.js"></script>
     <script src="/js/storage.js"></script>
     <script src="/js/graphql-client.js"></script>
@@ -59,11 +59,11 @@
                 <div class="page-header-content">
                     <div>
                         <nav class="breadcrumb" aria-label="Breadcrumb">
-                            <a href="/pages/rtsp-cameras.html">MJPEG Cameras</a>
+                            <a href="/pages/rtsp-cameras.html">RTSP Cameras</a>
                             <span class="breadcrumb-sep" aria-hidden="true">/</span>
                             <span class="breadcrumb-current" aria-current="page" id="breadcrumb-name">New Camera</span>
                         </nav>
-                        <h1 class="page-title" id="page-title">MJPEG Camera</h1>
+                        <h1 class="page-title" id="page-title">RTSP Camera</h1>
                         <p class="page-subtitle" id="page-subtitle">Configure a camera stream and publish round-robin JPEG snapshots</p>
                     </div>
                     <div class="page-header-actions">
@@ -194,7 +194,7 @@
                             </div>
                             <div class="form-group" style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
                                 <div style="display:flex; align-items:center; gap:8px;">
-                                    <input type="checkbox" id="camera-retain" checked style="width:auto;">
+                                    <input type="checkbox" id="camera-retain" style="width:auto;">
                                     <label for="camera-retain" style="margin-bottom:0; cursor:pointer;">Retain snapshots on MQTT topics</label>
                                 </div>
                                 <div style="display:flex; align-items:center; gap:8px;">
