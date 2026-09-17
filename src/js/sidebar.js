@@ -795,7 +795,9 @@ class SidebarManager {
 
     async _loadPageScript(src) {
         const { PageLifecycle } = await import('./page-lifecycle.js');
-        const module = await import(src);
+        // Page modules are discovered from the HTML fetched by the SPA router,
+        // so their runtime URLs cannot be statically enumerated by Vite.
+        const module = await import(/* @vite-ignore */ src);
         if (typeof module.mount !== 'function') throw new Error(`Page module has no mount(): ${src}`);
         const page = new PageLifecycle();
         this._pageCleanups.push(() => page.dispose());
