@@ -57,9 +57,7 @@ class RtspCameraDetailManager {
             modeSelect.addEventListener('change', (e) => {
                 const mode = e.target.value;
                 const intervalGroup = document.getElementById('interval-group');
-                const triggerGroup = document.getElementById('trigger-group');
                 if (intervalGroup) intervalGroup.style.display = mode === 'TRIGGERED' ? 'none' : '';
-                if (triggerGroup) triggerGroup.style.display = mode === 'CONTINUOUS' ? 'none' : '';
             });
         }
     }
@@ -179,9 +177,7 @@ class RtspCameraDetailManager {
             // Trigger topic visibility
             const mode = cfg.mode || 'CONTINUOUS';
             const intervalGroup = document.getElementById('interval-group');
-            const triggerGroup = document.getElementById('trigger-group');
             if (intervalGroup) intervalGroup.style.display = mode === 'TRIGGERED' ? 'none' : '';
-            if (triggerGroup) triggerGroup.style.display = mode === 'CONTINUOUS' ? 'none' : '';
 
             // Actions & status card
             document.getElementById('delete-btn').style.display = '';
