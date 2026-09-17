@@ -109,8 +109,8 @@
                             </div>
                             <div class="form-group" style="grid-column: 1 / -1;">
                                 <label for="camera-url">MJPEG Stream URL *</label>
-                                <input type="text" id="camera-url" required placeholder="rtsp://camera/mjpeg or http://host:8080/camera">
-                                <span class="form-hint">Supports MJPEG over RTSP (RTP/JPEG) and HTTP(S) multipart MJPEG. H.264 and H.265 require conversion to MJPEG.</span>
+                                <input type="text" id="camera-url" required placeholder="rtsp://camera/mjpeg, http://host/camera, or ws://host/ws">
+                                <span class="form-hint">Supports MJPEG over RTSP (RTP/JPEG), HTTP(S) multipart MJPEG, and WebSocket binary JPEG frames. H.264 and H.265 require conversion to MJPEG.</span>
                                 <div class="camera-stream-examples" aria-label="Supported stream examples">
                                     <div class="camera-stream-example">
                                         <strong>Example 1 — Camera with native MJPEG over RTSP</strong>
@@ -120,10 +120,14 @@
                                         <strong>Example 2 — H.264 camera converted by FFmpeg to HTTP multipart MJPEG</strong>
                                         <code>http://192.168.1.20:8080/c310</code>
                                     </div>
+                                    <div class="camera-stream-example">
+                                        <strong>Example 3 — JPEG frames over WebSocket</strong>
+                                        <code>ws://192.168.1.20:8888/ws</code>
+                                    </div>
                                 </div>
                             </div>
                             <div class="form-group">
-                                <label for="camera-transport">RTSP Transport (ignored for HTTP)</label>
+                                <label for="camera-transport">RTSP Transport</label>
                                 <select id="camera-transport">
                                     <option value="TCP" selected>TCP (Interleaved — recommended)</option>
                                     <option value="UDP">UDP</option>
@@ -147,8 +151,8 @@
                         <div class="form-grid">
                             <div class="form-group">
                                 <label for="camera-topic-prefix">Topic Prefix *</label>
-                                <input type="text" id="camera-topic-prefix" required value="cameras/front_gate">
-                                <span class="form-hint">Base topic for snapshots (e.g. <code>cameras/front_gate</code>).</span>
+                                <input type="text" id="camera-topic-prefix" required>
+                                <span class="form-hint">Base topic for snapshots (e.g. <code>cameras/camera1</code>).</span>
                             </div>
                             <div class="form-group">
                                 <label for="camera-mode">Capture Mode</label>
@@ -170,7 +174,7 @@
                             </div>
                             <div class="form-group" id="trigger-group" style="grid-column: 1 / -1;">
                                 <label for="camera-trigger-topic">Trigger Topic</label>
-                                <input type="text" id="camera-trigger-topic" placeholder="cameras/front_gate/trigger">
+                                <input type="text" id="camera-trigger-topic" placeholder="cameras/camera1/trigger">
                                 <span class="form-hint">Inbound topic that commands an immediate snapshot into the next round-robin slot.</span>
                             </div>
                             <div class="form-group">

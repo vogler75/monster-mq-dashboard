@@ -68,10 +68,10 @@ class RtspCameraDetailManager {
         const url = document.getElementById('camera-url')?.value.trim() || '';
         const transport = document.getElementById('camera-transport');
         const hint = document.getElementById('camera-transport-hint');
-        const isHTTP = /^https?:\/\//i.test(url);
-        if (transport) transport.disabled = isHTTP;
-        if (hint) hint.textContent = isHTTP
-            ? 'Not used for HTTP multipart MJPEG streams.'
+        const isNonRTSP = /^(?:https?|wss?):\/\//i.test(url);
+        if (transport) transport.disabled = isNonRTSP;
+        if (hint) hint.textContent = isNonRTSP
+            ? 'Not used for HTTP or WebSocket MJPEG streams.'
             : 'Used only for RTSP URLs.';
     }
 
@@ -353,8 +353,8 @@ class RtspCameraDetailManager {
         if (!name) { ui.showError('Camera Name is required'); return; }
         if (!nodeId) { ui.showError('Cluster Node is required'); return; }
         if (!url) { ui.showError('MJPEG Stream URL is required'); return; }
-        if (!/^(?:rtsps?|https?):\/\//i.test(url)) {
-            ui.showError('Stream URL must begin with rtsp://, rtsps://, http://, or https://');
+        if (!/^(?:rtsps?|https?|wss?):\/\//i.test(url)) {
+            ui.showError('Stream URL must begin with rtsp://, rtsps://, http://, https://, ws://, or wss://');
             return;
         }
         if (!topicPrefix) { ui.showError('Topic Prefix is required'); return; }

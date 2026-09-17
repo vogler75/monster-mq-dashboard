@@ -58,7 +58,6 @@ class RtspCameraManager {
                             connected
                             framesReceived
                             snapshotsPublished
-                            currentSlot
                             lastSnapshotAt
                             lastError
                             timestamp
@@ -113,7 +112,7 @@ class RtspCameraManager {
         if (!tbody) return;
 
         if (this.cameras.length === 0) {
-            tbody.innerHTML = ui.emptyRow(9, 'No MJPEG cameras configured',
+            tbody.innerHTML = ui.emptyRow(8, 'No MJPEG cameras configured',
                 'Click “Add Camera” to capture an MJPEG stream over RTSP or HTTP and publish snapshots to MQTT.');
             return;
         }
@@ -121,7 +120,7 @@ class RtspCameraManager {
         tbody.innerHTML = '';
         this.cameras.forEach(c => {
             const cfg = c.config || {};
-            const m = (c.metrics && c.metrics.length > 0) ? c.metrics[0] : { connected: false, snapshotsPublished: 0, currentSlot: 0 };
+            const m = (c.metrics && c.metrics.length > 0) ? c.metrics[0] : { connected: false };
             const node = ui.escapeHtml(c.nodeId || '');
 
             let statusLabel = 'Disabled';
@@ -139,9 +138,9 @@ class RtspCameraManager {
                 }
             }
 
-            const activeSlotDisplay = m.currentSlot > 0 ? `Slot ${m.currentSlot}` : '—';
             const isHTTP = /^https?:\/\//i.test(cfg.url || '');
-            const protocolLabel = isHTTP ? 'HTTP' : (cfg.transport || 'RTSP');
+            const isWebSocket = /^wss?:\/\//i.test(cfg.url || '');
+            const protocolLabel = isWebSocket ? 'WS' : (isHTTP ? 'HTTP' : (cfg.transport || 'RTSP'));
             const transportBadge = `<span class="status-badge badge-info" style="font-size:10px;margin-left:4px;">${ui.escapeHtml(protocolLabel)}</span>`;
 
             const row = document.createElement('tr');
@@ -158,7 +157,6 @@ class RtspCameraManager {
                 <td class="num">${cfg.slots || 5} (1..${cfg.slots || 5})</td>
                 <td class="num">${cfg.intervalMs || 1000} ms</td>
                 <td>${ui.statusBadge(statusLabel, statusVariant)}</td>
-                <td class="num"><strong>${activeSlotDisplay}</strong></td>
                 <td>
                     <div class="action-buttons">
                         <ix-icon-button icon="photo-camera" variant="subtle-tertiary" size="24" title="Trigger immediate snapshot" class="btn-snap" data-requires-auth></ix-icon-button>
