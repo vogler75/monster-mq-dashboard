@@ -234,7 +234,7 @@ class SidebarManager {
                 ]
             },
             {
-                section: 'Agents', sectionIcon: 'rocket',
+                section: 'Agents', sectionIcon: 'rocket', feature: 'Agents',
                 items: [
                     { href: '/pages/agent-monitor.html', icon: 'capacity-filled', text: 'Agent Monitor', feature: 'Agents' },
                     { href: '/pages/agent-online.html', icon: 'distribution', text: 'Agent Graph', feature: 'Agents' },
@@ -284,6 +284,10 @@ class SidebarManager {
         if (!ixMenu) return;
 
         this.getMenuConfig().forEach(section => {
+            // Hide section if whole section requires a feature that is not enabled
+            if (section.feature && Array.isArray(this._enabledFeatures) &&
+                !this._enabledFeatures.includes(section.feature)) return;
+
             const category = document.createElement('ix-menu-category');
             category.setAttribute('label', section.section);
             category.setAttribute('icon', section.sectionIcon);
