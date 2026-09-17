@@ -53,13 +53,20 @@ class RtspCameraDetailManager {
 
         if (urlInput) urlInput.addEventListener('input', () => this.updateTransportState());
 
-        if (modeSelect) {
-            modeSelect.addEventListener('change', (e) => {
-                const mode = e.target.value;
-                const intervalGroup = document.getElementById('interval-group');
-                if (intervalGroup) intervalGroup.style.display = mode === 'TRIGGERED' ? 'none' : '';
-            });
-        }
+        if (modeSelect) modeSelect.addEventListener('change', () => this.updateCaptureSettings());
+        document.getElementById('camera-h264-decode-mode')?.addEventListener('change', () => this.updateCaptureSettings());
+    }
+
+    updateCaptureSettings() {
+        const triggered = document.getElementById('camera-mode')?.value === 'TRIGGERED';
+        const decodeMode = document.getElementById('camera-h264-decode-mode');
+        const keyframesOnly = !decodeMode.disabled && decodeMode.value === 'KEYFRAMES_ONLY';
+        const intervalGroup = document.getElementById('interval-group');
+        if (intervalGroup) intervalGroup.style.display = triggered && !keyframesOnly ? 'none' : '';
+        const hint = document.getElementById('camera-interval-hint');
+        if (hint) hint.textContent = keyframesOnly
+            ? 'Minimum time between decoded keyframes, and between continuous snapshots. Actual updates also depend on the camera’s keyframe interval.'
+            : 'Milliseconds between snapshots in continuous mode (1000ms = 1 fps).';
     }
 
     updateTransportState() {
@@ -68,6 +75,9 @@ class RtspCameraDetailManager {
         const hint = document.getElementById('camera-transport-hint');
         const isNonRTSP = /^(?:https?|wss?):\/\//i.test(url);
         if (transport) transport.disabled = isNonRTSP;
+        const decodeMode = document.getElementById('camera-h264-decode-mode');
+        if (decodeMode) decodeMode.disabled = isNonRTSP;
+        this.updateCaptureSettings();
         if (hint) hint.textContent = isNonRTSP
             ? 'Not used for HTTP or WebSocket MJPEG streams.'
             : 'Used only for RTSP URLs.';
@@ -96,7 +106,7 @@ class RtspCameraDetailManager {
 
     setupNewCamera() {
         document.getElementById('breadcrumb-name').textContent = 'New Camera';
-        document.getElementById('page-title').textContent = 'New MJPEG Camera';
+        document.getElementById('page-title').textContent = 'New Camera';
         document.getElementById('camera-status-badge').textContent = 'New';
         document.getElementById('camera-status-badge').className = 'status-badge';
         document.getElementById('delete-btn').style.display = 'none';
@@ -122,6 +132,7 @@ class RtspCameraDetailManager {
                         config {
                             url
                             transport
+                            h264DecodeMode
                             topicPrefix
                             mode
                             intervalMs
@@ -162,6 +173,7 @@ class RtspCameraDetailManager {
             const cfg = camera.config || {};
             document.getElementById('camera-url').value = cfg.url || '';
             document.getElementById('camera-transport').value = cfg.transport || 'TCP';
+            document.getElementById('camera-h264-decode-mode').value = cfg.h264DecodeMode || 'FULL';
             this.updateTransportState();
             document.getElementById('camera-enabled').checked = camera.enabled;
 
@@ -174,10 +186,7 @@ class RtspCameraDetailManager {
             document.getElementById('camera-retain').checked = cfg.retain ?? true;
             document.getElementById('camera-publish-meta').checked = cfg.publishMetadata ?? true;
 
-            // Trigger topic visibility
-            const mode = cfg.mode || 'CONTINUOUS';
-            const intervalGroup = document.getElementById('interval-group');
-            if (intervalGroup) intervalGroup.style.display = mode === 'TRIGGERED' ? 'none' : '';
+            this.updateCaptureSettings();
 
             // Actions & status card
             document.getElementById('delete-btn').style.display = '';
@@ -348,7 +357,7 @@ class RtspCameraDetailManager {
 
         if (!name) { ui.showError('Camera Name is required'); return; }
         if (!nodeId) { ui.showError('Cluster Node is required'); return; }
-        if (!url) { ui.showError('MJPEG Stream URL is required'); return; }
+        if (!url) { ui.showError('Stream URL is required'); return; }
         if (!/^(?:rtsps?|https?|wss?):\/\//i.test(url)) {
             ui.showError('Stream URL must begin with rtsp://, rtsps://, http://, https://, ws://, or wss://');
             return;
@@ -362,6 +371,7 @@ class RtspCameraDetailManager {
             config: {
                 url,
                 transport,
+                h264DecodeMode: document.getElementById('camera-h264-decode-mode').value,
                 topicPrefix,
                 mode,
                 slots: isNaN(slots) ? 5 : slots,
@@ -494,4 +504,5 @@ class RtspCameraDetailManager {
 }
 
 new RtspCameraDetailManager();
+return () => page.dispose();
 }

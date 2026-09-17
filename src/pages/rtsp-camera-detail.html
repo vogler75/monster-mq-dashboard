@@ -64,7 +64,7 @@
                             <span class="breadcrumb-current" aria-current="page" id="breadcrumb-name">New Camera</span>
                         </nav>
                         <h1 class="page-title" id="page-title">MJPEG Camera</h1>
-                        <p class="page-subtitle" id="page-subtitle">Configure an MJPEG stream over RTSP or HTTP and publish round-robin snapshots</p>
+                        <p class="page-subtitle" id="page-subtitle">Configure a camera stream and publish round-robin JPEG snapshots</p>
                     </div>
                     <div class="page-header-actions">
                         <button class="btn btn-secondary" id="trigger-btn" type="button" data-requires-auth style="display:none;">
@@ -108,9 +108,9 @@
                                 </select>
                             </div>
                             <div class="form-group" style="grid-column: 1 / -1;">
-                                <label for="camera-url">MJPEG Stream URL *</label>
+                                <label for="camera-url">Stream URL *</label>
                                 <input type="text" id="camera-url" required placeholder="rtsp://camera/mjpeg, http://host/camera, or ws://host/ws">
-                                <span class="form-hint">Supports MJPEG over RTSP (RTP/JPEG), HTTP(S) multipart MJPEG, and WebSocket binary JPEG frames. H.264 and H.265 require conversion to MJPEG.</span>
+                                <span class="form-hint">Supports H.264 and MJPEG over RTSP, HTTP(S) multipart MJPEG, and WebSocket binary JPEG frames.</span>
                                 <div class="camera-stream-examples" aria-label="Supported stream examples">
                                     <div class="camera-stream-example">
                                         <strong>Example 1 — Camera with native MJPEG over RTSP</strong>
@@ -162,6 +162,14 @@
                                     <option value="BOTH">Both (Continuous + Topic trigger)</option>
                                 </select>
                             </div>
+                            <div class="form-group" id="h264-decode-group">
+                                <label for="camera-h264-decode-mode">H.264 Decoding</label>
+                                <select id="camera-h264-decode-mode">
+                                    <option value="FULL" selected>Full stream — freshest snapshots</option>
+                                    <option value="KEYFRAMES_ONLY">Keyframes only — lower CPU</option>
+                                </select>
+                                <span class="form-hint">Applies to H.264 over RTSP. Keyframes only skips dependent frames; snapshots use the latest decoded keyframe and may be older than the trigger time. Requires periodic IDR keyframes from the camera.</span>
+                            </div>
                             <div class="form-group">
                                 <label for="camera-slots">Snapshot Slots (Round Robin)</label>
                                 <input type="number" id="camera-slots" min="1" max="100" value="5" required>
@@ -170,7 +178,7 @@
                             <div class="form-group" id="interval-group">
                                 <label for="camera-interval">Capture Interval (ms)</label>
                                 <input type="number" id="camera-interval" min="50" step="50" value="1000" required>
-                                <span class="form-hint">Milliseconds between snapshots in continuous mode (1000ms = 1 fps).</span>
+                                <span class="form-hint" id="camera-interval-hint">Milliseconds between snapshots in continuous mode (1000ms = 1 fps).</span>
                             </div>
                             <div class="form-group" id="trigger-group" style="grid-column: 1 / -1;">
                                 <label for="camera-trigger-topic">Trigger Topic</label>

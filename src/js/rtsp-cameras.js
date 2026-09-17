@@ -265,4 +265,5 @@ class RtspCameraManager {
 }
 
 new RtspCameraManager();
+return () => page.dispose();
 }
