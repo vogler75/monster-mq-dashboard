@@ -334,7 +334,12 @@ export function mount(page) {
 
                 // Status Toggle Switch
                 const statusTd = document.createElement('td');
+                statusTd.style.whiteSpace = 'nowrap';
+                statusTd.style.width = '120px';
+                statusTd.style.minWidth = '120px';
+
                 const toggle = document.createElement('ix-toggle');
+                toggle.style.minWidth = '85px';
                 if (s.enabled) toggle.setAttribute('checked', '');
                 toggle.addEventListener('checkedChange', async (e) => {
                     const newEnabled = e.detail;
@@ -342,6 +347,14 @@ export function mount(page) {
                 });
                 statusTd.appendChild(toggle);
                 tr.appendChild(statusTd);
+
+                requestAnimationFrame(() => {
+                    const lbl = toggle.shadowRoot?.querySelector('.label');
+                    if (lbl) {
+                        lbl.style.whiteSpace = 'nowrap';
+                        lbl.style.wordBreak = 'normal';
+                    }
+                });
 
                 // Runs / Errors count
                 const countsTd = document.createElement('td');
