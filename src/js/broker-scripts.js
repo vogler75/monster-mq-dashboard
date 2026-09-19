@@ -31,9 +31,41 @@ export function mount(page) {
             }
 
             this.attachEventListeners();
+            await this.loadSupportedLanguages();
             await this.loadScripts();
 
             this.refreshTimer = setInterval(() => this.loadScripts(true), 30000);
+        }
+
+        async loadSupportedLanguages() {
+            try {
+                const query = `
+                    query GetScriptLanguages {
+                        scriptLanguages {
+                            name
+                            displayName
+                        }
+                    }
+                `;
+                const result = await window.graphqlClient.query(query);
+                const languages = result?.scriptLanguages;
+                if (Array.isArray(languages) && languages.length > 0) {
+                    const langFilter = document.getElementById('script-lang-filter');
+                    if (langFilter) {
+                        const currentVal = langFilter.value;
+                        langFilter.innerHTML = '<option value="">All Languages</option>';
+                        languages.forEach(lang => {
+                            const opt = document.createElement('option');
+                            opt.value = lang.name;
+                            opt.textContent = lang.displayName.split(' ')[0];
+                            langFilter.appendChild(opt);
+                        });
+                        langFilter.value = currentVal;
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to query scriptLanguages filter (using fallback):', err);
+            }
         }
 
         attachEventListeners() {

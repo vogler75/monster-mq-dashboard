@@ -11,6 +11,7 @@ export function mount(page) {
             this.scriptData = null;
             this.topicFilters = [];
             this.clusterNodes = [];
+            this.supportedLanguages = [];
             this.init();
         }
 
@@ -25,6 +26,7 @@ export function mount(page) {
             this.isNew = !this.scriptName;
 
             this.attachEventListeners();
+            await this.loadSupportedLanguages();
             await this.loadClusterNodes();
             await this.checkGenAiSupport();
 
@@ -44,6 +46,50 @@ export function mount(page) {
             const aiPanel = document.querySelector('.ai-panel');
             if (aiPanel) {
                 aiPanel.style.display = this.hasGenAi ? 'block' : 'none';
+            }
+        }
+
+        async loadSupportedLanguages() {
+            try {
+                const query = `
+                    query GetScriptLanguages {
+                        scriptLanguages {
+                            name
+                            displayName
+                            description
+                            isDefault
+                        }
+                    }
+                `;
+                const result = await window.graphqlClient.query(query);
+                const languages = result?.scriptLanguages;
+                if (Array.isArray(languages) && languages.length > 0) {
+                    this.supportedLanguages = languages;
+                    const select = document.getElementById('script-language');
+                    if (select) {
+                        const previousVal = select.value;
+                        select.innerHTML = '';
+                        let defaultLang = languages[0].name;
+                        languages.forEach(lang => {
+                            const opt = document.createElement('option');
+                            opt.value = lang.name;
+                            opt.textContent = lang.displayName;
+                            if (lang.isDefault) {
+                                defaultLang = lang.name;
+                            }
+                            select.appendChild(opt);
+                        });
+
+                        if (previousVal && languages.some(l => l.name === previousVal)) {
+                            select.value = previousVal;
+                        } else if (defaultLang) {
+                            select.value = defaultLang;
+                        }
+                        this.updateLanguageHint();
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to query scriptLanguages from broker (using fallback):', err);
             }
         }
 
@@ -158,9 +204,12 @@ export function mount(page) {
             this.addTopicFilterRow('sensors/#');
 
             // Default template in editor
-            this.setInitialTemplate('starlark');
+            const langSelect = document.getElementById('script-language');
+            const initialLang = langSelect ? langSelect.value : 'starlark';
+            this.setInitialTemplate(initialLang);
             this.updateTriggerVisibility();
             this.updateAiLangIndicator();
+            this.updateLanguageHint();
         }
 
         async loadScript() {
@@ -217,7 +266,17 @@ export function mount(page) {
                 document.getElementById('script-description').value = this.scriptData.config?.description || '';
 
                 const lang = this.scriptData.config?.language || 'starlark';
-                document.getElementById('script-language').value = lang;
+                const langSelect = document.getElementById('script-language');
+                if (langSelect) {
+                    const optExists = Array.from(langSelect.options).some(o => o.value === lang);
+                    if (!optExists) {
+                        const opt = document.createElement('option');
+                        opt.value = lang;
+                        opt.textContent = `${lang} (Unsupported on this broker)`;
+                        langSelect.appendChild(opt);
+                    }
+                    langSelect.value = lang;
+                }
 
                 const trig = this.scriptData.config?.triggerType || 'TOPIC';
                 document.getElementById('script-trigger-type').value = trig;
@@ -247,6 +306,7 @@ export function mount(page) {
 
                 this.updateTriggerVisibility();
                 this.updateAiLangIndicator();
+                this.updateLanguageHint();
                 ui.markPageSaved();
             } catch (err) {
                 console.error('Failed to load script:', err);
@@ -258,10 +318,22 @@ export function mount(page) {
 
         onLanguageChange() {
             this.updateAiLangIndicator();
+            this.updateLanguageHint();
             const editor = document.getElementById('script-code-editor');
             if (!editor.value.trim()) {
                 const lang = document.getElementById('script-language').value;
                 this.setInitialTemplate(lang);
+            }
+        }
+
+        updateLanguageHint() {
+            const hint = document.getElementById('script-language-hint');
+            const select = document.getElementById('script-language');
+            if (!hint || !select) return;
+            const currentLang = select.value;
+            const match = this.supportedLanguages?.find(l => l.name === currentLang);
+            if (match && match.description) {
+                hint.textContent = match.description;
             }
         }
 
@@ -403,7 +475,7 @@ if msg != None:
 
         buildSystemPrompt(language) {
             const isPython = language === 'python' || language === 'starlark';
-            const langName = isPython ? 'Python / Starlark' : 'JavaScript (ES2022)';
+            const langName = isPython ? 'Python / Starlark' : 'JavaScript (GraalJS / Truffle)';
             const codeTag = isPython ? 'python' : 'javascript';
 
             return `You are an expert ${langName} script assistant for MonsterMQ edge and enterprise MQTT brokers.
