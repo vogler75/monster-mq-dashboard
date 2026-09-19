@@ -113,6 +113,7 @@ class HmiScreensManager {
             const sizeBytes = hmi.sizeBytes ?? 0;
             const formattedSize = this.formatBytes(sizeBytes);
             const updated = hmi.updatedAt ? new Date(hmi.updatedAt).toLocaleString() : '-';
+            const isMissingDir = fileCount === 0;
 
             return `
                 <tr>
@@ -130,12 +131,12 @@ class HmiScreensManager {
                         ${isMain ? '<span class="status-badge badge-primary">Main Screen</span>' : '<span class="status-badge" style="background: rgba(148, 163, 184, 0.12); color: var(--text-muted);">Standard</span>'}
                     </td>
                     <td>
-                        <span class="status-badge ${hmi.enabled ? 'badge-success' : 'badge-danger'}">
-                            ${hmi.enabled ? 'Active' : 'Disabled'}
+                        <span class="status-badge ${!hmi.enabled ? 'badge-danger' : isMissingDir ? 'badge-warn' : 'badge-success'}">
+                            ${!hmi.enabled ? 'Disabled' : isMissingDir ? 'Missing Directory' : 'Active'}
                         </span>
                     </td>
                     <td>
-                        <span style="font-size: 0.85rem;">${fileCount} file${fileCount !== 1 ? 's' : ''}</span>
+                        <span style="font-size: 0.85rem; ${isMissingDir ? 'color: var(--c-warn); font-weight: 600;' : ''}">${fileCount} file${fileCount !== 1 ? 's' : ''}</span>
                         <span style="font-size: 0.75rem; color: var(--text-muted); display: block;">${formattedSize}</span>
                     </td>
                     <td style="font-size: 0.8rem; color: var(--text-muted);">${updated}</td>
