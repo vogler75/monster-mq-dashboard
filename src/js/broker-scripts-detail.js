@@ -58,6 +58,8 @@ export function mount(page) {
                             displayName
                             description
                             isDefault
+                            documentation
+                            skill
                         }
                     }
                 `;
@@ -474,9 +476,25 @@ if msg != None:
         }
 
         buildSystemPrompt(language) {
+            const codeTag = (language === 'javascript' || language === 'js') ? 'javascript' : 'python';
+            const langObj = this.supportedLanguages.find(l => (l.name || '').toLowerCase() === (language || '').toLowerCase());
+
+            if (langObj && langObj.skill) {
+                return `${langObj.skill}\n\nGoal: Return ONLY the executable ${langObj.displayName || language} script inside a standard \`\`\`${codeTag} code block, followed by a brief explanation.`;
+            }
+
+            if (langObj && langObj.documentation) {
+                return `You are an expert script assistant for MonsterMQ edge and enterprise MQTT brokers.
+Below is the official API reference and instructions for ${langObj.displayName || language}:
+
+${langObj.documentation}
+
+Goal: Return ONLY the executable ${langObj.displayName || language} script inside a standard \`\`\`${codeTag} code block, followed by a brief explanation.`;
+            }
+
+            // Fallback if broker didn't return skill or documentation
             const isPython = language === 'python' || language === 'starlark';
             const langName = isPython ? 'Python / Starlark' : 'JavaScript (GraalJS / Truffle)';
-            const codeTag = isPython ? 'python' : 'javascript';
 
             return `You are an expert ${langName} script assistant for MonsterMQ edge and enterprise MQTT brokers.
 The scripts execute in a sandboxed ${langName} environment with the following bindings:

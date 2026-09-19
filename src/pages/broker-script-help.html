@@ -64,6 +64,7 @@
             border-radius: 6px;
             font-size: 0.85rem;
             transition: all 0.15s ease;
+            cursor: pointer;
         }
 
         .help-nav-list a:hover {
@@ -83,6 +84,51 @@
             max-height: 100vh;
             box-sizing: border-box;
             scroll-behavior: smooth;
+        }
+
+        .lang-tabs-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border-color, #2d3139);
+        }
+
+        .lang-tabs-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary, #9ca3af);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .lang-tabs {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .lang-tab-btn {
+            padding: 0.4rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary, #9ca3af);
+            border: 1px solid var(--border-color, #2d3139);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .lang-tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .lang-tab-btn.active {
+            background: var(--primary-color, #7c3aed);
+            color: #fff;
+            border-color: var(--primary-color, #7c3aed);
         }
 
         .help-section {
@@ -122,6 +168,17 @@
             line-height: 1.6;
             color: #9ca3af;
             margin: 0 0 1rem 0;
+        }
+
+        ul, ol {
+            line-height: 1.6;
+            color: #9ca3af;
+            padding-left: 1.5rem;
+            margin: 0 0 1rem 0;
+        }
+
+        li {
+            margin-bottom: 0.4rem;
         }
 
         .badge {
@@ -200,259 +257,377 @@
 </head>
 <body>
     <div class="help-container">
-        <nav class="help-nav">
-            <h3>Overview</h3>
-            <ul class="help-nav-list">
-                <li><a href="#overview">Introduction</a></li>
-                <li><a href="#runtimes">Runtime Support</a></li>
-                <li><a href="#execution-model">Execution Model</a></li>
-            </ul>
-
-            <h3>API Reference</h3>
-            <ul class="help-nav-list">
-                <li><a href="#api-msg">msg (Message)</a></li>
-                <li><a href="#api-mqtt">mqtt (Publish/Sub)</a></li>
-                <li><a href="#api-archive">archive (History)</a></li>
-                <li><a href="#api-db">db (Databases)</a></li>
-                <li><a href="#api-state">state &amp; global</a></li>
-                <li><a href="#api-storage">storage (Persistent)</a></li>
-                <li><a href="#api-scripts">scripts.call</a></li>
-                <li><a href="#api-logging">log &amp; json</a></li>
-            </ul>
-
-            <h3>Recipes</h3>
-            <ul class="help-nav-list">
-                <li><a href="#recipe-threshold">Threshold Alert</a></li>
-                <li><a href="#recipe-moving-avg">Moving Average</a></li>
-                <li><a href="#recipe-db-sync">DB Query to MQTT</a></li>
+        <nav class="help-nav" id="help-nav-container">
+            <h3>Contents</h3>
+            <ul class="help-nav-list" id="nav-list">
+                <li><span style="font-size: 0.85rem; color: var(--text-secondary, #9ca3af);">Loading...</span></li>
             </ul>
         </nav>
 
-        <main class="help-content">
-            <section id="overview" class="help-section">
-                <h1>Broker Scripts Reference</h1>
-                <p>The Broker Script Engine executes fast, standalone scripts directly inside the MonsterMQ broker process. Unlike legacy FlowEngine visual workflows, scripts are defined as standalone entities with straightforward syntax and zero diagram overhead.</p>
-                <div class="card-tip">
-                    <p><strong>Cross-Platform Parity:</strong> Scripts written in Python/Starlark run seamlessly on both <strong>MonsterMQ Main</strong> (JVM GraalPy) and <strong>MonsterMQ Edge</strong> (pure-Go Starlark) with identical API bindings.</p>
+        <main class="help-content" id="help-content-area">
+            <div id="lang-tabs-bar" class="lang-tabs-bar" style="display: none;">
+                <span class="lang-tabs-label">Runtime:</span>
+                <div class="lang-tabs" id="lang-tabs-container"></div>
+            </div>
+
+            <div id="doc-render-target">
+                <div style="padding: 3rem 1rem; text-align: center; color: var(--text-secondary, #9ca3af);">
+                    <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Loading documentation from broker...</p>
+                    <p style="font-size: 0.85rem; opacity: 0.7;">Fetching supported language references via GraphQL</p>
                 </div>
-            </section>
-
-            <section id="runtimes" class="help-section">
-                <h2>Runtime Support</h2>
-                <table class="api-table">
-                    <thead>
-                        <tr>
-                            <th>Language</th>
-                            <th>Engine</th>
-                            <th>Supported Platforms</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><span class="badge badge-python">python</span></td>
-                            <td>GraalVM Polyglot Python (GraalPy)</td>
-                            <td>MonsterMQ Main Broker</td>
-                            <td>Full Python 3.11+ compliant Truffle runtime running on OpenJDK. Fast JIT compilation with standard library math, json, re, etc.</td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge badge-starlark">starlark</span></td>
-                            <td>Google Starlark</td>
-                            <td>MonsterMQ Edge &amp; Main</td>
-                            <td>Deterministic, lightweight Python dialect implemented in pure Go. Extremely safe, hermetic, and instant startup for IoT edge nodes.</td>
-                        </tr>
-                        <tr>
-                            <td><span class="badge badge-js">javascript</span></td>
-                            <td>GraalVM JavaScript (GraalJS)</td>
-                            <td>MonsterMQ Main Broker</td>
-                            <td>Modern ECMAScript (ES2022) runtime with full standard object model.</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </section>
-
-            <section id="execution-model" class="help-section">
-                <h2>Execution Model &amp; Triggers</h2>
-                <p>Scripts can be triggered through one or more mechanisms:</p>
-                <ul>
-                    <li><code>TOPIC</code>: Executes whenever a message matching configured MQTT topic filter(s) arrives. If <em>Trigger on Change Only</em> is enabled, execution skips duplicate consecutive payloads.</li>
-                    <li><code>TIMER</code>: Executes periodically at a fixed millisecond interval (e.g. 5000 ms). On timer ticks, <code>msg</code> is <code>None</code> / <code>null</code>.</li>
-                    <li><code>BOTH</code>: Responds to incoming MQTT messages as well as periodic timer intervals.</li>
-                    <li><code>CALLABLE</code>: Executes only when explicitly invoked by another script via <code>scripts.call(name, args)</code> or via the test sandbox.</li>
-                </ul>
-                <h3>Concurrency Modes</h3>
-                <p><code>SINGLETON</code> (Default): All executions for a given script instance run serially in a dedicated queue, guaranteeing that in-memory <code>state</code> remains free of race conditions.</p>
-                <p><code>MULTI_INSTANCE</code>: Invocations execute concurrently across the broker worker pool for high-throughput, stateless workloads.</p>
-            </section>
-
-            <section id="api-msg" class="help-section">
-                <h2>1. msg (Incoming Message)</h2>
-                <p>Available on topic triggers. <code>None</code> (or <code>null</code>) during timer ticks.</p>
-                <pre><code># Python / Starlark
-if msg is not None:
-    topic = msg["topic"]             # e.g. "sensors/chiller/temp"
-    payload = msg["payload"]         # parsed JSON dict/list or string
-    raw = msg["raw_payload"]         # raw string payload
-    qos = msg["qos"]                 # 0, 1, or 2
-    retain = msg["retain"]           # boolean
-    ts = msg["timestamp"]            # ISO 8601 string</code></pre>
-            </section>
-
-            <section id="api-mqtt" class="help-section">
-                <h2>2. mqtt (Broker MQTT Operations)</h2>
-                <p>Publish messages into the broker or subscribe dynamically:</p>
-                <pre><code># Publish
-mqtt.publish("alerts/temperature", json.encode({"alarm": True, "value": 85.4}), qos=1, retain=True)
-
-# Subscribe (callback function)
-def on_sub_msg(sub_msg):
-    log.info("Received sub message on: " + sub_msg["topic"])
-
-mqtt.subscribe("cmd/reset/+", on_sub_msg)</code></pre>
-            </section>
-
-            <section id="api-archive" class="help-section">
-                <h2>3. archive (Historical &amp; Last-Value Queries)</h2>
-                <pre><code># Get latest recorded message for a topic
-last_val = archive.get_last_value("sensors/ambient/temperature", archive_group="Default")
-if last_val is not None:
-    log.info("Previous value was: " + str(last_val["payload"]))
-
-# Get historical messages
-records = archive.get_history("sensors/ambient/temperature", limit=50)</code></pre>
-            </section>
-
-            <section id="api-db" class="help-section">
-                <h2>4. db (Database Connections)</h2>
-                <p>Execute queries on configured database connections or SQLite/Postgres stores:</p>
-                <pre><code># Query returns a list of dictionaries / objects
-rows = db.query("PostgresStore", "SELECT status, setpoint FROM equipment WHERE id = $1", [42])
-for row in rows:
-    log.info("Setpoint: " + str(row["setpoint"]))
-
-# Execute UPDATE / INSERT
-res = db.execute("PostgresStore", "UPDATE equipment SET last_seen = NOW() WHERE id = $1", [42])</code></pre>
-            </section>
-
-            <section id="api-state" class="help-section">
-                <h2>5. Scoped Memory (state &amp; global)</h2>
-                <ul>
-                    <li><code>state</code>: Mutable in-memory dict preserved across invocations for this script instance. Perfect for moving averages, counters, or state machines.</li>
-                    <li><code>global</code> (or <code>globals</code>): Shared across all scripts on the current broker node. Methods: <code>global.get(key)</code>, <code>global.set(key, val)</code>.</li>
-                </ul>
-                <pre><code># Retain counter in local state
-state["count"] = state.get("count", 0) + 1
-
-# Node-wide shared variable
-global.set("active_shift", "Shift-A")</code></pre>
-            </section>
-
-            <section id="api-storage" class="help-section">
-                <h2>6. storage (Persistent KV Store)</h2>
-                <p>Persists key-value data to disk surviving broker restarts and script reloads:</p>
-                <pre><code># Get value with default
-max_limit = storage.get("max_temp_limit", 100.0)
-
-# Set persistent value
-storage.set("last_reboot_cycle", 5)
-
-# Delete key
-storage.delete("temporary_flag")</code></pre>
-            </section>
-
-            <section id="api-scripts" class="help-section">
-                <h2>7. scripts.call (Inter-Script Calls)</h2>
-                <p>Invoke another script registered with trigger type <code>CALLABLE</code>:</p>
-                <pre><code>result = scripts.call("CalculateEfficiency", {"flow": 12.5, "pressure": 4.2})
-log.info("Efficiency result: " + str(result))</code></pre>
-            </section>
-
-            <section id="api-logging" class="help-section">
-                <h2>8. log &amp; json Utilities</h2>
-                <pre><code>log.info("Process completed successfully")
-log.warn("Value exceeded nominal range")
-log.error("Failed to parse data: " + str(err))
-
-# JSON handling
-encoded_str = json.encode({"temp": 22.4, "active": True})
-data = json.decode(encoded_str)</code></pre>
-            </section>
-
-            <section id="recipe-threshold" class="help-section">
-                <h2>Recipe: Threshold Alert &amp; Retained Alarm</h2>
-                <pre><code># Trigger: TOPIC (sensors/+/temp)
-if msg != None and type(msg["payload"]) == "dict":
-    temp = msg["payload"].get("temperature", 0)
-    dev_id = msg["topic"].split("/")[1]
-    
-    if temp > 75.0:
-        alarm_msg = {
-            "device": dev_id,
-            "temperature": temp,
-            "status": "ALARM_HIGH",
-            "time": msg["timestamp"]
-        }
-        mqtt.publish("alarms/" + dev_id, json.encode(alarm_msg), qos=1, retain=True)
-        log.warn("High temperature on " + dev_id + ": " + str(temp))
-    elif temp < 65.0:
-        # Clear alarm
-        mqtt.publish("alarms/" + dev_id, json.encode({"device": dev_id, "status": "OK"}), qos=1, retain=True)</code></pre>
-            </section>
-
-            <section id="recipe-moving-avg" class="help-section">
-                <h2>Recipe: Moving Average Filter</h2>
-                <pre><code># Trigger: TOPIC (meters/power)
-if msg != None:
-    val = float(msg["raw_payload"])
-    history = state.get("window", [])
-    history.append(val)
-    if len(history) > 10:
-        history.pop(0)
-    state["window"] = history
-    
-    avg_val = sum(history) / len(history)
-    mqtt.publish("meters/power/smoothed", str(round(avg_val, 2)), retain=True)</code></pre>
-            </section>
-
-            <section id="recipe-db-sync" class="help-section">
-                <h2>Recipe: Database Query on Periodic Timer</h2>
-                <pre><code># Trigger: TIMER (Interval: 10000 ms)
-rows = db.query("PostgresStore", "SELECT tag_name, tag_value FROM plant_tags WHERE modified > NOW() - INTERVAL '10 seconds'", [])
-for row in rows:
-    topic = "plant/tags/" + row["tag_name"]
-    mqtt.publish(topic, str(row["tag_value"]), qos=0, retain=True)
-log.info("Synced " + str(len(rows)) + " tags from database")</code></pre>
-            </section>
+            </div>
         </main>
     </div>
 
     <script>
-        // Smooth scroll and active nav link tracking
-        const navLinks = document.querySelectorAll('.help-nav-list a');
-        const sections = document.querySelectorAll('.help-section');
+        let loadedLanguages = [];
+        let activeLangName = '';
+
+        function escapeHtml(str) {
+            return (str || '')
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Lightweight Markdown to HTML renderer for broker documentation
+        function renderMarkdownToHtml(md) {
+            if (!md) return '';
+            const lines = md.split('\n');
+            let html = '';
+            let inCodeBlock = false;
+            let codeLang = '';
+            let codeLines = [];
+            let inTable = false;
+            let tableHeader = true;
+            let inList = false;
+            let currentSectionId = '';
+
+            function closeList() {
+                if (inList) {
+                    html += '</ul>';
+                    inList = false;
+                }
+            }
+
+            function closeTable() {
+                if (inTable) {
+                    html += '</tbody></table>';
+                    inTable = false;
+                }
+            }
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                // Code block toggle
+                if (line.trim().startsWith('```')) {
+                    closeList();
+                    closeTable();
+                    if (inCodeBlock) {
+                        html += `<pre><code>${escapeHtml(codeLines.join('\n'))}</code></pre>`;
+                        codeLines = [];
+                        inCodeBlock = false;
+                    } else {
+                        inCodeBlock = true;
+                        codeLang = line.trim().substring(3).trim();
+                        codeLines = [];
+                    }
+                    continue;
+                }
+
+                if (inCodeBlock) {
+                    codeLines.push(line);
+                    continue;
+                }
+
+                const trimmed = line.trim();
+
+                // Horizontal rule
+                if (trimmed === '---' || trimmed === '***') {
+                    closeList();
+                    closeTable();
+                    continue;
+                }
+
+                // Headings
+                if (trimmed.startsWith('# ') && !trimmed.startsWith('## ')) {
+                    closeList();
+                    closeTable();
+                    const title = trimmed.substring(2);
+                    html += `<section id="overview" class="help-section"><h1>${escapeHtml(title)}</h1>`;
+                    currentSectionId = 'overview';
+                    continue;
+                }
+
+                if (trimmed.startsWith('## ')) {
+                    closeList();
+                    closeTable();
+                    if (currentSectionId) html += `</section>`;
+                    const title = trimmed.substring(3);
+                    const secId = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                    currentSectionId = secId;
+                    html += `<section id="${secId}" class="help-section"><h2>${escapeHtml(title)}</h2>`;
+                    continue;
+                }
+
+                if (trimmed.startsWith('### ')) {
+                    closeList();
+                    closeTable();
+                    const title = trimmed.substring(4);
+                    html += `<h3>${escapeHtml(title)}</h3>`;
+                    continue;
+                }
+
+                // Table row
+                if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+                    closeList();
+                    // Divider row
+                    if (/^\|[\s\-:|]+\|$/.test(trimmed)) {
+                        continue;
+                    }
+                    const cols = trimmed.substring(1, trimmed.length - 1).split('|').map(c => c.trim());
+                    if (!inTable) {
+                        inTable = true;
+                        tableHeader = true;
+                        html += `<table class="api-table"><thead><tr>`;
+                        cols.forEach(c => {
+                            html += `<th>${formatInline(c)}</th>`;
+                        });
+                        html += `</tr></thead><tbody>`;
+                    } else {
+                        html += `<tr>`;
+                        cols.forEach(c => {
+                            html += `<td>${formatInline(c)}</td>`;
+                        });
+                        html += `</tr>`;
+                    }
+                    continue;
+                } else if (inTable) {
+                    closeTable();
+                }
+
+                // Blockquotes
+                if (trimmed.startsWith('>')) {
+                    closeList();
+                    const text = trimmed.replace(/^>\s*/, '');
+                    html += `<div class="card-tip"><p>${formatInline(text)}</p></div>`;
+                    continue;
+                }
+
+                // Lists
+                if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || /^\d+\.\s/.test(trimmed)) {
+                    const content = trimmed.replace(/^[-*]\s+|\d+\.\s+/, '');
+                    if (!inList) {
+                        html += '<ul>';
+                        inList = true;
+                    }
+                    html += `<li>${formatInline(content)}</li>`;
+                    continue;
+                } else if (inList && trimmed === '') {
+                    closeList();
+                }
+
+                // Blank line
+                if (trimmed === '') {
+                    closeList();
+                    continue;
+                }
+
+                // Standard paragraph
+                closeList();
+                html += `<p>${formatInline(trimmed)}</p>`;
+            }
+
+            closeList();
+            closeTable();
+            if (currentSectionId) html += `</section>`;
+
+            return html;
+        }
+
+        function formatInline(text) {
+            let res = escapeHtml(text);
+            // inline code `code`
+            res = res.replace(/`([^`]+)`/g, '<code>$1</code>');
+            // bold **text**
+            res = res.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            // italic *text*
+            res = res.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+            // links [text](url)
+            res = res.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+            // br tags
+            res = res.replace(/&lt;br\s*\/?&gt;/gi, '<br>');
+            return res;
+        }
+
+        function buildNavigationFromSections() {
+            const sections = document.querySelectorAll('#doc-render-target .help-section');
+            const navContainer = document.getElementById('help-nav-container');
+            if (!navContainer || sections.length === 0) return;
+
+            let navHtml = '<h3>Contents</h3><ul class="help-nav-list">';
+            sections.forEach(sec => {
+                const id = sec.getAttribute('id');
+                const heading = sec.querySelector('h1, h2');
+                const title = heading ? heading.textContent : id;
+                if (id && title) {
+                    navHtml += `<li><a href="#${id}">${escapeHtml(title)}</a></li>`;
+                }
+            });
+            navHtml += '</ul>';
+            navContainer.innerHTML = navHtml;
+            bindNavLinks();
+        }
+
+        function bindNavLinks() {
+            const navLinks = document.querySelectorAll('.help-nav-list a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href').replace('#', '');
+                    const targetEl = document.getElementById(targetId);
+                    if (targetEl) {
+                        targetEl.scrollIntoView({ behavior: 'smooth' });
+                        navLinks.forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
+                    }
+                });
+            });
+        }
 
         function updateActiveNav() {
-            const scrollPos = document.querySelector('.help-content').scrollTop + 100;
+            const scrollPos = document.getElementById('help-content-area').scrollTop + 100;
+            const sections = document.querySelectorAll('#doc-render-target .help-section');
+            const navLinks = document.querySelectorAll('.help-nav-list a');
+
             sections.forEach(sec => {
                 const top = sec.offsetTop;
                 const height = sec.offsetHeight;
                 const id = sec.getAttribute('id');
                 if (scrollPos >= top && scrollPos < top + height) {
                     navLinks.forEach(link => {
-                        link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+                        const href = link.getAttribute('href');
+                        link.classList.toggle('active', href === '#' + id);
                     });
                 }
             });
         }
 
-        document.querySelector('.help-content').addEventListener('scroll', updateActiveNav);
+        function switchLanguage(langName) {
+            const langObj = loadedLanguages.find(l => l.name === langName);
+            if (!langObj || !langObj.documentation) return;
+
+            activeLangName = langName;
+
+            // Update tabs UI
+            document.querySelectorAll('.lang-tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === langName);
+            });
+
+            // Render Markdown
+            const target = document.getElementById('doc-render-target');
+            target.innerHTML = renderMarkdownToHtml(langObj.documentation);
+
+            // Rebuild TOC Navigation
+            buildNavigationFromSections();
+            document.getElementById('help-content-area').scrollTop = 0;
+        }
+
+        async function initDynamicDocs() {
+            let langs = null;
+            const query = `
+                query GetScriptLanguagesDocs {
+                    scriptLanguages {
+                        name
+                        displayName
+                        description
+                        isDefault
+                        documentation
+                    }
+                }
+            `;
+
+            // 1. Try window or parent graphqlClient
+            const client = window.graphqlClient || (window.parent && window.parent.graphqlClient);
+            if (client && typeof client.query === 'function') {
+                try {
+                    const res = await client.query(query);
+                    langs = res?.scriptLanguages;
+                } catch (err) {
+                    console.warn('GraphQL query via client failed:', err);
+                }
+            }
+
+            // 2. Direct fetch fallback if client was not found or failed
+            if (!langs) {
+                try {
+                    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (token && token !== 'null') {
+                        headers['Authorization'] = 'Bearer ' + token;
+                    }
+                    const resp = await fetch('/graphql', {
+                        method: 'POST',
+                        headers,
+                        body: JSON.stringify({ query })
+                    });
+                    if (resp.ok) {
+                        const json = await resp.json();
+                        langs = json?.data?.scriptLanguages;
+                    }
+                } catch (e) {
+                    console.warn('Direct fetch /graphql failed:', e);
+                }
+            }
+
+            try {
+                if (Array.isArray(langs) && langs.length > 0 && langs.some(l => l.documentation)) {
+                    loadedLanguages = langs.filter(l => l.documentation);
+
+                    // Show language tabs if multiple or at least 1
+                    const tabsBar = document.getElementById('lang-tabs-bar');
+                    const tabsContainer = document.getElementById('lang-tabs-container');
+                    tabsContainer.innerHTML = '';
+
+                    loadedLanguages.forEach(l => {
+                        const btn = document.createElement('button');
+                        btn.className = 'lang-tab-btn';
+                        btn.dataset.lang = l.name;
+                        btn.textContent = l.displayName || l.name;
+                        btn.onclick = () => switchLanguage(l.name);
+                        tabsContainer.appendChild(btn);
+                    });
+
+                    if (loadedLanguages.length > 1) {
+                        tabsBar.style.display = 'flex';
+                    }
+
+                    // Select default language
+                    let defaultLang = loadedLanguages.find(l => l.isDefault)?.name || loadedLanguages[0].name;
+                    switchLanguage(defaultLang);
+                } else {
+                    bindNavLinks();
+                }
+            } catch (err) {
+                console.warn('Could not load documentation from broker via GraphQL:', err);
+                bindNavLinks();
+            }
+        }
+
+        document.getElementById('help-content-area').addEventListener('scroll', updateActiveNav);
+
+        // Initial launch
+        initDynamicDocs();
 
         // Handle initial hash
         if (window.location.hash) {
-            const target = document.querySelector(window.location.hash);
-            if (target) {
-                setTimeout(() => target.scrollIntoView(), 100);
-            }
+            setTimeout(() => {
+                const target = document.querySelector(window.location.hash);
+                if (target) target.scrollIntoView();
+            }, 200);
         }
     </script>
 </body>
