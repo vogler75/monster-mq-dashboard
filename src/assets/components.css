@@ -1555,3 +1555,37 @@ th[aria-sort="descending"] .table-sort::after { content: ' ↓'; }
 .data-table table:has(thead th:nth-child(6)) { min-width: 48rem; }
 
 .modal.active { display: flex; }
+
+/* Deprecation Banner & Menu Indicator */
+.deprecation-banner {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--c-warn-bg);
+    border: 1px solid var(--c-warn-bd);
+    border-radius: var(--r-md);
+    color: #fed7aa;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    margin-bottom: var(--sp-5);
+}
+
+.deprecation-banner ix-icon {
+    color: var(--c-warn);
+    flex-shrink: 0;
+}
+
+.deprecation-banner a {
+    color: #fff;
+    text-decoration: underline;
+    font-weight: 600;
+}
+
+.deprecation-banner a:hover {
+    color: var(--c-warn);
+}
+
+ix-menu-item.menu-item-deprecated {
+    opacity: 0.85;
+}

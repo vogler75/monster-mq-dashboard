@@ -205,8 +205,8 @@ class SidebarManager {
             {
                 section: 'Configuration', sectionIcon: 'cogwheel',
                 items: [
-                    { href: '/pages/scripts.html', icon: 'document', text: 'Scripts', feature: 'FlowEngine' },
-                    { href: '/pages/workflows.html', icon: 'ontology-filled', text: 'Workflows', feature: 'FlowEngine' },
+                    { href: '/pages/scripts.html', icon: 'java-script', text: 'Java Scripts (deprecated)', feature: 'FlowEngine', deprecated: true },
+                    { href: '/pages/workflows.html', icon: 'ontology-filled', text: 'Workflows (deprecated)', feature: 'FlowEngine', deprecated: true },
                     { href: '/pages/hmi-screens.html', icon: 'screen', text: 'HMI Screens', feature: 'Hmi' }
                 ]
             },
@@ -308,6 +308,10 @@ class SidebarManager {
                 menuItem.setAttribute('icon', item.icon);
                 if (item.id) menuItem.id = item.id;
                 if (item.adminOnly) menuItem.style.display = 'none';
+                if (item.deprecated) {
+                    menuItem.setAttribute('tooltipText', item.text + ' — Deprecated in favor of Broker Scripts');
+                    menuItem.classList.add('menu-item-deprecated');
+                }
                 menuItem.dataset.href = item.href;
 
                 menuItem.addEventListener('click', () => this.navigateTo(item.href));
@@ -586,12 +590,13 @@ class SidebarManager {
 
     setActiveNavItem() {
         const currentPath = this._currentHref?.split('?')[0];
+        const isWorkflowSubpage = currentPath && currentPath.startsWith('/pages/workflows-');
         const listPath = currentPath
             ? currentPath.replace(/-detail\.html$/, 's.html').replace(/([a-z0-9]+)-client-detail\.html$/, '$1-clients.html')
             : null;
         requestAnimationFrame(() => {
             document.querySelectorAll('ix-menu-item[data-href]').forEach(item => {
-                if (item.dataset.href === currentPath || (listPath && item.dataset.href === listPath)) {
+                if (item.dataset.href === currentPath || (listPath && item.dataset.href === listPath) || (isWorkflowSubpage && item.dataset.href === '/pages/workflows.html')) {
                     item.setAttribute('active', '');
                 } else {
                     item.removeAttribute('active');

@@ -377,8 +377,8 @@
             <div class="page-header">
                 <div class="page-header-content">
                     <div>
-                        <h1 class="page-title">Workflows</h1>
-                        <p class="page-subtitle">Create and manage flow classes and instances</p>
+                        <h1 class="page-title">Workflows <span class="status-badge is-warn" style="font-size: 0.75rem; vertical-align: middle; margin-left: 0.5rem;">Deprecated</span></h1>
+                        <p class="page-subtitle">Legacy FlowEngine flow classes and instances (deprecated)</p>
                     </div>
                     <div class="page-header-actions">
                         <button onclick="openHelp('overview')" class="btn btn-secondary" title="Open Workflow Help">
@@ -386,6 +386,13 @@
                             Help
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <div class="deprecation-banner">
+                <ix-icon name="warning" size="20"></ix-icon>
+                <div>
+                    <strong>Notice:</strong> FlowEngine Workflows are deprecated. A new standalone Broker Script engine will replace visual workflows in an upcoming release.
                 </div>
             </div>
 

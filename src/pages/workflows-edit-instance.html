@@ -261,7 +261,7 @@
             <div class="page-header-content">
                 <div class="page-header-info">
                     <nav class="breadcrumb" aria-label="Breadcrumb">
-                        <a href="/pages/workflows.html">Workflows</a>
+                        <a href="/pages/workflows.html">Workflows (deprecated)</a>
                         <span class="breadcrumb-sep" aria-hidden="true">/</span>
                         <span class="breadcrumb-current" aria-current="page" id="breadcrumb-name">&hellip;</span>
                     </nav>
@@ -275,6 +275,13 @@
                     <button class="btn btn-primary btn-small" onclick="FlowEdit.save()">Save</button>
                     <button class="btn btn-danger btn-small" id="delete-button" style="display:none;" onclick="FlowEdit.deleteItem()">Delete</button>
                 </div>
+            </div>
+        </div>
+
+        <div class="deprecation-banner">
+            <ix-icon name="warning" size="20"></ix-icon>
+            <div>
+                <strong>Notice:</strong> FlowEngine Workflows are deprecated. A new standalone Broker Script engine will replace visual workflows in an upcoming release.
             </div>
         </div>
 
