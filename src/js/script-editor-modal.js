@@ -191,6 +191,17 @@ const ScriptEditorModal = (() => {
     // Show overlay
     overlay.classList.add('active');
     textarea.focus();
+
+    // Check GenAI support
+    if (window.graphqlClient && typeof window.graphqlClient.hasQueryField === 'function') {
+      window.graphqlClient.hasQueryField('genai').then(hasGenAi => {
+        if (aiPanel) {
+          aiPanel.style.display = hasGenAi ? 'flex' : 'none';
+        }
+      }).catch(() => {
+        if (aiPanel) aiPanel.style.display = 'none';
+      });
+    }
   }
 
   function close() {

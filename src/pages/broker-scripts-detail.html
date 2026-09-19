@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonsterMQ - Broker Script Detail</title>
+    <script type="module" src="/js/ix-init.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/graphql-client.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/log-viewer.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
+    <script type="module" src="/js/help-modal.js"></script>
+    <style>
+        .topic-filter-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .topic-filter-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .topic-filter-row input {
+            flex: 1;
+            font-family: monospace;
+        }
+
+        .snippet-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--dark-bg, #0b0f19);
+            border: 1px solid var(--dark-border, #1f2937);
+            border-radius: var(--r-md, 8px);
+        }
+
+        .snippet-btn {
+            background: transparent;
+            border: 1px solid var(--dark-border, #374151);
+            color: var(--text-secondary, #9ca3af);
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: monospace;
+        }
+
+        .snippet-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary, #f9fafb);
+            border-color: var(--primary-color, #7c3aed);
+        }
+
+        .code-editor-wrapper {
+            position: relative;
+            border: 1px solid var(--dark-border, #1f2937);
+            border-radius: var(--r-md, 8px);
+            overflow: hidden;
+        }
+
+        .script-textarea {
+            width: 100%;
+            height: 380px;
+            background: #0f172a;
+            border: none;
+            color: #f1f5f9;
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            padding: 1rem 1.25rem;
+            box-sizing: border-box;
+            resize: vertical;
+            outline: none;
+            tab-size: 4;
+        }
+
+        .script-textarea:focus {
+            box-shadow: inset 0 0 0 1px var(--primary-color, #7c3aed);
+        }
+
+        .ai-panel {
+            background: rgba(124, 58, 237, 0.04);
+            border: 1px solid rgba(124, 58, 237, 0.2);
+            border-radius: var(--r-md, 8px);
+            padding: 1.25rem;
+            margin-top: 1rem;
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .ai-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #c4b5fd;
+        }
+
+        .ai-quick-prompts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .ai-chip {
+            background: rgba(124, 58, 237, 0.12);
+            border: 1px solid rgba(124, 58, 237, 0.25);
+            color: #ddd6fe;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .ai-chip:hover {
+            background: rgba(124, 58, 237, 0.25);
+            color: #fff;
+        }
+
+        .ai-input-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .ai-feedback {
+            margin-top: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .ai-feedback.loading {
+            display: block;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+        }
+
+        .ai-feedback.success {
+            display: block;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+
+        .ai-feedback.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .test-sandbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .test-output-box {
+            background: #0b0f19;
+            border: 1px solid var(--dark-border, #1f2937);
+            border-radius: 6px;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.825rem;
+            max-height: 240px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            color: #cbd5e1;
+        }
+
+        .log-line {
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <ix-application force-breakpoint="lg">
+        <ix-menu application-name="MonsterMQ" pinned start-expanded></ix-menu>
+        
+        <div class="main-content" id="main-content">
+            <div class="container">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="page-header-content">
+                        <div>
+                            <nav class="breadcrumb" aria-label="Breadcrumb">
+                                <a href="/pages/broker-scripts.html">Broker Scripts</a>
+                                <span class="breadcrumb-sep" aria-hidden="true">/</span>
+                                <span class="breadcrumb-current" aria-current="page" id="breadcrumb-name">New Script</span>
+                            </nav>
+                            <h1 class="page-title" id="page-title">Configure Broker Script</h1>
+                            <p class="page-subtitle" id="page-subtitle">Define standalone scripts executed on incoming messages, timer intervals, or script calls</p>
+                        </div>
+                        <div class="page-header-actions">
+                            <button id="api-docs-btn" class="btn btn-secondary" title="Broker Script API Reference">
+                                <ix-icon name="info" size="16"></ix-icon> Reference
+                            </button>
+                            <button id="delete-btn" class="btn btn-danger" style="display: none;">Delete</button>
+                            <button id="test-run-btn" class="btn btn-secondary">
+                                <ix-icon name="play" size="16"></ix-icon> Run Test
+                            </button>
+                            <button id="save-btn" class="btn btn-primary">
+                                <ix-icon name="success" size="16"></ix-icon> Save Script
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Banner -->
+                <div id="error-message" class="error-message" style="display: none;">
+                    <div class="error-content">
+                        <span class="error-icon">&#9888;</span>
+                        <span class="error-text"></span>
+                    </div>
+                </div>
+
+                <!-- Detail Sections -->
+                <div class="form-container" style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 3rem;">
+                    
+                    <!-- Section 1: General Settings -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h2 class="section-title">General Settings</h2>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="script-name" class="form-label">Script Name *</label>
+                                    <input type="text" id="script-name" class="form-control" placeholder="e.g. EnergyAggregator" required />
+                                    <small style="color: var(--text-muted); font-size: 0.75rem;">Unique script identifier.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="script-namespace" class="form-label">Namespace</label>
+                                    <input type="text" id="script-namespace" class="form-control" value="script" placeholder="script" />
+                                    <small style="color: var(--text-muted); font-size: 0.75rem;">Logical grouping namespace (default: "script").</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="script-node-id" class="form-label">Target Cluster Node</label>
+                                    <select id="script-node-id" class="form-control">
+                                        <option value="*">* (All Cluster Nodes)</option>
+                                        <option value="local">local (Current Node)</option>
+                                    </select>
+                                    <small style="color: var(--text-muted); font-size: 0.75rem;">Target cluster node ID or "*" for all nodes.</small>
+                                </div>
+                                <div class="form-group" style="display: flex; flex-direction: column; justify-content: center; gap: 0.5rem;">
+                                    <label class="form-label">Status</label>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <input type="checkbox" id="script-enabled" checked style="width: 18px; height: 18px; accent-color: var(--primary-color);" />
+                                        <span>Enabled &amp; Active</span>
+                                    </div>
+                                </div>
+                                <div class="form-group" style="grid-column: 1 / -1;">
+                                    <label for="script-description" class="form-label">Description</label>
+                                    <input type="text" id="script-description" class="form-control" placeholder="Optional human-readable purpose of this script..." />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Runtime & Triggers -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h2 class="section-title">Runtime &amp; Triggers</h2>
+                        </div>
+                        <div class="section-content">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="script-language" class="form-label">Script Language</label>
+                                    <select id="script-language" class="form-control">
+                                        <option value="python">Python (GraalPy / Truffle)</option>
+                                        <option value="starlark" selected>Starlark (Go / Python dialect)</option>
+                                        <option value="javascript">JavaScript (ES2022)</option>
+                                    </select>
+                                    <small style="color: var(--text-muted); font-size: 0.75rem;">Starlark is supported on both Edge and Main brokers.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="script-trigger-type" class="form-label">Trigger Type</label>
+                                    <select id="script-trigger-type" class="form-control">
+                                        <option value="TOPIC">TOPIC (MQTT Message Arrival)</option>
+                                        <option value="TIMER">TIMER (Periodic Interval)</option>
+                                        <option value="BOTH">BOTH (Topic &amp; Timer)</option>
+                                        <option value="CALLABLE">CALLABLE (Invoked by scripts.call)</option>
+                                    </select>
+                                    <small style="color: var(--text-muted); font-size: 0.75rem;">Execution trigger mechanism.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="script-instance-mode" class="form-label">Concurrency Mode</label>
+                                    <select id="script-instance-mode" class="form-control">
+                                        <option value="SINGLETON">SINGLETON (Serialized queue, safe state)</option>
+                                        <option value="MULTI_INSTANCE">MULTI_INSTANCE (Parallel worker pool)</option>
+                                    </select>
+                                    <small style="color: var(--text-muted); font-size: 0.75rem;">Singleton guarantees isolation for in-memory state.</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="script-timeout" class="form-label">Timeout (ms)</label>
+                                    <input type="number" id="script-timeout" class="form-control" value="200" min="10" max="60000" />
+                                    <small style="color: var(--text-muted); font-size: 0.75rem;">Max duration before watchdog cancels script (default: 200 ms).</small>
+                                </div>
+
+                                <!-- Conditional Timer input -->
+                                <div class="form-group" id="timer-settings-group" style="display: none;">
+                                    <label for="script-timer-interval" class="form-label">Timer Interval (ms) *</label>
+                                    <input type="number" id="script-timer-interval" class="form-control" value="5000" min="50" />
+                                    <small style="color: var(--text-muted); font-size: 0.75rem;">Frequency of timer ticks (e.g. 1000 = 1s, 5000 = 5s).</small>
+                                </div>
+
+                                <!-- Conditional On-Change Only toggle -->
+                                <div class="form-group" id="on-change-settings-group" style="display: flex; flex-direction: column; justify-content: center; gap: 0.5rem;">
+                                    <label class="form-label">Change Detection</label>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <input type="checkbox" id="script-trigger-on-change" style="width: 18px; height: 18px; accent-color: var(--primary-color);" />
+                                        <span>Trigger on Change Only</span>
+                                    </div>
+                                    <small style="color: var(--text-muted); font-size: 0.75rem;">Skip execution if message payload is unchanged.</small>
+                                </div>
+
+                                <!-- Conditional Topic Filters -->
+                                <div class="form-group" id="topic-settings-group" style="grid-column: 1 / -1;">
+                                    <label class="form-label">MQTT Topic Filters</label>
+                                    <div class="topic-filter-list" id="topic-filters-list"></div>
+                                    <button type="button" class="btn btn-secondary btn-small" id="add-topic-filter-btn">
+                                        <ix-icon name="add-circle" size="14"></ix-icon> Add Topic Filter
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Script Code & AI Assistant -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h2 class="section-title">Script Implementation</h2>
+                        </div>
+                        <div class="section-content">
+                            <!-- Snippet Insertion Toolbar -->
+                            <div class="snippet-bar" id="snippet-bar">
+                                <span style="font-size: 0.75rem; color: var(--text-muted); align-self: center; margin-right: 0.25rem;">Quick Snippets:</span>
+                                <button type="button" class="snippet-btn" data-snippet="publish">mqtt.publish()</button>
+                                <button type="button" class="snippet-btn" data-snippet="archive_last">archive.get_last_value()</button>
+                                <button type="button" class="snippet-btn" data-snippet="db_query">db.query()</button>
+                                <button type="button" class="snippet-btn" data-snippet="state">state[key]</button>
+                                <button type="button" class="snippet-btn" data-snippet="storage">storage.get()</button>
+                                <button type="button" class="snippet-btn" data-snippet="call">scripts.call()</button>
+                            </div>
+
+                            <!-- Code Editor -->
+                            <div class="code-editor-wrapper">
+                                <textarea id="script-code-editor" class="script-textarea" spellcheck="false" placeholder="# Write your script here..."></textarea>
+                            </div>
+
+                            <!-- Language-Aware AI Assistant Panel -->
+                            <div class="ai-panel">
+                                <div class="ai-header">
+                                    <div class="ai-title">
+                                        <ix-icon name="code-ai" size="18" style="color: #a78bfa;"></ix-icon>
+                                        AI Script Assistant (<span id="ai-lang-indicator">Starlark</span>)
+                                    </div>
+                                </div>
+                                <div class="ai-quick-prompts">
+                                    <span class="ai-chip" data-prompt="Check temperature field in JSON payload; publish alarm message with retain=True if > 50">Threshold Alarm</span>
+                                    <span class="ai-chip" data-prompt="Calculate a 10-point moving average using local state dictionary and publish smoothed topic">Moving Average</span>
+                                    <span class="ai-chip" data-prompt="Query PostgresStore equipment table on timer and publish updated status to plant/status">DB Query to MQTT</span>
+                                    <span class="ai-chip" data-prompt="Store incoming counter in persistent storage and log when incremented">Persistent KV Storage</span>
+                                </div>
+                                <div class="ai-input-row">
+                                    <input type="text" id="ai-user-prompt" class="form-control" placeholder="Describe the script logic or transformations you want..." />
+                                    <button type="button" class="btn btn-primary" id="ai-generate-btn">
+                                        <ix-icon name="code-ai" size="16"></ix-icon>
+                                        Generate with AI
+                                    </button>
+                                </div>
+                                <div id="ai-feedback" class="ai-feedback"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Interactive Test Sandbox -->
+                    <div class="section-card">
+                        <div class="section-header">
+                            <h2 class="section-title">Interactive Test Sandbox (Dry-Run)</h2>
+                            <span class="status-badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">Isolated execution</span>
+                        </div>
+                        <div class="section-content">
+                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0;">
+                                Test execution simulates script invocation without publishing real messages to MQTT or mutating active broker devices.
+                            </p>
+                            <div class="test-sandbox-grid">
+                                <div class="form-group">
+                                    <label for="test-topic" class="form-label">Simulated Topic</label>
+                                    <input type="text" id="test-topic" class="form-control" placeholder="e.g. sensors/chamber1/temperature" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="test-payload" class="form-label">Simulated Payload (JSON or String)</label>
+                                    <input type="text" id="test-payload" class="form-control" placeholder='{"temperature": 68.5, "unit": "C"}' />
+                                </div>
+                                <div class="form-group">
+                                    <label for="test-args" class="form-label">Simulated Args (JSON for Callable)</label>
+                                    <input type="text" id="test-args" class="form-control" placeholder='{"target": "alert"}' />
+                                </div>
+                            </div>
+
+                            <!-- Test Output Display -->
+                            <div id="test-output-area" style="display: none; margin-top: 1rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <span style="font-weight: 600; font-size: 0.85rem;" id="test-result-header">Execution Results</span>
+                                    <span style="font-size: 0.75rem; color: var(--text-muted);" id="test-time-badge"></span>
+                                </div>
+                                <div class="test-output-box" id="test-output-log"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 5: Recent Execution Logs (for existing scripts) -->
+                    <div class="section-card" id="recent-logs-section" style="display: none;">
+                        <div class="section-header">
+                            <h2 class="section-title">Recent Execution Logs</h2>
+                            <ix-icon-button icon="refresh" variant="subtle-tertiary" id="refresh-logs-btn" title="Refresh logs"></ix-icon-button>
+                        </div>
+                        <div class="section-content">
+                            <div class="test-output-box" id="recent-logs-box" style="max-height: 200px;">
+                                No recent logs recorded for this script.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <script type="module" src="/js/broker-scripts-detail.js"></script>
+    </ix-application>
+</body>
+</html>

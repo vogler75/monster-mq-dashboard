@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', initScriptDetailPage);
 async function initScriptDetailPage() {
     toggleTriggerPanels();
     parseQueryParams();
+    checkGenAiSupport();
     
     if (editingScriptName) {
         await loadScriptForEditing();
@@ -26,6 +27,18 @@ async function initScriptDetailPage() {
         // New Script: Add one blank topic row by default
         addTopicRow();
         renderDatabaseNodes([]);
+    }
+}
+
+async function checkGenAiSupport() {
+    try {
+        const hasGenAi = await window.graphqlClient.hasQueryField('genai');
+        const aiCard = document.querySelector('.ai-assistant-card');
+        if (aiCard) {
+            aiCard.style.display = hasGenAi ? 'block' : 'none';
+        }
+    } catch (e) {
+        // Ignore failure
     }
 }
 

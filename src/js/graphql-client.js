@@ -566,6 +566,10 @@ class GraphQLDashboardClient {
         return fields.has(fieldName);
     }
 
+    async hasQueryField(fieldName) {
+        return this.hasTypeField('Query', fieldName);
+    }
+
     async getBrokersWithHistory(lastMinutes = null, from = null, to = null) {
         const query = `
             query GetBrokersWithHistory($lastMinutes: Int, $from: String, $to: String) {

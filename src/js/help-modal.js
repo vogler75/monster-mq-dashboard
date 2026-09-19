@@ -221,8 +221,14 @@ const HelpModal = (() => {
 window.HelpModal = HelpModal;
 
 // Global helper function to open help
-window.openHelp = function(section) {
-  HelpModal.open('/pages/workflow-help.html', section);
+window.openHelp = function(sectionOrTopic, section) {
+  if (sectionOrTopic === 'broker-script-api' || sectionOrTopic === 'broker-script-help' || sectionOrTopic === 'broker-scripts') {
+    HelpModal.open('/pages/broker-script-help.html', section || '');
+  } else if (typeof sectionOrTopic === 'string' && sectionOrTopic.startsWith('/pages/')) {
+    HelpModal.open(sectionOrTopic, section || '');
+  } else {
+    HelpModal.open('/pages/workflow-help.html', sectionOrTopic);
+  }
 };
 
 page.expose({

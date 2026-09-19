@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonsterMQ - Broker Script Help</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            background: var(--background-secondary, #12141a);
+            color: var(--text-primary, #e8eaed);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .help-container {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 0;
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .help-nav {
+            position: sticky;
+            top: 0;
+            align-self: start;
+            background: var(--background-primary, #1a1d28);
+            border-right: 1px solid var(--border-color, #2d3139);
+            padding: 1.5rem 1rem;
+            max-height: 100vh;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        .help-nav h3 {
+            margin: 0 0 0.75rem 0;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary, #9ca3af);
+            font-weight: 700;
+        }
+
+        .help-nav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 1.5rem 0;
+        }
+
+        .help-nav-list li {
+            margin-bottom: 0.25rem;
+        }
+
+        .help-nav-list a {
+            display: block;
+            padding: 0.4rem 0.6rem;
+            color: var(--text-secondary, #9ca3af);
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: all 0.15s ease;
+        }
+
+        .help-nav-list a:hover {
+            color: var(--text-primary, #e8eaed);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .help-nav-list a.active {
+            color: #fff;
+            background: var(--primary-color, #7c3aed);
+            font-weight: 600;
+        }
+
+        .help-content {
+            padding: 2.5rem 3rem;
+            overflow-y: auto;
+            max-height: 100vh;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        .help-section {
+            margin-bottom: 3.5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color, #2d3139);
+        }
+
+        .help-section:last-child {
+            border-bottom: none;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin: 0 0 0.75rem 0;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            margin: 0 0 1rem 0;
+            color: #e8eaed;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            margin: 1.5rem 0 0.5rem 0;
+            color: #d1d5db;
+        }
+
+        p {
+            line-height: 1.6;
+            color: #9ca3af;
+            margin: 0 0 1rem 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-python { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge-starlark { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-js { background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); }
+
+        pre {
+            background: #0f1117;
+            border: 1px solid #2d3139;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #e2e8f0;
+            margin: 0.75rem 0 1.25rem 0;
+        }
+
+        code {
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 0.15rem 0.35rem;
+            border-radius: 4px;
+            color: #e2e8f0;
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+        }
+
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0 1.5rem 0;
+            font-size: 0.875rem;
+        }
+
+        .api-table th, .api-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #2d3139;
+        }
+
+        .api-table th {
+            background: #1a1d28;
+            color: #e8eaed;
+            font-weight: 600;
+        }
+
+        .api-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .card-tip {
+            background: rgba(124, 58, 237, 0.08);
+            border-left: 3px solid #7c3aed;
+            padding: 1rem 1.25rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0 1.5rem 0;
+        }
+        .card-tip p { margin: 0; color: #cbd5e1; }
+    </style>
+</head>
+<body>
+    <div class="help-container">
+        <nav class="help-nav">
+            <h3>Overview</h3>
+            <ul class="help-nav-list">
+                <li><a href="#overview">Introduction</a></li>
+                <li><a href="#runtimes">Runtime Support</a></li>
+                <li><a href="#execution-model">Execution Model</a></li>
+            </ul>
+
+            <h3>API Reference</h3>
+            <ul class="help-nav-list">
+                <li><a href="#api-msg">msg (Message)</a></li>
+                <li><a href="#api-mqtt">mqtt (Publish/Sub)</a></li>
+                <li><a href="#api-archive">archive (History)</a></li>
+                <li><a href="#api-db">db (Databases)</a></li>
+                <li><a href="#api-state">state &amp; global</a></li>
+                <li><a href="#api-storage">storage (Persistent)</a></li>
+                <li><a href="#api-scripts">scripts.call</a></li>
+                <li><a href="#api-logging">log &amp; json</a></li>
+            </ul>
+
+            <h3>Recipes</h3>
+            <ul class="help-nav-list">
+                <li><a href="#recipe-threshold">Threshold Alert</a></li>
+                <li><a href="#recipe-moving-avg">Moving Average</a></li>
+                <li><a href="#recipe-db-sync">DB Query to MQTT</a></li>
+            </ul>
+        </nav>
+
+        <main class="help-content">
+            <section id="overview" class="help-section">
+                <h1>Broker Scripts Reference</h1>
+                <p>The Broker Script Engine executes fast, standalone scripts directly inside the MonsterMQ broker process. Unlike legacy FlowEngine visual workflows, scripts are defined as standalone entities with straightforward syntax and zero diagram overhead.</p>
+                <div class="card-tip">
+                    <p><strong>Cross-Platform Parity:</strong> Scripts written in Python/Starlark run seamlessly on both <strong>MonsterMQ Main</strong> (JVM GraalPy) and <strong>MonsterMQ Edge</strong> (pure-Go Starlark) with identical API bindings.</p>
+                </div>
+            </section>
+
+            <section id="runtimes" class="help-section">
+                <h2>Runtime Support</h2>
+                <table class="api-table">
+                    <thead>
+                        <tr>
+                            <th>Language</th>
+                            <th>Engine</th>
+                            <th>Supported Platforms</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-python">python</span></td>
+                            <td>GraalVM Polyglot Python (GraalPy)</td>
+                            <td>MonsterMQ Main Broker</td>
+                            <td>Full Python 3.11+ compliant Truffle runtime running on OpenJDK. Fast JIT compilation with standard library math, json, re, etc.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-starlark">starlark</span></td>
+                            <td>Google Starlark</td>
+                            <td>MonsterMQ Edge &amp; Main</td>
+                            <td>Deterministic, lightweight Python dialect implemented in pure Go. Extremely safe, hermetic, and instant startup for IoT edge nodes.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-js">javascript</span></td>
+                            <td>GraalVM JavaScript (GraalJS)</td>
+                            <td>MonsterMQ Main Broker</td>
+                            <td>Modern ECMAScript (ES2022) runtime with full standard object model.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="execution-model" class="help-section">
+                <h2>Execution Model &amp; Triggers</h2>
+                <p>Scripts can be triggered through one or more mechanisms:</p>
+                <ul>
+                    <li><code>TOPIC</code>: Executes whenever a message matching configured MQTT topic filter(s) arrives. If <em>Trigger on Change Only</em> is enabled, execution skips duplicate consecutive payloads.</li>
+                    <li><code>TIMER</code>: Executes periodically at a fixed millisecond interval (e.g. 5000 ms). On timer ticks, <code>msg</code> is <code>None</code> / <code>null</code>.</li>
+                    <li><code>BOTH</code>: Responds to incoming MQTT messages as well as periodic timer intervals.</li>
+                    <li><code>CALLABLE</code>: Executes only when explicitly invoked by another script via <code>scripts.call(name, args)</code> or via the test sandbox.</li>
+                </ul>
+                <h3>Concurrency Modes</h3>
+                <p><code>SINGLETON</code> (Default): All executions for a given script instance run serially in a dedicated queue, guaranteeing that in-memory <code>state</code> remains free of race conditions.</p>
+                <p><code>MULTI_INSTANCE</code>: Invocations execute concurrently across the broker worker pool for high-throughput, stateless workloads.</p>
+            </section>
+
+            <section id="api-msg" class="help-section">
+                <h2>1. msg (Incoming Message)</h2>
+                <p>Available on topic triggers. <code>None</code> (or <code>null</code>) during timer ticks.</p>
+                <pre><code># Python / Starlark
+if msg is not None:
+    topic = msg["topic"]             # e.g. "sensors/chiller/temp"
+    payload = msg["payload"]         # parsed JSON dict/list or string
+    raw = msg["raw_payload"]         # raw string payload
+    qos = msg["qos"]                 # 0, 1, or 2
+    retain = msg["retain"]           # boolean
+    ts = msg["timestamp"]            # ISO 8601 string</code></pre>
+            </section>
+
+            <section id="api-mqtt" class="help-section">
+                <h2>2. mqtt (Broker MQTT Operations)</h2>
+                <p>Publish messages into the broker or subscribe dynamically:</p>
+                <pre><code># Publish
+mqtt.publish("alerts/temperature", json.encode({"alarm": True, "value": 85.4}), qos=1, retain=True)
+
+# Subscribe (callback function)
+def on_sub_msg(sub_msg):
+    log.info("Received sub message on: " + sub_msg["topic"])
+
+mqtt.subscribe("cmd/reset/+", on_sub_msg)</code></pre>
+            </section>
+
+            <section id="api-archive" class="help-section">
+                <h2>3. archive (Historical &amp; Last-Value Queries)</h2>
+                <pre><code># Get latest recorded message for a topic
+last_val = archive.get_last_value("sensors/ambient/temperature", archive_group="Default")
+if last_val is not None:
+    log.info("Previous value was: " + str(last_val["payload"]))
+
+# Get historical messages
+records = archive.get_history("sensors/ambient/temperature", limit=50)</code></pre>
+            </section>
+
+            <section id="api-db" class="help-section">
+                <h2>4. db (Database Connections)</h2>
+                <p>Execute queries on configured database connections or SQLite/Postgres stores:</p>
+                <pre><code># Query returns a list of dictionaries / objects
+rows = db.query("PostgresStore", "SELECT status, setpoint FROM equipment WHERE id = $1", [42])
+for row in rows:
+    log.info("Setpoint: " + str(row["setpoint"]))
+
+# Execute UPDATE / INSERT
+res = db.execute("PostgresStore", "UPDATE equipment SET last_seen = NOW() WHERE id = $1", [42])</code></pre>
+            </section>
+
+            <section id="api-state" class="help-section">
+                <h2>5. Scoped Memory (state &amp; global)</h2>
+                <ul>
+                    <li><code>state</code>: Mutable in-memory dict preserved across invocations for this script instance. Perfect for moving averages, counters, or state machines.</li>
+                    <li><code>global</code> (or <code>globals</code>): Shared across all scripts on the current broker node. Methods: <code>global.get(key)</code>, <code>global.set(key, val)</code>.</li>
+                </ul>
+                <pre><code># Retain counter in local state
+state["count"] = state.get("count", 0) + 1
+
+# Node-wide shared variable
+global.set("active_shift", "Shift-A")</code></pre>
+            </section>
+
+            <section id="api-storage" class="help-section">
+                <h2>6. storage (Persistent KV Store)</h2>
+                <p>Persists key-value data to disk surviving broker restarts and script reloads:</p>
+                <pre><code># Get value with default
+max_limit = storage.get("max_temp_limit", 100.0)
+
+# Set persistent value
+storage.set("last_reboot_cycle", 5)
+
+# Delete key
+storage.delete("temporary_flag")</code></pre>
+            </section>
+
+            <section id="api-scripts" class="help-section">
+                <h2>7. scripts.call (Inter-Script Calls)</h2>
+                <p>Invoke another script registered with trigger type <code>CALLABLE</code>:</p>
+                <pre><code>result = scripts.call("CalculateEfficiency", {"flow": 12.5, "pressure": 4.2})
+log.info("Efficiency result: " + str(result))</code></pre>
+            </section>
+
+            <section id="api-logging" class="help-section">
+                <h2>8. log &amp; json Utilities</h2>
+                <pre><code>log.info("Process completed successfully")
+log.warn("Value exceeded nominal range")
+log.error("Failed to parse data: " + str(err))
+
+# JSON handling
+encoded_str = json.encode({"temp": 22.4, "active": True})
+data = json.decode(encoded_str)</code></pre>
+            </section>
+
+            <section id="recipe-threshold" class="help-section">
+                <h2>Recipe: Threshold Alert &amp; Retained Alarm</h2>
+                <pre><code># Trigger: TOPIC (sensors/+/temp)
+if msg != None and isinstance(msg["payload"], dict):
+    temp = msg["payload"].get("temperature", 0)
+    dev_id = msg["topic"].split("/")[1]
+    
+    if temp > 75.0:
+        alarm_msg = {
+            "device": dev_id,
+            "temperature": temp,
+            "status": "ALARM_HIGH",
+            "time": msg["timestamp"]
+        }
+        mqtt.publish("alarms/" + dev_id, json.encode(alarm_msg), qos=1, retain=True)
+        log.warn("High temperature on " + dev_id + ": " + str(temp))
+    elif temp < 65.0:
+        # Clear alarm
+        mqtt.publish("alarms/" + dev_id, json.encode({"device": dev_id, "status": "OK"}), qos=1, retain=True)</code></pre>
+            </section>
+
+            <section id="recipe-moving-avg" class="help-section">
+                <h2>Recipe: Moving Average Filter</h2>
+                <pre><code># Trigger: TOPIC (meters/power)
+if msg != None:
+    val = float(msg["raw_payload"])
+    history = state.get("window", [])
+    history.append(val)
+    if len(history) > 10:
+        history.pop(0)
+    state["window"] = history
+    
+    avg_val = sum(history) / len(history)
+    mqtt.publish("meters/power/smoothed", str(round(avg_val, 2)), retain=True)</code></pre>
+            </section>
+
+            <section id="recipe-db-sync" class="help-section">
+                <h2>Recipe: Database Query on Periodic Timer</h2>
+                <pre><code># Trigger: TIMER (Interval: 10000 ms)
+rows = db.query("PostgresStore", "SELECT tag_name, tag_value FROM plant_tags WHERE modified > NOW() - INTERVAL '10 seconds'", [])
+for row in rows:
+    topic = "plant/tags/" + row["tag_name"]
+    mqtt.publish(topic, str(row["tag_value"]), qos=0, retain=True)
+log.info("Synced " + str(len(rows)) + " tags from database")</code></pre>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Smooth scroll and active nav link tracking
+        const navLinks = document.querySelectorAll('.help-nav-list a');
+        const sections = document.querySelectorAll('.help-section');
+
+        function updateActiveNav() {
+            const scrollPos = document.querySelector('.help-content').scrollTop + 100;
+            sections.forEach(sec => {
+                const top = sec.offsetTop;
+                const height = sec.offsetHeight;
+                const id = sec.getAttribute('id');
+                if (scrollPos >= top && scrollPos < top + height) {
+                    navLinks.forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === '#' + id);
+                    });
+                }
+            });
+        }
+
+        document.querySelector('.help-content').addEventListener('scroll', updateActiveNav);
+
+        // Handle initial hash
+        if (window.location.hash) {
+            const target = document.querySelector(window.location.hash);
+            if (target) {
+                setTimeout(() => target.scrollIntoView(), 100);
+            }
+        }
+    </script>
+</body>
+</html>

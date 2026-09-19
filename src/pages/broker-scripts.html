@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonsterMQ - Broker Scripts</title>
+    <script type="module" src="/js/ix-init.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/graphql-client.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/log-viewer.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
+    <script type="module" src="/js/help-modal.js"></script>
+</head>
+<body>
+    <ix-application force-breakpoint="lg">
+        <ix-menu application-name="MonsterMQ" pinned start-expanded></ix-menu>
+        
+        <div class="main-content" id="main-content">
+            <div class="container">
+                <!-- Page Header -->
+                <div class="page-header">
+                    <div class="page-header-content">
+                        <div>
+                            <h1 class="page-title">Broker Scripts</h1>
+                            <p class="page-subtitle">Fast, standalone scripts (Python, Starlark, JavaScript) triggered by MQTT topics, timers, or explicit calls</p>
+                        </div>
+                        <div class="page-header-actions">
+                            <button id="api-ref-btn" class="btn btn-secondary" title="Broker Script API Reference">
+                                <ix-icon name="info" size="16"></ix-icon>
+                                API Reference
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Message Banner -->
+                <div id="error-message" class="error-message" style="display: none;">
+                    <div class="error-content">
+                        <span class="error-icon">&#9888;</span>
+                        <span class="error-text"></span>
+                    </div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Total Scripts</span>
+                            <div class="metric-icon"><ix-icon name="code-script" size="14"></ix-icon></div>
+                        </div>
+                        <div class="metric-value" id="metric-total-scripts">0</div>
+                        <div class="metric-label">Configured Devices</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Active Scripts</span>
+                            <div class="metric-icon is-ok"><ix-icon name="success" size="14"></ix-icon></div>
+                        </div>
+                        <div class="metric-value" id="metric-active-scripts">0</div>
+                        <div class="metric-label">Currently Enabled</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Total Invocations</span>
+                            <div class="metric-icon is-info"><ix-icon name="capacity-filled" size="14"></ix-icon></div>
+                        </div>
+                        <div class="metric-value" id="metric-total-executions">0</div>
+                        <div class="metric-label">All-time Executions</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Errors</span>
+                            <div class="metric-icon is-warn" id="metric-error-icon"><ix-icon name="warning" size="14"></ix-icon></div>
+                        </div>
+                        <div class="metric-value" id="metric-total-errors">0</div>
+                        <div class="metric-label">Total Errors Logged</div>
+                    </div>
+                </div>
+
+                <!-- Scripts Table Card -->
+                <div class="data-table" data-table-tools>
+                    <div class="table-header">
+                        <div class="table-title">
+                            <h2>Scripts</h2>
+                        </div>
+                        <div class="table-actions">
+                            <input type="text" id="script-search-input" class="form-control" placeholder="Search scripts..." style="width: 220px;" />
+                            <select id="script-lang-filter" class="form-control" style="width: 140px;">
+                                <option value="">All Languages</option>
+                                <option value="python">Python</option>
+                                <option value="starlark">Starlark</option>
+                                <option value="javascript">JavaScript</option>
+                            </select>
+                            <ix-icon-button icon="refresh" variant="subtle-tertiary" id="refresh-scripts-btn" title="Refresh scripts"></ix-icon-button>
+                            <button id="add-script-btn" class="btn btn-primary">
+                                <ix-icon name="add-circle" size="16"></ix-icon>
+                                Add Script
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="broker-scripts-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 220px;">Name / Namespace</th>
+                                    <th style="width: 110px;">Language</th>
+                                    <th>Trigger</th>
+                                    <th style="width: 120px;">Concurrency</th>
+                                    <th style="width: 100px;">Status</th>
+                                    <th style="width: 120px; text-align: right;">Runs / Errors</th>
+                                    <th style="width: 170px;">Last Execution</th>
+                                    <th style="width: 120px; text-align: center;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="broker-scripts-tbody">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                                        Loading scripts&hellip;
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script type="module" src="/js/broker-scripts.js"></script>
+    </ix-application>
+</body>
+</html>

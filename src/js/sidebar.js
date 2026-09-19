@@ -205,6 +205,7 @@ class SidebarManager {
             {
                 section: 'Configuration', sectionIcon: 'cogwheel',
                 items: [
+                    { href: '/pages/broker-scripts.html', icon: 'code-script', text: 'Broker Scripts', feature: 'PythonScripts' },
                     { href: '/pages/scripts.html', icon: 'java-script', text: 'Java Scripts (deprecated)', feature: 'FlowEngine', deprecated: true },
                     { href: '/pages/workflows.html', icon: 'ontology-filled', text: 'Workflows (deprecated)', feature: 'FlowEngine', deprecated: true },
                     { href: '/pages/hmi-screens.html', icon: 'screen', text: 'HMI Screens', feature: 'Hmi' }
@@ -592,7 +593,10 @@ class SidebarManager {
         const currentPath = this._currentHref?.split('?')[0];
         const isWorkflowSubpage = currentPath && currentPath.startsWith('/pages/workflows-');
         const listPath = currentPath
-            ? currentPath.replace(/-detail\.html$/, 's.html').replace(/([a-z0-9]+)-client-detail\.html$/, '$1-clients.html')
+            ? currentPath
+                .replace(/-scripts-detail\.html$/, '-scripts.html')
+                .replace(/-detail\.html$/, 's.html')
+                .replace(/([a-z0-9]+)-client-detail\.html$/, '$1-clients.html')
             : null;
         requestAnimationFrame(() => {
             document.querySelectorAll('ix-menu-item[data-href]').forEach(item => {
