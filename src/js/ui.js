@@ -591,6 +591,18 @@
         if (crumbObserver) { crumbObserver.disconnect(); crumbObserver = null; }
     }
 
+    /** Format ISO or timestamp date string to localized date/time representation. */
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        try {
+            var d = new Date(dateStr);
+            if (isNaN(d.getTime())) return String(dateStr);
+            return d.toLocaleString();
+        } catch (e) {
+            return String(dateStr);
+        }
+    }
+
     window.ui = {
         __version: 1,
         toast: toast,
@@ -614,7 +626,8 @@
         statusBadge: statusBadge,
         breadcrumb: breadcrumb,
         syncBreadcrumb: syncBreadcrumb,
-        escapeHtml: escapeHtml
+        escapeHtml: escapeHtml,
+        formatDateTime: formatDateTime
     };
 
     initLegacyModals();

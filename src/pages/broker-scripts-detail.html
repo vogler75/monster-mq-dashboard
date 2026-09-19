@@ -387,7 +387,7 @@
                                     <span class="ai-chip" data-prompt="Store incoming counter in persistent storage and log when incremented">Persistent KV Storage</span>
                                 </div>
                                 <div class="ai-input-row">
-                                    <input type="text" id="ai-user-prompt" class="form-control" placeholder="Describe the script logic or transformations you want..." />
+                                    <input type="text" id="ai-user-prompt" class="form-control" placeholder="Describe the script logic or transformations you want..." data-ignore-dirty />
                                     <button type="button" class="btn btn-primary" id="ai-generate-btn">
                                         <ix-icon name="code-ai" size="16"></ix-icon>
                                         Generate with AI
@@ -411,15 +411,15 @@
                             <div class="test-sandbox-grid">
                                 <div class="form-group">
                                     <label for="test-topic" class="form-label">Simulated Topic</label>
-                                    <input type="text" id="test-topic" class="form-control" placeholder="e.g. sensors/chamber1/temperature" />
+                                    <input type="text" id="test-topic" class="form-control" placeholder="e.g. sensors/chamber1/temperature" data-ignore-dirty />
                                 </div>
                                 <div class="form-group">
                                     <label for="test-payload" class="form-label">Simulated Payload (JSON or String)</label>
-                                    <input type="text" id="test-payload" class="form-control" placeholder='{"temperature": 68.5, "unit": "C"}' />
+                                    <input type="text" id="test-payload" class="form-control" placeholder='{"temperature": 68.5, "unit": "C"}' data-ignore-dirty />
                                 </div>
                                 <div class="form-group">
                                     <label for="test-args" class="form-label">Simulated Args (JSON for Callable)</label>
-                                    <input type="text" id="test-args" class="form-control" placeholder='{"target": "alert"}' />
+                                    <input type="text" id="test-args" class="form-control" placeholder='{"target": "alert"}' data-ignore-dirty />
                                 </div>
                             </div>
 

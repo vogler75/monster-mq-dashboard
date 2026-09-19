@@ -4,6 +4,17 @@ export function mount(page) {
         requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
         IntersectionObserver, WebSocket, EventSource } = page;
 
+    function formatDateTime(dateStr) {
+        if (!dateStr) return '-';
+        try {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return String(dateStr);
+            return d.toLocaleString();
+        } catch {
+            return String(dateStr);
+        }
+    }
+
     class BrokerScriptsManager {
         constructor() {
             this.scripts = [];
@@ -346,7 +357,7 @@ export function mount(page) {
                 if (s.lastExecutionTime) {
                     const timeDiv = document.createElement('div');
                     timeDiv.style.fontSize = '0.8rem';
-                    timeDiv.textContent = ui.formatDateTime(s.lastExecutionTime);
+                    timeDiv.textContent = formatDateTime(s.lastExecutionTime);
 
                     const statusBadge = document.createElement('span');
                     statusBadge.style.fontSize = '0.7rem';

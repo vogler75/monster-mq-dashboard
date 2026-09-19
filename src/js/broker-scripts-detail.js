@@ -247,6 +247,7 @@ export function mount(page) {
 
                 this.updateTriggerVisibility();
                 this.updateAiLangIndicator();
+                ui.markPageSaved();
             } catch (err) {
                 console.error('Failed to load script:', err);
                 ui.showError('Failed to load script: ' + (err.message || err));
@@ -513,6 +514,7 @@ Goal: Return ONLY the executable ${langName} script inside a standard \`\`\`${co
 
                 if (extracted) {
                     document.getElementById('script-code-editor').value = extracted;
+                    ui.markPageDirty();
                     feedback.className = 'ai-feedback success';
                     feedback.innerHTML = `
                         <div style="font-weight: 600;">✓ Script Generated (${ai?.model || 'AI'})</div>
@@ -710,6 +712,7 @@ Goal: Return ONLY the executable ${langName} script inside a standard \`\`\`${co
                     if (!result?.success) {
                         throw new Error(result?.errors?.join(', ') || 'Failed to create script');
                     }
+                    ui.markPageSaved();
                     ui.success(`Script "${name}" created successfully`);
                     setTimeout(() => {
                         window.spaLocation.href = `/pages/broker-scripts-detail.html?name=${encodeURIComponent(name)}`;
@@ -733,6 +736,7 @@ Goal: Return ONLY the executable ${langName} script inside a standard \`\`\`${co
                     if (!result?.success) {
                         throw new Error(result?.errors?.join(', ') || 'Failed to update script');
                     }
+                    ui.markPageSaved();
                     ui.success(`Script "${name}" updated successfully`);
                     await this.loadScript();
                 }
@@ -767,6 +771,7 @@ Goal: Return ONLY the executable ${langName} script inside a standard \`\`\`${co
                 if (!result?.script?.delete) {
                     throw new Error('Deletion failed');
                 }
+                ui.markPageSaved();
                 ui.success(`Script "${this.scriptName}" deleted`);
                 setTimeout(() => {
                     window.spaLocation.href = '/pages/broker-scripts.html';
