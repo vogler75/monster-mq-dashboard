@@ -295,7 +295,7 @@ if msg != None:
     
     # Process payload (dict or string)
     payload = msg["payload"]
-    if isinstance(payload, dict):
+    if type(payload) == "dict":
         temp = payload.get("temperature", 0)
         if temp > 50:
             mqtt.publish("alerts/temp", json.encode({"val": temp, "status": "ALARM"}), retain=True)

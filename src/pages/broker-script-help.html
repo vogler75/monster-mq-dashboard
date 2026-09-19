@@ -381,7 +381,7 @@ data = json.decode(encoded_str)</code></pre>
             <section id="recipe-threshold" class="help-section">
                 <h2>Recipe: Threshold Alert &amp; Retained Alarm</h2>
                 <pre><code># Trigger: TOPIC (sensors/+/temp)
-if msg != None and isinstance(msg["payload"], dict):
+if msg != None and type(msg["payload"]) == "dict":
     temp = msg["payload"].get("temperature", 0)
     dev_id = msg["topic"].split("/")[1]
     
