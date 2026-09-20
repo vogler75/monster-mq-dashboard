@@ -1,0 +1,23 @@
+Release v1.8.32
+Built from commit: 66d9fac
+Date: 2026-09-20 08:50:36
+
+Changes since v1.8.31:
+---
+66d9fac feat(broker-scripts): dynamically load script docs from broker and feed AI prompt with broker skill
+527150e feat: dynamically populate script languages from broker via scriptLanguages query
+9c32c6d fix(broker-scripts): prevent ix-toggle status label from wrapping across rows
+4e369c6 fix(broker-scripts): replace isinstance with type check in template and help docs
+b3783e4 fix(broker-scripts): add ui.markPageSaved, ignore dirty on sandbox inputs, and export ui.formatDateTime
+03b337c Add standalone broker scripts UI and integrate with edge broker
+52f52d4 docs: add broker scripts plan and mark legacy scripts and workflows as deprecated
+dac9e5f feat(hmi): display missing directory status badge for screens with 0 files
+f477e6b Update release.sh
+a782321 Hide Agents menu section when Agents feature is not enabled
+08710c1 fix: align RTSP camera labels and snapshot defaults
+fc28e43 fix(dashboard): leave dynamic page imports to the SPA router
+f8cfd55 feat(camera): configure H.264 decoding per camera in dashboard
+658fa20 fix: retain camera trigger topic when editing
+e44c7de feat: support WebSocket MJPEG camera streams
+e3c7959 Add MJPEG camera dashboard
+89a0675 fix(publish): do not automatically trigger desktop builds during publish
