@@ -10,6 +10,8 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
 NC='\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -155,6 +157,11 @@ echo -e "${YELLOW}Creating git tag v${NEW_VERSION}...${NC}"
 git tag -a "v${NEW_VERSION}" -m "Release version ${NEW_VERSION}"
 echo -e "${GREEN}✓ Created git tag v${NEW_VERSION}${NC}"
 
+echo -e "${YELLOW}Pushing commits and tags...${NC}"
+git push origin HEAD
+git push origin --tags
+echo -e "${GREEN}✓ Pushed commits and tags${NC}"
+
 echo ""
 echo -e "${GREEN}=== Release Tag Complete ===${NC}"
 echo -e "${GREEN}Version ${NEW_VERSION} tagged successfully.${NC}"
@@ -162,4 +169,3 @@ echo ""
 echo -e "${YELLOW}Next steps:${NC}"
 echo "  1. Build desktop artifacts : ./build.sh --all"
 echo "  2. Publish release assets  : ./publish.sh"
-echo "  3. Push commits & tag      : git push origin HEAD && git push origin v${NEW_VERSION}"
