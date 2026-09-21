@@ -169,6 +169,7 @@ class AgentManager {
                 : 'trigger-manual';
 
             const inputTopics = (agent.inputTopics || []).join(', ') || '-';
+            const outputTopics = (agent.outputTopics || []).join(', ') || '-';
             const isDecision = agent.provider === 'openrouter-decision' || (agent.provider || '').endsWith('-decision');
             const decisionBadge = isDecision ? '<span class="decision-badge" title="Fast System-1 Decision Agent">Decision</span>' : '';
             const providerModel = (this.escapeHtml(agent.provider || '') + (agent.model ? ' / ' + this.escapeHtml(agent.model) : '')) + decisionBadge;

@@ -61,29 +61,89 @@
 
         .code-editor-wrapper {
             position: relative;
+            display: flex;
+            background: #0f172a;
             border: 1px solid var(--dark-border, #1f2937);
-            border-radius: var(--r-md, 8px);
+            border-radius: var(--r-md, 8px) var(--r-md, 8px) 0 0;
             overflow: hidden;
+            height: 380px;
+            min-height: 200px;
+            resize: vertical;
         }
 
-        .script-textarea {
-            width: 100%;
-            height: 380px;
-            background: #0f172a;
-            border: none;
+        .code-editor-wrapper:focus-within {
+            border-color: var(--primary-color, #7c3aed);
+            box-shadow: 0 0 0 1px var(--primary-color, #7c3aed);
+        }
+
+        .code-editor-gutter {
+            min-width: 44px;
+            max-width: 80px;
+            height: 100%;
+            min-height: 0;
+            background: #090d16;
+            border-right: 1px solid var(--dark-border, #1f2937);
+            padding: 1rem 0.6rem 1rem 0.5rem;
+            box-sizing: border-box;
+            user-select: none;
+            pointer-events: none;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .code-editor-lines {
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: #4b5563;
+            text-align: right;
+            white-space: pre;
+            margin: 0;
+            padding: 0;
+        }
+
+        .code-editor-wrapper textarea.script-textarea,
+        .code-editor-wrapper textarea.script-textarea:hover,
+        .code-editor-wrapper textarea.script-textarea:focus {
+            flex: 1;
+            width: auto;
+            height: 100%;
+            min-height: 0;
+            background: transparent !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            outline: none !important;
             color: #f1f5f9;
             font-family: 'Fira Code', 'Courier New', Courier, monospace;
             font-size: 0.875rem;
             line-height: 1.5;
-            padding: 1rem 1.25rem;
+            padding: 1rem 1rem 1rem 0.75rem;
             box-sizing: border-box;
-            resize: vertical;
-            outline: none;
+            resize: none !important;
             tab-size: 4;
+            white-space: pre;
+            overflow-wrap: normal;
+            overflow: auto;
         }
 
-        .script-textarea:focus {
-            box-shadow: inset 0 0 0 1px var(--primary-color, #7c3aed);
+        .code-editor-statusbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #090d16;
+            border: 1px solid var(--dark-border, #1f2937);
+            border-top: none;
+            border-radius: 0 0 var(--r-md, 8px) var(--r-md, 8px);
+            padding: 0.35rem 0.85rem;
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted, #9ca3af);
+            user-select: none;
+        }
+
+        .code-editor-wrapper:focus-within + .code-editor-statusbar {
+            border-color: var(--primary-color, #7c3aed);
         }
 
         .ai-panel {
@@ -368,8 +428,15 @@
                             </div>
 
                             <!-- Code Editor -->
-                            <div class="code-editor-wrapper">
+                            <div class="code-editor-wrapper" id="code-editor-wrapper">
+                                <div class="code-editor-gutter" id="code-editor-gutter" aria-hidden="true">
+                                    <div class="code-editor-lines" id="code-editor-lines">1</div>
+                                </div>
                                 <textarea id="script-code-editor" class="script-textarea" spellcheck="false" placeholder="# Write your script here..."></textarea>
+                            </div>
+                            <div class="code-editor-statusbar">
+                                <span id="editor-cursor-pos">Ln 1, Col 1</span>
+                                <span id="editor-lines-count">1 line</span>
                             </div>
 
                             <!-- Language-Aware AI Assistant Panel -->

@@ -180,19 +180,94 @@ export function mount(page) {
                 aiGenBtn.addEventListener('click', () => this.generateAiScript());
             }
 
-            // Indent on Tab key in editor
+            // Setup code editor with line numbers and cursor tracking
+            this.setupCodeEditor();
+        }
+
+        setupCodeEditor() {
             const editor = document.getElementById('script-code-editor');
-            if (editor) {
-                editor.addEventListener('keydown', (e) => {
-                    if (e.key === 'Tab') {
-                        e.preventDefault();
-                        const start = editor.selectionStart;
-                        const end = editor.selectionEnd;
-                        editor.value = editor.value.substring(0, start) + '    ' + editor.value.substring(end);
-                        editor.selectionStart = editor.selectionEnd = start + 4;
+            const gutter = document.getElementById('code-editor-gutter');
+            const gutterLines = document.getElementById('code-editor-lines');
+            const cursorPosEl = document.getElementById('editor-cursor-pos');
+            const linesCountEl = document.getElementById('editor-lines-count');
+
+            if (!editor || !gutterLines) return;
+
+            let lastLineCount = 0;
+
+            const updateLines = () => {
+                const text = editor.value || '';
+                const lines = text.split('\n');
+                const count = Math.max(1, lines.length);
+
+                if (count !== lastLineCount) {
+                    lastLineCount = count;
+                    let numStr = '';
+                    for (let i = 1; i <= count; i++) {
+                        numStr += i + '\n';
                     }
-                });
-            }
+                    gutterLines.textContent = numStr;
+
+                    if (gutter) {
+                        const digits = Math.max(2, String(count).length);
+                        gutter.style.width = (digits * 8.5 + 24) + 'px';
+                    }
+
+                    if (linesCountEl) {
+                        linesCountEl.textContent = `${count} ${count === 1 ? 'line' : 'lines'}`;
+                    }
+                }
+            };
+
+            const updateCursor = () => {
+                if (!cursorPosEl) return;
+                const pos = editor.selectionStart || 0;
+                const textBefore = editor.value.substring(0, pos);
+                const lines = textBefore.split('\n');
+                const lineNum = lines.length;
+                const colNum = lines[lines.length - 1].length + 1;
+                const selLen = (editor.selectionEnd || 0) - pos;
+                if (selLen > 0) {
+                    cursorPosEl.textContent = `Ln ${lineNum}, Col ${colNum} (${selLen} selected)`;
+                } else {
+                    cursorPosEl.textContent = `Ln ${lineNum}, Col ${colNum}`;
+                }
+            };
+
+            // Sync vertical scrolling between textarea and line numbers gutter
+            editor.addEventListener('scroll', () => {
+                if (gutter) gutter.scrollTop = editor.scrollTop;
+            });
+
+            // Update lines and cursor on typing and content changes
+            editor.addEventListener('input', () => {
+                updateLines();
+                updateCursor();
+            });
+
+            editor.addEventListener('keyup', () => updateCursor());
+            editor.addEventListener('click', () => updateCursor());
+            editor.addEventListener('select', () => updateCursor());
+
+            // Handle Tab indentation
+            editor.addEventListener('keydown', (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const start = editor.selectionStart;
+                    const end = editor.selectionEnd;
+                    editor.value = editor.value.substring(0, start) + '    ' + editor.value.substring(end);
+                    editor.selectionStart = editor.selectionEnd = start + 4;
+                    updateLines();
+                    updateCursor();
+                }
+            });
+
+            this.updateEditorLines = updateLines;
+            this.updateEditorCursor = updateCursor;
+
+            // Initial render
+            updateLines();
+            updateCursor();
         }
 
         setupNewMode() {
@@ -300,6 +375,8 @@ export function mount(page) {
 
                 // Script Code
                 document.getElementById('script-code-editor').value = this.scriptData.config?.script || '';
+                if (this.updateEditorLines) this.updateEditorLines();
+                if (this.updateEditorCursor) this.updateEditorCursor();
 
                 // UI controls
                 document.getElementById('delete-btn').style.display = 'inline-flex';
@@ -375,6 +452,8 @@ if msg != None:
             mqtt.publish("alerts/temp", json.encode({"val": temp, "status": "ALARM"}), retain=True)
 `;
             }
+            if (this.updateEditorLines) this.updateEditorLines();
+            if (this.updateEditorCursor) this.updateEditorCursor();
         }
 
         updateTriggerVisibility() {
@@ -472,6 +551,8 @@ if msg != None:
             const end = editor.selectionEnd;
             editor.value = editor.value.substring(0, start) + snippet + editor.value.substring(end);
             editor.selectionStart = editor.selectionEnd = start + snippet.length;
+            if (this.updateEditorLines) this.updateEditorLines();
+            if (this.updateEditorCursor) this.updateEditorCursor();
             editor.focus();
         }
 
@@ -604,6 +685,8 @@ Goal: Return ONLY the executable ${langName} script inside a standard \`\`\`${co
 
                 if (extracted) {
                     document.getElementById('script-code-editor').value = extracted;
+                    if (this.updateEditorLines) this.updateEditorLines();
+                    if (this.updateEditorCursor) this.updateEditorCursor();
                     ui.markPageDirty();
                     feedback.className = 'ai-feedback success';
                     feedback.innerHTML = `
