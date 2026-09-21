@@ -63,11 +63,16 @@ class GenAiProviderManager {
                        <ix-icon-button icon="trashcan" variant="subtle-tertiary" title="Delete" data-name="${p.name}" data-action="delete"></ix-icon-button>
                    </div>`;
 
+            const isDecision = (p.type || '').includes('decision');
+            const typeBadge = isDecision
+                ? `<span class="type-badge" style="background: rgba(16, 185, 129, 0.15); color: #34D399; border-color: rgba(16, 185, 129, 0.3);">${p.type.replace('-decision', '')} · Decision</span>`
+                : `<span class="type-badge">${p.type}</span>`;
+
             const tr = document.createElement('tr');
             if (!isConfig) tr.classList.add('clickable-row');
             tr.innerHTML = `
                 <td><strong>${p.name}</strong></td>
-                <td><span class="type-badge">${p.type}</span></td>
+                <td>${typeBadge}</td>
                 <td>${sourceBadge}</td>
                 <td>${modelText}</td>
                 <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${endpointText}</td>

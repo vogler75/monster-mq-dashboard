@@ -150,6 +150,12 @@ class AgentDetailManager {
         const dbProviders = this.genAiProviders.filter(p => p.source === 'database');
         const configProviders = this.genAiProviders.filter(p => p.source === 'config');
 
+        const formatProviderLabel = (p) => {
+            const isDec = (p.type || '').includes('decision');
+            const typeLabel = isDec ? `${p.type.replace('-decision', '')} · Decision` : p.type;
+            return `${p.name} (${typeLabel})`;
+        };
+
         if (dbProviders.length > 0) {
             const group = document.createElement('optgroup');
             group.label = 'Saved Providers';
@@ -158,7 +164,7 @@ class AgentDetailManager {
                 opt.value = p.name;
                 opt.dataset.source = 'database';
                 opt.dataset.type = p.type;
-                opt.textContent = p.name + ' (' + p.type + ')';
+                opt.textContent = formatProviderLabel(p);
                 group.appendChild(opt);
             });
             select.appendChild(group);
@@ -172,7 +178,7 @@ class AgentDetailManager {
                 opt.value = 'config:' + p.name;
                 opt.dataset.source = 'config';
                 opt.dataset.type = p.type;
-                opt.textContent = p.name + ' (' + p.type + ')';
+                opt.textContent = formatProviderLabel(p);
                 group.appendChild(opt);
             });
             select.appendChild(group);
@@ -576,9 +582,24 @@ class AgentDetailManager {
             }
             onProviderNameChange();
         }
-        document.getElementById('agent-provider').value = d.provider || 'gemini';
+        const rawProv = (d.provider || 'gemini').toLowerCase();
+        const isDec = rawProv === 'openrouter-decision' || rawProv === 'decision' || rawProv.endsWith('-decision');
+        const baseProv = isDec ? rawProv.replace('-decision', '') : rawProv;
+        const provSelect = document.getElementById('agent-provider');
+        if (provSelect) {
+            if (!Array.from(provSelect.options).some(o => o.value === baseProv)) {
+                const opt = document.createElement('option');
+                opt.value = baseProv;
+                opt.textContent = baseProv;
+                provSelect.appendChild(opt);
+            }
+            provSelect.value = baseProv || 'gemini';
+        }
+        const provTypeSelect = document.getElementById('agent-provider-type');
+        if (provTypeSelect) provTypeSelect.value = isDec ? 'decision' : 'chat';
         updateModelPlaceholder();
         document.getElementById('agent-model').value = d.model || '';
+        checkDecisionMode();
         document.getElementById('agent-api-key').value = '';
         const endpointEl = document.getElementById('agent-endpoint');
         if (endpointEl) endpointEl.value = d.endpoint || '';
@@ -779,8 +800,11 @@ class AgentDetailManager {
             const selectedOpt = providerNameEl.options[providerNameEl.selectedIndex];
             data.provider = selectedOpt?.dataset?.type || 'gemini';
         } else {
-            // Manual mode — provider already set from the type select
+            // Manual mode
             data.providerName = null;
+            const prov = document.getElementById('agent-provider')?.value || 'gemini';
+            const typeKind = document.getElementById('agent-provider-type')?.value || 'chat';
+            data.provider = typeKind === 'decision' ? `${prov}-decision` : prov;
         }
 
         return data;
@@ -965,26 +989,46 @@ function updateModelPlaceholder() {
     const nameSelect = document.getElementById('agent-provider-name');
     const selectedOpt = nameSelect?.options[nameSelect.selectedIndex];
     const isManual = !selectedOpt || nameSelect.value === '';
-    const providerType = isManual
-        ? (document.getElementById('agent-provider')?.value || 'gemini')
-        : (selectedOpt?.dataset?.type || 'gemini');
+
+    let baseProvider = 'openrouter';
+    let isDecision = false;
+
+    if (isManual) {
+        baseProvider = document.getElementById('agent-provider')?.value || 'openrouter';
+        const typeKind = document.getElementById('agent-provider-type')?.value || 'chat';
+        isDecision = typeKind === 'decision';
+        if (isDecision && baseProvider !== 'openrouter') {
+            const provSelect = document.getElementById('agent-provider');
+            if (provSelect) provSelect.value = 'openrouter';
+            baseProvider = 'openrouter';
+        }
+    } else {
+        const pType = (selectedOpt?.dataset?.type || 'gemini').toLowerCase();
+        isDecision = pType === 'openrouter-decision' || pType === 'decision' || pType.endsWith('-decision');
+        baseProvider = isDecision ? pType.replace('-decision', '') : pType;
+    }
 
     const modelInput = document.getElementById('agent-model');
-    if (!modelInput) return;
+    if (modelInput) {
+        if (isDecision) {
+            modelInput.placeholder = 'typesafe/jev-1.13';
+        } else {
+            const placeholders = {
+                'gemini': 'gemini-2.0-flash',
+                'claude': 'claude-sonnet-4-20250514',
+                'openai': 'gpt-4o',
+                'openrouter': 'anthropic/claude-3.5-sonnet',
+                'ollama': 'llama3',
+                'azure-openai': 'deployment-name',
+                'llamacpp': 'local-model'
+            };
+            modelInput.placeholder = placeholders[baseProvider] || 'Model name';
+        }
+    }
 
-    const placeholders = {
-        'gemini': 'gemini-2.0-flash',
-        'claude': 'claude-sonnet-4-20250514',
-        'openai': 'gpt-4o',
-        'ollama': 'llama3',
-        'azure-openai': 'deployment-name',
-        'llamacpp': 'local-model'
-    };
-    modelInput.placeholder = placeholders[providerType] || 'Model name';
-
-    // Endpoint/version groups only shown in manual mode with azure-openai, openai, or llamacpp
-    const isAzure = isManual && providerType === 'azure-openai';
-    const isCustomOpenAi = isManual && (providerType === 'openai' || providerType === 'llamacpp');
+    // Endpoint/version groups only shown in manual mode with azure-openai, openai, openrouter, or llamacpp
+    const isAzure = isManual && baseProvider === 'azure-openai';
+    const isCustomOpenAi = isManual && (baseProvider === 'openai' || baseProvider === 'llamacpp' || baseProvider === 'openrouter');
     const endpointGroup = document.getElementById('agent-endpoint-group');
     if (endpointGroup) {
         endpointGroup.style.display = (isAzure || isCustomOpenAi) ? '' : 'none';
@@ -994,9 +1038,15 @@ function updateModelPlaceholder() {
             if (isAzure) {
                 label.textContent = 'Azure Endpoint';
                 input.placeholder = 'https://<resource>.openai.azure.com/';
-            } else if (providerType === 'llamacpp') {
+            } else if (baseProvider === 'llamacpp') {
                 label.textContent = 'llama.cpp Host URL';
                 input.placeholder = 'http://localhost:8080/v1';
+            } else if (baseProvider === 'openrouter' && isDecision) {
+                label.textContent = 'Decisions Endpoint (optional)';
+                input.placeholder = 'https://openrouter.ai/api/alpha/decisions (leave blank for default)';
+            } else if (baseProvider === 'openrouter') {
+                label.textContent = 'OpenRouter Base URL (optional)';
+                input.placeholder = 'https://openrouter.ai/api/v1 (leave blank for default)';
             } else {
                 label.textContent = 'Custom Endpoint (optional)';
                 input.placeholder = 'https://api.openai.com/v1 (leave blank for default)';
@@ -1005,6 +1055,43 @@ function updateModelPlaceholder() {
     }
     const serviceVersionGroup = document.getElementById('agent-service-version-group');
     if (serviceVersionGroup) serviceVersionGroup.style.display = isAzure ? '' : 'none';
+
+    checkDecisionMode();
+}
+
+function checkDecisionMode() {
+    const nameSelect = document.getElementById('agent-provider-name');
+    const selectedOpt = nameSelect?.options[nameSelect.selectedIndex];
+    const isManual = !selectedOpt || nameSelect.value === '';
+
+    let effectiveType = '';
+    if (isManual) {
+        const prov = document.getElementById('agent-provider')?.value || 'gemini';
+        const typeKind = document.getElementById('agent-provider-type')?.value || 'chat';
+        effectiveType = typeKind === 'decision' ? `${prov}-decision` : prov;
+    } else {
+        effectiveType = selectedOpt?.dataset?.type || '';
+    }
+
+    // Only check provider type
+    const isDecision = effectiveType === 'openrouter-decision' || effectiveType === 'decision' || effectiveType.endsWith('-decision');
+
+    const banner = document.getElementById('decision-mode-banner');
+    if (banner) banner.style.display = isDecision ? 'block' : 'none';
+
+    const promptHintStandard = document.getElementById('prompt-hint-standard');
+    const promptHintDecision = document.getElementById('prompt-hint-decision');
+    const promptTitle = document.getElementById('prompt-section-title');
+
+    if (isDecision) {
+        if (promptHintStandard) promptHintStandard.style.display = 'none';
+        if (promptHintDecision) promptHintDecision.style.display = 'block';
+        if (promptTitle) promptTitle.textContent = 'Decision Questions (JSON / Text)';
+    } else {
+        if (promptHintStandard) promptHintStandard.style.display = 'block';
+        if (promptHintDecision) promptHintDecision.style.display = 'none';
+        if (promptTitle) promptTitle.textContent = 'System Prompt';
+    }
 }
 
 // Set up custom drop handlers for context data textareas (append instead of replace)
@@ -1112,6 +1199,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('add-history-query-btn').addEventListener('click', () => {
         agentDetailManager.addHistoryQueryCard(null);
     });
+
+    document.getElementById('agent-provider')?.addEventListener('change', updateModelPlaceholder);
+    document.getElementById('agent-provider-type')?.addEventListener('change', updateModelPlaceholder);
 });
 
 // Handle modal clicks (close on backdrop)
@@ -1119,6 +1209,7 @@ document.addEventListener('DOMContentLoaded', () => {
 page.expose({
     get AgentDetailManager() { return AgentDetailManager; },
     get agentDetailManager() { return agentDetailManager; },
+    get checkDecisionMode() { return checkDecisionMode; },
     get goBack() { return goBack; },
     get onProviderNameChange() { return onProviderNameChange; },
     get saveAgent() { return saveAgent; },

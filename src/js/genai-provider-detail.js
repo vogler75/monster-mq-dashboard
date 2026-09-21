@@ -36,7 +36,11 @@ class GenAiProviderDetailManager {
         document.getElementById('save-btn').textContent = 'Create Provider';
         document.getElementById('delete-btn').style.display = 'none';
         document.getElementById('provider-content').style.display = 'block';
-        this.onTypeChange();
+        const serviceSelect = document.getElementById('provider-service');
+        if (serviceSelect) serviceSelect.value = 'openrouter';
+        const typeSelect = document.getElementById('provider-type');
+        if (typeSelect) typeSelect.value = 'chat';
+        this.onServiceOrTypeChange();
     }
 
     async loadProvider() {
@@ -78,12 +82,32 @@ class GenAiProviderDetailManager {
     }
 
     populateForm(p) {
+        const rawType = (p.type || 'gemini').toLowerCase();
+        const isDecision = rawType === 'openrouter-decision' || rawType === 'decision' || rawType.endsWith('-decision');
+        const service = isDecision ? (rawType.replace('-decision', '') || 'openrouter') : rawType;
+
         document.getElementById('page-title').textContent = 'AI Provider: ' + p.name;
-        document.getElementById('page-subtitle').textContent = p.type + (p.source === 'config' ? ' · from config.yaml' : '');
+        document.getElementById('page-subtitle').textContent = (isDecision ? `${service} (Decision Provider)` : `${service} (Chat / LLM)`) + (p.source === 'config' ? ' · from config.yaml' : '');
 
         document.getElementById('provider-name').value = p.name;
         document.getElementById('provider-name').disabled = true;
-        document.getElementById('provider-type').value = p.type || 'gemini';
+
+        const serviceSelect = document.getElementById('provider-service');
+        if (serviceSelect) {
+            if (!Array.from(serviceSelect.options).some(o => o.value === service)) {
+                const opt = document.createElement('option');
+                opt.value = service;
+                opt.textContent = service;
+                serviceSelect.appendChild(opt);
+            }
+            serviceSelect.value = service;
+        }
+
+        const typeSelect = document.getElementById('provider-type');
+        if (typeSelect) {
+            typeSelect.value = isDecision ? 'decision' : 'chat';
+        }
+
         document.getElementById('provider-model').value = p.model || '';
         document.getElementById('provider-api-key').value = '';
         document.getElementById('provider-api-key').placeholder = p.apiKey ? 'Stored (enter to replace)' : 'No key configured';
@@ -106,17 +130,29 @@ class GenAiProviderDetailManager {
         }
 
         document.getElementById('provider-content').style.display = 'block';
-        this.onTypeChange();
+        this.onServiceOrTypeChange();
     }
 
-    onTypeChange() {
-        const type = document.getElementById('provider-type').value;
-        const isAzure = type === 'azure-openai';
-        const isOpenAI = type === 'openai';
-        const isOllama = type === 'ollama';
-        const isLlamaCpp = type === 'llamacpp';
+    onServiceOrTypeChange() {
+        const serviceSelect = document.getElementById('provider-service');
+        const typeSelect = document.getElementById('provider-type');
+        const service = serviceSelect?.value || 'openrouter';
+        const typeKind = typeSelect?.value || 'chat';
+        const isDecision = typeKind === 'decision';
 
-        document.getElementById('provider-endpoint-group').style.display = (isAzure || isOpenAI || isLlamaCpp) ? '' : 'none';
+        // Currently, OpenRouter is the decision provider
+        if (isDecision && service !== 'openrouter') {
+            serviceSelect.value = 'openrouter';
+        }
+        const activeService = serviceSelect?.value || 'openrouter';
+
+        const isAzure = activeService === 'azure-openai';
+        const isOpenAI = activeService === 'openai';
+        const isOpenRouter = activeService === 'openrouter';
+        const isOllama = activeService === 'ollama';
+        const isLlamaCpp = activeService === 'llamacpp';
+
+        document.getElementById('provider-endpoint-group').style.display = (isAzure || isOpenAI || isLlamaCpp || isOpenRouter) ? '' : 'none';
         document.getElementById('provider-service-version-group').style.display = isAzure ? '' : 'none';
         document.getElementById('provider-base-url-group').style.display = isOllama ? '' : 'none';
 
@@ -125,6 +161,12 @@ class GenAiProviderDetailManager {
         if (isAzure) {
             endpointLabel.textContent = 'Azure Endpoint';
             endpointInput.placeholder = 'https://<resource>.openai.azure.com/';
+        } else if (isOpenRouter && isDecision) {
+            endpointLabel.textContent = 'Decisions Endpoint (optional)';
+            endpointInput.placeholder = 'https://openrouter.ai/api/alpha/decisions (leave blank for default)';
+        } else if (isOpenRouter) {
+            endpointLabel.textContent = 'OpenRouter Base URL (optional)';
+            endpointInput.placeholder = 'https://openrouter.ai/api/v1 (leave blank for default)';
         } else if (isOpenAI) {
             endpointLabel.textContent = 'Custom Endpoint (optional)';
             endpointInput.placeholder = 'https://api.openai.com/v1 (leave blank for default)';
@@ -134,20 +176,33 @@ class GenAiProviderDetailManager {
         }
 
         const modelInput = document.getElementById('provider-model');
-        const placeholders = {
-            'gemini': 'gemini-2.0-flash',
-            'claude': 'claude-sonnet-4-20250514',
-            'openai': 'gpt-4o',
-            'ollama': 'llama3',
-            'azure-openai': 'deployment-name',
-            'llamacpp': 'local-model'
-        };
-        modelInput.placeholder = placeholders[type] || 'Model name';
+        if (isDecision) {
+            modelInput.placeholder = 'typesafe/jev-1.13';
+        } else {
+            const placeholders = {
+                'gemini': 'gemini-2.0-flash',
+                'claude': 'claude-sonnet-4-20250514',
+                'openai': 'gpt-4o',
+                'ollama': 'llama3',
+                'azure-openai': 'deployment-name',
+                'llamacpp': 'local-model',
+                'openrouter': 'anthropic/claude-3.5-sonnet'
+            };
+            modelInput.placeholder = placeholders[activeService] || 'Model name';
+        }
+    }
+
+    onTypeChange() {
+        this.onServiceOrTypeChange();
     }
 
     collectFormData() {
+        const service = document.getElementById('provider-service')?.value || 'gemini';
+        const typeKind = document.getElementById('provider-type')?.value || 'chat';
+        const effectiveType = typeKind === 'decision' ? `${service}-decision` : service;
+
         const data = {
-            type:           document.getElementById('provider-type').value,
+            type:           effectiveType,
             model:          document.getElementById('provider-model').value.trim() || null,
             endpoint:       document.getElementById('provider-endpoint').value.trim() || null,
             serviceVersion: document.getElementById('provider-service-version').value.trim() || null,

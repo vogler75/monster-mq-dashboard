@@ -58,8 +58,9 @@
                                 <small style="color: var(--text-muted);">Letters, digits, underscores and hyphens only</small>
                             </div>
                             <div class="form-group">
-                                <label for="provider-type">Provider Type</label>
-                                <select id="provider-type" onchange="providerDetailManager.onTypeChange()">
+                                <label for="provider-service">Provider</label>
+                                <select id="provider-service" onchange="providerDetailManager.onServiceOrTypeChange()">
+                                    <option value="openrouter">OpenRouter</option>
                                     <option value="gemini">Gemini</option>
                                     <option value="claude">Claude</option>
                                     <option value="openai">OpenAI</option>
@@ -67,6 +68,14 @@
                                     <option value="azure-openai">Azure OpenAI</option>
                                     <option value="llamacpp">llama.cpp</option>
                                 </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="provider-type">Provider Type</label>
+                                <select id="provider-type" onchange="providerDetailManager.onServiceOrTypeChange()">
+                                    <option value="chat">Chat / LLM</option>
+                                    <option value="decision">Decision Provider</option>
+                                </select>
+                                <small style="color: var(--text-muted); margin-top: 0.25rem; display: block;">Select whether this provider is for conversational chat or System-1 decisions (e.g. Jev).</small>
                             </div>
                             <div class="form-group">
                                 <label for="provider-model">Model / Deployment</label>
