@@ -193,6 +193,38 @@
             color: #fff;
         }
 
+        .timer-preset-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-top: 0.4rem;
+        }
+
+        .timer-preset-chip {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--dark-border, #374151);
+            color: var(--text-secondary, #9ca3af);
+            padding: 0.2rem 0.55rem;
+            border-radius: 12px;
+            font-size: 0.72rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .timer-preset-chip:hover {
+            background: rgba(124, 58, 237, 0.18);
+            border-color: rgba(124, 58, 237, 0.4);
+            color: #ddd6fe;
+        }
+
+        .timer-preset-chip.active {
+            background: rgba(124, 58, 237, 0.28);
+            border-color: var(--primary-color, #7c3aed);
+            color: #fff;
+            font-weight: 500;
+        }
+
         .ai-input-row {
             display: flex;
             gap: 0.5rem;
@@ -385,7 +417,15 @@
                                 <div class="form-group" id="timer-settings-group" style="display: none;">
                                     <label for="script-timer-interval" class="form-label">Timer Interval (ms) *</label>
                                     <input type="number" id="script-timer-interval" class="form-control" value="5000" min="50" />
-                                    <small style="color: var(--text-muted); font-size: 0.75rem;">Frequency of timer ticks (e.g. 1000 = 1s, 5000 = 5s).</small>
+                                    <div class="timer-preset-chips" id="timer-preset-chips">
+                                        <span class="timer-preset-chip" data-ms="1000">1s (:00)</span>
+                                        <span class="timer-preset-chip" data-ms="5000">5s</span>
+                                        <span class="timer-preset-chip" data-ms="60000">1 min (:00)</span>
+                                        <span class="timer-preset-chip" data-ms="300000">5 min (:00, :05)</span>
+                                        <span class="timer-preset-chip" data-ms="900000">15 min</span>
+                                        <span class="timer-preset-chip" data-ms="3600000">1 hour</span>
+                                    </div>
+                                    <small style="color: var(--text-muted); font-size: 0.75rem; margin-top: 0.35rem; display: block;">Intervals &ge; 1s automatically align to round wall-clock boundaries (e.g. 60s at :00s, 5 min at :00, :05...). Scripts receive exact <code>trigger_time</code>.</small>
                                 </div>
 
                                 <!-- Conditional On-Change Only toggle -->
@@ -419,6 +459,7 @@
                             <!-- Snippet Insertion Toolbar -->
                             <div class="snippet-bar" id="snippet-bar">
                                 <span style="font-size: 0.75rem; color: var(--text-muted); align-self: center; margin-right: 0.25rem;">Quick Snippets:</span>
+                                <button type="button" class="snippet-btn" data-snippet="trigger_time">trigger_time</button>
                                 <button type="button" class="snippet-btn" data-snippet="publish">mqtt.publish()</button>
                                 <button type="button" class="snippet-btn" data-snippet="archive_last">archive.get_last_value()</button>
                                 <button type="button" class="snippet-btn" data-snippet="db_query">db.query()</button>

@@ -180,8 +180,35 @@ export function mount(page) {
                 aiGenBtn.addEventListener('click', () => this.generateAiScript());
             }
 
+            // Timer preset chips
+            const timerChipsContainer = document.getElementById('timer-preset-chips');
+            const timerIntervalInput = document.getElementById('script-timer-interval');
+            if (timerChipsContainer && timerIntervalInput) {
+                timerChipsContainer.addEventListener('click', (e) => {
+                    const chip = e.target.closest('.timer-preset-chip');
+                    if (chip && chip.dataset.ms) {
+                        timerIntervalInput.value = chip.dataset.ms;
+                        this.syncActiveTimerChip(chip.dataset.ms);
+                        timerIntervalInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                });
+
+                timerIntervalInput.addEventListener('input', () => {
+                    this.syncActiveTimerChip(timerIntervalInput.value);
+                });
+            }
+
             // Setup code editor with line numbers and cursor tracking
             this.setupCodeEditor();
+        }
+
+        syncActiveTimerChip(val) {
+            const container = document.getElementById('timer-preset-chips');
+            if (!container) return;
+            const strVal = String(val);
+            container.querySelectorAll('.timer-preset-chip').forEach(chip => {
+                chip.classList.toggle('active', chip.dataset.ms === strVal);
+            });
         }
 
         setupCodeEditor() {
@@ -361,6 +388,7 @@ export function mount(page) {
                 document.getElementById('script-instance-mode').value = this.scriptData.config?.instanceMode || 'SINGLETON';
                 document.getElementById('script-timeout').value = this.scriptData.config?.timeoutMs || 200;
                 document.getElementById('script-timer-interval').value = this.scriptData.config?.timerIntervalMs || 5000;
+                this.syncActiveTimerChip(this.scriptData.config?.timerIntervalMs || 5000);
                 document.getElementById('script-trigger-on-change').checked = !!this.scriptData.config?.triggerOnChangeOnly;
 
                 // Topic filters
@@ -515,6 +543,11 @@ if msg != None:
 
             let snippet = '';
             switch (type) {
+                case 'trigger_time':
+                    snippet = isJs
+                        ? 'const iso = trigger_time.iso;       // e.g. "2026-09-21T12:00:00Z"\nconst ms = trigger_time.time_ms; // e.g. 1789992626000\n// Properties: iso, time_ms, timestamp, year, month, day, hour, minute, second\n'
+                        : 'iso = trigger_time.iso       # e.g. "2026-09-21T12:00:00Z"\nms = trigger_time.time_ms # e.g. 1789992626000\n# Properties: iso, time_ms, timestamp, year, month, day, hour, minute, second\n';
+                    break;
                 case 'publish':
                     snippet = isJs
                         ? 'mqtt.publish("topic/name", JSON.stringify({ ok: true }), 0, false);'
