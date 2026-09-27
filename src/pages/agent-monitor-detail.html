@@ -352,12 +352,12 @@
             letter-spacing: 0.04em;
             border: 1px solid transparent;
         }
-        .event-state.working {
+        .event-state.working, .event-state.streaming {
             color: var(--monster-orange);
             background: rgba(249,115,22,0.14);
             border-color: rgba(249,115,22,0.26);
         }
-        .event-state.completed, .event-state.response {
+        .event-state.completed, .event-state.response, .event-state.streamed {
             color: var(--monster-green);
             background: rgba(16,185,129,0.14);
             border-color: rgba(16,185,129,0.26);
@@ -502,6 +502,18 @@
                     <div class="live-feed" id="task-status-stream">
                         <div class="log-empty">Waiting for task status updates...</div>
                     </div>
+                </div>
+            </div>
+
+            <div class="test-card response-section">
+                <div class="test-card-header">
+                    <div>
+                        <div class="test-card-title">Pending Approvals</div>
+                        <div class="test-card-subtitle">Human-in-the-loop requests from <code>approval/request/{id}</code>. The agent waits until you approve or reject the action.</div>
+                    </div>
+                </div>
+                <div class="live-feed" id="approval-list">
+                    <div class="log-empty">No pending approval requests.</div>
                 </div>
             </div>
 

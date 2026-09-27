@@ -25,6 +25,8 @@ class AgentDetailMonitorManager {
         this.activeTaskId = null;
         this.activeTaskState = null;
         this.sendInFlight = false;
+        // Pending human-in-the-loop approval requests: approvalId -> request
+        this.approvals = new Map();
 
         // Parse URL params
         const params = new URLSearchParams(window.location.search);
@@ -39,6 +41,91 @@ class AgentDetailMonitorManager {
         this.init();
     }
 
+    // ===================== Approvals (human-in-the-loop) =====================
+
+    async loadPendingApprovals() {
+        try {
+            const result = await this.client.query(
+                `query($filter: String) { retainedMessages(topicFilter: $filter, format: JSON, limit: 100) { topic payload } }`,
+                { filter: `${this.agentBaseTopic}/approval/request/+` });
+            (result?.retainedMessages || []).forEach(m => this.handleApprovalUpdate(m.topic, this.parsePayload(m.payload)));
+        } catch (e) {
+            console.warn('Failed to load pending approvals:', e);
+        }
+        this.renderApprovals();
+    }
+
+    handleApprovalUpdate(topic, payload) {
+        const approvalId = topic.substring(topic.lastIndexOf('/') + 1);
+        if (topic.includes('/approval/request/')) {
+            // An empty retained message clears a decided request
+            if (payload && typeof payload === 'object') this.approvals.set(approvalId, payload);
+            else this.approvals.delete(approvalId);
+        } else if (topic.includes('/approval/response/')) {
+            this.approvals.delete(approvalId);
+        }
+        this.renderApprovals();
+    }
+
+    renderApprovals() {
+        const container = document.getElementById('approval-list');
+        if (!container) return;
+        if (this.approvals.size === 0) {
+            container.innerHTML = '<div class="log-empty">No pending approval requests.</div>';
+            return;
+        }
+        container.innerHTML = [...this.approvals.entries()].map(([id, req]) => {
+            const request = req.request || {};
+            const details = request.action === 'publish'
+                ? `Publish to <code>${this.esc(request.topic)}</code>`
+                : this.esc(request.action || 'Action');
+            return `
+            <div class="event-entry">
+                <div class="event-meta">
+                    <span class="event-time">${this.esc(this.formatTimestamp(req.timestamp))}</span>
+                    ${req.taskId ? `<span class="event-task">${this.esc(req.taskId)}</span>` : ''}
+                    <span class="event-state working">approval required</span>
+                </div>
+                <div class="event-summary">${details}</div>
+                <pre class="event-payload">${this.esc(this.stringifyPayload(request.payload !== undefined ? request.payload : request))}</pre>
+                <div class="test-actions">
+                    <input type="text" class="approval-reason" data-approval="${this.esc(id)}" placeholder="Reason (optional)" style="flex:1;min-width:10rem;">
+                    <button class="btn-primary" type="button" onclick="agentDetailMonitor.decideApproval('${this.esc(id)}', true)">Approve</button>
+                    <button class="btn-secondary" type="button" onclick="agentDetailMonitor.decideApproval('${this.esc(id)}', false)">Reject</button>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    async decideApproval(approvalId, approved) {
+        const req = this.approvals.get(approvalId);
+        if (!req) return;
+        const reasonEl = [...document.querySelectorAll('.approval-reason')].find(el => el.dataset.approval === approvalId);
+        const reason = reasonEl?.value?.trim() || null;
+        const topic = req.responseTopic || `${this.agentBaseTopic}/approval/response/${approvalId}`;
+        try {
+            const result = await this.client.query(`
+                mutation PublishApproval($input: PublishInput!) {
+                    publish(input: $input) { success error }
+                }
+            `, {
+                input: {
+                    topic,
+                    payload: JSON.stringify({ approved, reason, by: 'dashboard' }),
+                    format: 'JSON',
+                    qos: 1,
+                    retained: false
+                }
+            });
+            if (!result?.publish?.success) throw new Error(result?.publish?.error || 'Publish rejected');
+            this.approvals.delete(approvalId);
+            this.renderApprovals();
+        } catch (e) {
+            console.error('Failed to send approval decision:', e);
+            window.alert?.(`Failed to send decision: ${e.message}`);
+        }
+    }
+
     async init() {
         if (!this.agentName) {
             document.getElementById('page-title').textContent = 'No agent specified';
@@ -51,6 +138,7 @@ class AgentDetailMonitorManager {
         this.setDefaultHistoryDates();
 
         await this.loadInitialData();
+        this.loadPendingApprovals();
         this.connectWebSocket();
         window.registerPageCleanup(() => this.cleanup());
     }
@@ -284,6 +372,16 @@ class AgentDetailMonitorManager {
 
         if (this.isResponseTopic(topic)) {
             this.handleResponseUpdate(update, payload);
+            return;
+        }
+
+        if (topic.startsWith(this.agentBaseTopic + '/stream/')) {
+            this.handleStreamUpdate(update, payload);
+            return;
+        }
+
+        if (topic.startsWith(this.agentBaseTopic + '/approval/')) {
+            this.handleApprovalUpdate(topic, payload);
             return;
         }
 
@@ -534,6 +632,59 @@ class AgentDetailMonitorManager {
             this.responseEntries = this.responseEntries.slice(0, this.maxResponseEntries);
         }
         this.renderResponseStream();
+    }
+
+    // Token stream of agents with streamingEnabled: chunks {taskId, seq, token, done, error}
+    // are accumulated into one live response entry per task.
+    handleStreamUpdate(update, payload) {
+        if (!payload || typeof payload !== 'object') return;
+        const taskId = payload.taskId || update.topic.substring(update.topic.lastIndexOf('/') + 1);
+        if (!this.streamEntries) this.streamEntries = new Map();
+
+        let entry = this.streamEntries.get(taskId);
+        if (!entry) {
+            entry = {
+                topic: update.topic,
+                taskId,
+                timestamp: update.timestamp || Date.now(),
+                state: 'streaming',
+                summary: 'Streaming…',
+                payload: '',
+                chunks: new Map()
+            };
+            this.streamEntries.set(taskId, entry);
+            this.responseEntries.unshift(entry);
+            if (this.responseEntries.length > this.maxResponseEntries) {
+                this.responseEntries = this.responseEntries.slice(0, this.maxResponseEntries);
+            }
+            // Forget old streams that dropped out of the list
+            for (const id of this.streamEntries.keys()) {
+                if (!this.responseEntries.includes(this.streamEntries.get(id))) this.streamEntries.delete(id);
+            }
+        }
+
+        // Chunks may arrive out of order; order them by sequence number
+        if (payload.token) entry.chunks.set(payload.seq ?? entry.chunks.size, payload.token);
+        entry.payload = [...entry.chunks.entries()].sort((a, b) => a[0] - b[0]).map(c => c[1]).join('');
+        entry.timestamp = update.timestamp || Date.now();
+        if (payload.done) {
+            entry.state = payload.error ? 'failed' : 'streamed';
+            entry.summary = payload.error
+                ? `Error: ${String(payload.error).slice(0, 220)}`
+                : this.shortenText(entry.payload, 220) || 'Stream finished';
+        } else {
+            entry.summary = `Streaming… (${entry.chunks.size} chunks)`;
+        }
+        this.scheduleResponseRender();
+    }
+
+    scheduleResponseRender() {
+        if (this.responseRenderPending) return;
+        this.responseRenderPending = true;
+        requestAnimationFrame(() => {
+            this.responseRenderPending = false;
+            this.renderResponseStream();
+        });
     }
 
     addTaskEntry(entry) {

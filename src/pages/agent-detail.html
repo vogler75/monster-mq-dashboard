@@ -267,6 +267,22 @@
                             <label for="agent-task-timeout-seconds">Task Timeout (s)</label>
                             <input type="number" id="agent-task-timeout-seconds" value="60" min="1" step="1" placeholder="60">
                         </div>
+                        <div class="form-group">
+                            <label for="agent-max-call-depth">Max Call Depth</label>
+                            <input type="number" id="agent-max-call-depth" value="5" min="1" step="1" title="Maximum depth of nested agent-to-agent calls">
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" id="agent-state-enabled" style="accent-color: var(--monster-purple);" checked>
+                            <label for="agent-state-enabled" style="margin: 0; cursor: pointer;">Keep Conversation Across Tasks</label>
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" id="agent-persist-memory" style="accent-color: var(--monster-purple);">
+                            <label for="agent-persist-memory" style="margin: 0; cursor: pointer;">Persist Conversation Memory</label>
+                        </div>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" id="agent-streaming-enabled" style="accent-color: var(--monster-purple);">
+                            <label for="agent-streaming-enabled" style="margin: 0; cursor: pointer;">Stream Tokens</label>
+                        </div>
                         <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
                             <input type="checkbox" id="agent-enable-thinking" style="accent-color: var(--monster-purple);">
                             <label for="agent-enable-thinking" style="margin: 0; cursor: pointer;">Enable Thinking</label>
@@ -474,6 +490,13 @@
                         </small>
                     </div>
                     <div class="form-group">
+                        <label for="agent-context-max-tokens">Context Token Budget</label>
+                        <input type="number" id="agent-context-max-tokens" value="0" min="0" step="100" style="max-width: 300px;">
+                        <small style="color: var(--text-muted); margin-top: 0.25rem; display: block;">
+                            Approximate maximum tokens of injected context data (0 = unlimited). Larger sections are truncated, history keeps the newest rows.
+                        </small>
+                    </div>
+                    <div class="form-group">
                         <label for="agent-context-lastval-topics">Lastval Message Topics</label>
                         <textarea id="agent-context-lastval-topics" rows="4" data-drop-zone-enabled="true" placeholder="sensors/#&#10;enterprise/+/value @SCADA" style="font-family: monospace; font-size: 0.85rem;"></textarea>
                         <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
@@ -498,6 +521,53 @@
                         <button type="button" class="btn-secondary" id="add-history-query-btn" style="margin-top: 0.5rem; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
                             + Add History Query
                         </button>
+                    </div>
+
+                    <!-- Semantic Search (RAG) -->
+                    <div class="form-group full-width" style="margin-top: 1.5rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                            <input type="checkbox" id="agent-rag-enabled" style="accent-color: var(--monster-purple);">
+                            <span style="font-weight: 500;">Semantic Search (RAG)</span>
+                        </label>
+                        <small style="color: var(--text-muted); margin-top: 0.25rem; display: block;">
+                            Indexes topic values and history of an archive group with an embedding model and gives the agent a <code>semanticSearch</code> tool.
+                        </small>
+                    </div>
+                    <div class="form-grid" id="agent-rag-settings">
+                        <div class="form-group">
+                            <label for="agent-rag-archive-group">Archive Group</label>
+                            <input type="text" id="agent-rag-archive-group" value="Default">
+                        </div>
+                        <div class="form-group">
+                            <label for="agent-rag-lookback-seconds">History Lookback (s)</label>
+                            <input type="number" id="agent-rag-lookback-seconds" value="86400" min="0" step="60">
+                        </div>
+                        <div class="form-group">
+                            <label for="agent-rag-refresh-seconds">Refresh Interval (s)</label>
+                            <input type="number" id="agent-rag-refresh-seconds" value="300" min="10" step="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="agent-rag-max-results">Max Results</label>
+                            <input type="number" id="agent-rag-max-results" value="5" min="1" max="50">
+                        </div>
+                        <div class="form-group">
+                            <label for="agent-embedding-provider">Embedding Provider</label>
+                            <select id="agent-embedding-provider">
+                                <option value="">Same as agent provider</option>
+                                <option value="gemini">Gemini</option>
+                                <option value="openai">OpenAI</option>
+                                <option value="ollama">Ollama</option>
+                                <option value="azure-openai">Azure OpenAI</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="agent-embedding-model">Embedding Model</label>
+                            <input type="text" id="agent-embedding-model" placeholder="Provider default">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="agent-rag-topics">Indexed Topics</label>
+                            <textarea id="agent-rag-topics" rows="3" data-drop-zone-enabled="true" placeholder="One topic filter per line (empty = all topics of the archive group)" style="font-family: monospace; font-size: 0.85rem;"></textarea>
+                        </div>
                     </div>
                 </div>
             </div>

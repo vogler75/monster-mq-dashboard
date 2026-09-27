@@ -86,6 +86,12 @@ class AgentDetailManager {
         document.getElementById('agent-max-tokens').value = '';
         document.getElementById('agent-max-tool-iterations').value = '10';
         document.getElementById('agent-memory-window-size').value = '40';
+        document.getElementById('agent-max-call-depth').value = '5';
+        document.getElementById('agent-state-enabled').checked = true;
+        document.getElementById('agent-persist-memory').checked = false;
+        document.getElementById('agent-streaming-enabled').checked = false;
+        document.getElementById('agent-context-max-tokens').value = '0';
+        this.populateRagSettings({});
         document.getElementById('agent-enable-thinking').checked = false;
         document.getElementById('agent-trigger-type').value = 'MQTT';
         document.getElementById('agent-schedule-mode').value = 'interval';
@@ -283,6 +289,17 @@ class AgentDetailManager {
 
     getSelectedSubAgents() {
         return Array.from(document.querySelectorAll('.sub-agent-checkbox:checked')).map(cb => cb.value);
+    }
+
+    populateRagSettings(d) {
+        document.getElementById('agent-rag-enabled').checked = d.ragEnabled || false;
+        document.getElementById('agent-rag-archive-group').value = d.ragArchiveGroup || 'Default';
+        document.getElementById('agent-rag-topics').value = (d.ragTopics || []).join('\n');
+        document.getElementById('agent-rag-lookback-seconds').value = d.ragLookbackSeconds != null ? d.ragLookbackSeconds : 86400;
+        document.getElementById('agent-rag-refresh-seconds').value = d.ragRefreshSeconds != null ? d.ragRefreshSeconds : 300;
+        document.getElementById('agent-rag-max-results').value = d.ragMaxResults != null ? d.ragMaxResults : 5;
+        document.getElementById('agent-embedding-provider').value = d.embeddingProvider || '';
+        document.getElementById('agent-embedding-model').value = d.embeddingModel || '';
     }
 
     parseCommaSeparatedList(raw) {
@@ -512,6 +529,18 @@ class AgentDetailManager {
                         subAgents
                         visibleAgentTags
                         isolatedAgent
+                        persistMemory
+                        maxCallDepth
+                        streamingEnabled
+                        contextMaxTokens
+                        ragEnabled
+                        ragArchiveGroup
+                        ragTopics
+                        ragLookbackSeconds
+                        ragRefreshSeconds
+                        ragMaxResults
+                        embeddingProvider
+                        embeddingModel
                         createdAt
                         updatedAt
                     }
@@ -610,6 +639,12 @@ class AgentDetailManager {
         document.getElementById('agent-max-tool-iterations').value = d.maxToolIterations != null ? d.maxToolIterations : 10;
         document.getElementById('agent-memory-window-size').value = d.memoryWindowSize != null ? d.memoryWindowSize : 20;
         document.getElementById('agent-task-timeout-seconds').value = d.taskTimeoutSeconds != null ? d.taskTimeoutSeconds : 60;
+        document.getElementById('agent-max-call-depth').value = d.maxCallDepth != null ? d.maxCallDepth : 5;
+        document.getElementById('agent-state-enabled').checked = d.stateEnabled !== false;
+        document.getElementById('agent-persist-memory').checked = d.persistMemory || false;
+        document.getElementById('agent-streaming-enabled').checked = d.streamingEnabled || false;
+        document.getElementById('agent-context-max-tokens').value = d.contextMaxTokens || 0;
+        this.populateRagSettings(d);
         document.getElementById('agent-enable-thinking').checked = d.enableThinking || false;
         document.getElementById('agent-conversation-log').checked = d.conversationLogEnabled !== false;
 
@@ -728,6 +763,20 @@ class AgentDetailManager {
             maxToolIterations: parseInt(document.getElementById('agent-max-tool-iterations').value) || null,
             memoryWindowSize: parseInt(document.getElementById('agent-memory-window-size').value) || null,
             taskTimeoutSeconds: parseInt(document.getElementById('agent-task-timeout-seconds').value) || null,
+            maxCallDepth: parseInt(document.getElementById('agent-max-call-depth').value) || null,
+            stateEnabled: document.getElementById('agent-state-enabled').checked,
+            persistMemory: document.getElementById('agent-persist-memory').checked,
+            streamingEnabled: document.getElementById('agent-streaming-enabled').checked,
+            contextMaxTokens: parseInt(document.getElementById('agent-context-max-tokens').value) || 0,
+            ragEnabled: document.getElementById('agent-rag-enabled').checked,
+            ragArchiveGroup: document.getElementById('agent-rag-archive-group').value.trim() || 'Default',
+            ragTopics: document.getElementById('agent-rag-topics').value
+                .split('\n').map(t => t.trim()).filter(t => t.length > 0),
+            ragLookbackSeconds: parseInt(document.getElementById('agent-rag-lookback-seconds').value) || 0,
+            ragRefreshSeconds: parseInt(document.getElementById('agent-rag-refresh-seconds').value) || 300,
+            ragMaxResults: parseInt(document.getElementById('agent-rag-max-results').value) || 5,
+            embeddingProvider: document.getElementById('agent-embedding-provider').value || null,
+            embeddingModel: document.getElementById('agent-embedding-model').value.trim() || null,
             enableThinking: document.getElementById('agent-enable-thinking').checked,
             conversationLogEnabled: document.getElementById('agent-conversation-log').checked,
             triggerType: document.getElementById('agent-trigger-type').value,

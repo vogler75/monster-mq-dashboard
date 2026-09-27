@@ -99,7 +99,8 @@ const VisualFlow = (() => {
     const icons = {
       function: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>',
       database: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>',
-      timer: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l3 2"></path><path d="M9 2h6"></path></svg>'
+      timer: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l3 2"></path><path d="M9 2h6"></path></svg>',
+      agent: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="8" width="16" height="12" rx="2"></rect><path d="M12 4v4"></path><circle cx="12" cy="3" r="1"></circle><circle cx="9" cy="14" r="1"></circle><circle cx="15" cy="14" r="1"></circle></svg>'
     };
     return icons[type] || '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>';
   }
@@ -210,6 +211,14 @@ const VisualFlow = (() => {
       config = {
         frequency: 1000
       };
+    } else if(type === 'agent'){
+      config = {
+        agentName: '',
+        org: 'default',
+        site: 'default',
+        sessionId: '',
+        timeoutSeconds: 300
+      };
     }
 
     const nodeObj = { id, type, name: type+'_'+state.nodes.length, config, inputs:[...def.defaultInputs], outputs:[...def.defaultOutputs], position:{ x:120 + (state.nodes.length*30)%400, y:120 + Math.floor(state.nodes.length/10)*100 }};
@@ -278,6 +287,12 @@ const VisualFlow = (() => {
     } else if(n.type === 'timer'){
       n.config.frequency = parseInt(qs('#n-frequency')?.value || '1000');
       n.config.value = qs('#n-timer-value')?.value ?? '';
+    } else if(n.type === 'agent'){
+      n.config.agentName = (qs('#n-agent-name')?.value || '').trim();
+      n.config.org = (qs('#n-agent-org')?.value || '').trim() || 'default';
+      n.config.site = (qs('#n-agent-site')?.value || '').trim() || 'default';
+      n.config.sessionId = (qs('#n-agent-session')?.value || '').trim();
+      n.config.timeoutSeconds = parseInt(qs('#n-agent-timeout')?.value || '300') || 300;
     }
 
     renderAll();
@@ -414,13 +429,16 @@ const VisualFlow = (() => {
     if(funcForm) funcForm.style.display = n.type === 'function' ? 'block' : 'none';
     if(dbForm) dbForm.style.display = n.type === 'database' ? 'block' : 'none';
     if(timerForm) timerForm.style.display = n.type === 'timer' ? 'block' : 'none';
+    const agentForm = qs('#node-form-agent');
+    if(agentForm) agentForm.style.display = n.type === 'agent' ? 'block' : 'none';
 
     // Hide inputs/outputs for timer and database nodes (they have fixed ports)
     const inputsGroup = qs('#inputs-group');
     const outputsGroup = qs('#outputs-group');
     const hideInputsOutputs = n.type === 'timer' || n.type === 'database';
     if(inputsGroup) inputsGroup.style.display = hideInputsOutputs ? 'none' : 'block';
-    if(outputsGroup) outputsGroup.style.display = hideInputsOutputs ? 'none' : 'block';
+    // Agent nodes have fixed outputs (result, error) but may get an extra "sessionId" input
+    if(outputsGroup) outputsGroup.style.display = (hideInputsOutputs || n.type === 'agent') ? 'none' : 'block';
 
     // Populate function form
     if(n.type === 'function'){
@@ -461,6 +479,16 @@ const VisualFlow = (() => {
 
       if(frequencyField) frequencyField.value = n.config?.frequency || 1000;
       if(timerValueField) timerValueField.value = n.config?.value ?? '';
+    }
+
+    // Populate agent form
+    if(n.type === 'agent'){
+      const setVal = (sel, v) => { const el = qs(sel); if(el) el.value = v; };
+      setVal('#n-agent-name', n.config?.agentName || '');
+      setVal('#n-agent-org', n.config?.org || 'default');
+      setVal('#n-agent-site', n.config?.site || 'default');
+      setVal('#n-agent-session', n.config?.sessionId || '');
+      setVal('#n-agent-timeout', n.config?.timeoutSeconds || 300);
     }
   }
   // Enhance script area after panel update

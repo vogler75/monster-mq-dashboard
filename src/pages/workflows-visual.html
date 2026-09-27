@@ -876,6 +876,31 @@
             </div>
           </div>
 
+          <!-- Agent Node Form -->
+          <div id="node-form-agent" style="display:none;">
+            <div class="form-group">
+              <label class="form-label">Agent Name</label>
+              <input id="n-agent-name" placeholder="MyAgent">
+              <span class="inline-hint">The input value is sent as a task to this agent; its answer is emitted on "result", failures and timeouts on "error"</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Organization / Site</label>
+              <div style="display: flex; gap: 0.5rem;">
+                <input id="n-agent-org" placeholder="default" value="default">
+                <input id="n-agent-site" placeholder="default" value="default">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Session ID</label>
+              <input id="n-agent-session" placeholder="(optional)">
+              <span class="inline-hint">Tasks with the same session share the agent's chat memory. Can also be provided via an input named "sessionId"</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Timeout (seconds)</label>
+              <input id="n-agent-timeout" type="number" placeholder="300" value="300">
+            </div>
+          </div>
+
           <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
             <button class="btn btn-primary btn-small" style="flex: 1;" onclick="VisualFlow.saveNode()">Update</button>
             <button class="btn btn-danger btn-small" onclick="VisualFlow.deleteNode()">Delete</button>
