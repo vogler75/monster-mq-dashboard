@@ -1,3 +1,46 @@
+// Mutual-TLS fields (issue #111). Older brokers lack them, so both the query
+// selection and the mutation input are filtered by schema introspection.
+const TLS_QUERY_FIELDS = ['tlsCaCertPath', 'tlsClientCertPath', 'tlsClientKeyPath', 'tlsClientKeyPasswordSet',
+    'tlsClientKeyFormat', 'tlsAlpnProtocols', 'tlsServerName'];
+const TLS_INPUT_FIELDS = ['tlsCaCertPath', 'tlsClientCertPath', 'tlsClientKeyPath', 'tlsClientKeyPassword',
+    'tlsClientKeyFormat', 'tlsAlpnProtocols', 'tlsServerName'];
+
+export function mqttTlsSupportState(configFields, inputFields) {
+    if (!configFields.has('brokerUrl') || !inputFields.has('brokerUrl')) return 'unknown';
+    const queryCount = TLS_QUERY_FIELDS.filter(f => configFields.has(f)).length;
+    const inputCount = TLS_INPUT_FIELDS.filter(f => inputFields.has(f)).length;
+    if (queryCount === TLS_QUERY_FIELDS.length && inputCount === TLS_INPUT_FIELDS.length) return 'supported';
+    if (queryCount === 0 && inputCount === 0) return 'legacy';
+    return 'unknown';
+}
+
+export function isMqttTlsUrl(url) {
+    const normalized = (url || '').trim().toLowerCase();
+    return normalized.startsWith('ssl://') || normalized.startsWith('tls://') || normalized.startsWith('wss://');
+}
+
+export function buildMqttTlsInput(values) {
+    if (!isMqttTlsUrl(values.brokerUrl)) {
+        // Empty values explicitly clear stored TLS options when changing to plain TCP/WS.
+        return {
+            tlsCaCertPath: '', tlsClientCertPath: '', tlsClientKeyPath: '',
+            tlsClientKeyPassword: values.passwordSet ? '' : null,
+            tlsClientKeyFormat: 'PEM', tlsAlpnProtocols: [], tlsServerName: ''
+        };
+    }
+    const format = values.tlsClientKeyFormat === 'PKCS12' ? 'PKCS12' : 'PEM';
+    const alpn = (values.tlsAlpnProtocols || '').split(',').map(p => p.trim()).filter(Boolean);
+    return {
+        tlsCaCertPath: (values.tlsCaCertPath || '').trim(),
+        tlsClientCertPath: (values.tlsClientCertPath || '').trim(),
+        tlsClientKeyPath: format === 'PKCS12' ? '' : (values.tlsClientKeyPath || '').trim(),
+        tlsClientKeyPassword: values.clearPassword ? '' : (values.tlsClientKeyPassword || null),
+        tlsClientKeyFormat: format,
+        tlsAlpnProtocols: alpn,
+        tlsServerName: (values.tlsServerName || '').trim()
+    };
+}
+
 // Mounted by the SPA router; resources and handler bindings belong to this visit.
 export function mount(page) {
 const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
@@ -13,6 +56,10 @@ class MqttClientDetailManager {
         this.clusterNodes = [];
         this.deleteAddressRemoteTopic = null;
         this.editAddressOriginalRemoteTopic = null;
+        this.tlsQueryFields = new Set();
+        this.tlsInputFields = new Set();
+        this.tlsSupportState = 'unknown';
+        this.tlsKeyPasswordSet = false;
         this.init();
     }
 
@@ -20,6 +67,9 @@ class MqttClientDetailManager {
         const urlParams = new URLSearchParams(window.location.search);
         this.clientName = urlParams.get('client');
         this.isNew = urlParams.get('new') === 'true';
+
+        this.bindTlsControls();
+        await this.loadTlsSupport();
 
         if (this.isNew) {
             await this.loadClusterNodes();
@@ -57,6 +107,131 @@ class MqttClientDetailManager {
         }
     }
 
+    async loadTlsSupport() {
+        try {
+            // getTypeFields() turns failed introspection into an empty set. Query directly
+            // so a failed request cannot be mistaken for an older broker schema.
+            const result = await this.client.query(`
+                query GetMqttClientTlsFields {
+                    config: __type(name: "MqttClientConnectionConfig") { fields { name } }
+                    input: __type(name: "MqttClientConnectionConfigInput") { inputFields { name } }
+                }
+            `);
+            const configFields = new Set(result?.config?.fields?.map(f => f.name) || []);
+            const inputFields = new Set(result?.input?.inputFields?.map(f => f.name) || []);
+            if (!configFields.has('brokerUrl') || !inputFields.has('brokerUrl'))
+                throw new Error('MQTT client config types were not returned by schema introspection');
+            this.tlsQueryFields = new Set(TLS_QUERY_FIELDS.filter(f => configFields.has(f)));
+            this.tlsInputFields = new Set(TLS_INPUT_FIELDS.filter(f => inputFields.has(f)));
+            this.tlsSupportState = mqttTlsSupportState(configFields, inputFields);
+            if (this.tlsSupportState === 'unknown') {
+                console.warn('Incomplete MQTT TLS schema; saving is disabled to protect certificate settings');
+            }
+        } catch (error) {
+            console.warn('MQTT TLS field introspection failed; saving is disabled:', error?.message || error);
+            this.tlsQueryFields = new Set();
+            this.tlsInputFields = new Set();
+            this.tlsSupportState = 'unknown';
+        }
+        this.updateTlsVisibility();
+    }
+
+    isTlsSupported() {
+        return this.tlsSupportState === 'supported';
+    }
+
+    isTlsBrokerUrl() {
+        return isMqttTlsUrl(document.getElementById('client-broker-url')?.value);
+    }
+
+    bindTlsControls() {
+        document.getElementById('client-broker-url')?.addEventListener('input', () => this.updateTlsVisibility());
+        document.getElementById('client-tls-key-format')?.addEventListener('change', () => this.updateTlsKeyFormat());
+        document.getElementById('client-tls-key-password-clear')?.addEventListener('change', (e) => {
+            const pw = document.getElementById('client-tls-key-password');
+            if (!pw) return;
+            pw.disabled = e.target.checked;
+            if (e.target.checked) pw.value = '';
+        });
+    }
+
+    updateTlsVisibility() {
+        const section = document.getElementById('tls-client-cert-section');
+        if (!section) return;
+        section.style.display = (this.isTlsSupported() && this.isTlsBrokerUrl()) ? 'block' : 'none';
+    }
+
+    updateTlsKeyFormat() {
+        const isPkcs12 = document.getElementById('client-tls-key-format')?.value === 'PKCS12';
+        const keyGroup = document.getElementById('client-tls-key-path-group');
+        if (keyGroup) keyGroup.style.display = isPkcs12 ? 'none' : '';
+        const certLabel = document.getElementById('client-tls-cert-path-label');
+        if (certLabel) certLabel.textContent = isPkcs12 ? 'PKCS12 Bundle Path' : 'Client Certificate Path';
+        const certInput = document.getElementById('client-tls-cert-path');
+        if (certInput) certInput.placeholder = isPkcs12 ? '/etc/monstermq/certs/client.p12' : '/etc/monstermq/certs/client.pem';
+    }
+
+    setTlsPasswordState(passwordSet) {
+        this.tlsKeyPasswordSet = !!passwordSet;
+        const pw = document.getElementById('client-tls-key-password');
+        if (pw) {
+            pw.value = '';
+            pw.disabled = false;
+            pw.placeholder = this.tlsKeyPasswordSet ? '(unchanged)' : '';
+        }
+        const clearGroup = document.getElementById('client-tls-key-password-clear-group');
+        if (clearGroup) clearGroup.style.display = this.tlsKeyPasswordSet ? 'flex' : 'none';
+        const clear = document.getElementById('client-tls-key-password-clear');
+        if (clear) clear.checked = false;
+    }
+
+    renderTlsConfig(cfg) {
+        const set = (id, value) => { const el = document.getElementById(id); if (el) el.value = value ?? ''; };
+        set('client-tls-ca-cert-path', cfg?.tlsCaCertPath);
+        set('client-tls-cert-path', cfg?.tlsClientCertPath);
+        set('client-tls-key-path', cfg?.tlsClientKeyPath);
+        set('client-tls-key-format', cfg?.tlsClientKeyFormat === 'PKCS12' ? 'PKCS12' : 'PEM');
+        set('client-tls-alpn', Array.isArray(cfg?.tlsAlpnProtocols) ? cfg.tlsAlpnProtocols.join(', ') : '');
+        set('client-tls-server-name', cfg?.tlsServerName);
+        this.setTlsPasswordState(cfg?.tlsClientKeyPasswordSet);
+        this.updateTlsKeyFormat();
+        this.updateTlsVisibility();
+    }
+
+    collectTlsConfig() {
+        const value = id => document.getElementById(id)?.value || '';
+        return buildMqttTlsInput({
+            brokerUrl: value('client-broker-url'),
+            tlsCaCertPath: value('client-tls-ca-cert-path'),
+            tlsClientCertPath: value('client-tls-cert-path'),
+            tlsClientKeyPath: value('client-tls-key-path'),
+            tlsClientKeyPassword: value('client-tls-key-password'),
+            tlsClientKeyFormat: value('client-tls-key-format'),
+            tlsAlpnProtocols: value('client-tls-alpn'),
+            tlsServerName: value('client-tls-server-name'),
+            passwordSet: this.tlsKeyPasswordSet,
+            clearPassword: this.tlsKeyPasswordSet && document.getElementById('client-tls-key-password-clear')?.checked
+        });
+    }
+
+    validateTlsConfig(cfg) {
+        if (!this.isTlsSupported()) return null;
+        if (cfg.tlsClientKeyFormat === 'PKCS12') {
+            if (!cfg.tlsClientCertPath) return 'PKCS12 bundle path is required when the client key format is PKCS12.';
+        } else if (!!cfg.tlsClientCertPath !== !!cfg.tlsClientKeyPath) {
+            return 'Client certificate path and client private key path must both be set or both be empty.';
+        }
+        return null;
+    }
+
+    // Removes TLS keys the connected broker does not understand from the mutation input.
+    stripUnsupportedTlsInput(config) {
+        TLS_INPUT_FIELDS.forEach(f => {
+            if (!this.tlsInputFields.has(f)) delete config[f];
+        });
+        return config;
+    }
+
     showNewClientForm() {
         document.getElementById('page-title').textContent = 'Add MQTT Bridge';
         document.getElementById('page-subtitle').textContent = 'Create a new MQTT broker connection';
@@ -85,6 +260,7 @@ class MqttClientDetailManager {
         document.getElementById('client-buffer-size').value = '5000';
         document.getElementById('client-persist-buffer').checked = false;
         document.getElementById('client-delete-oldest').checked = false;
+        this.renderTlsConfig({ tlsClientKeyFormat: 'PEM', tlsClientKeyPasswordSet: false });
 
         // Update save button label
         const saveBtn = document.getElementById('save-client-btn');
@@ -141,6 +317,7 @@ class MqttClientDetailManager {
                             brokerUrl username clientId cleanSession keepAlive reconnectDelay connectionTimeout
                             bufferEnabled bufferImplementation bufferSize persistBuffer deleteOldestMessages sslVerifyCertificate
                             protocolVersion sessionExpiryInterval receiveMaximum maximumPacketSize topicAliasMaximum
+                            ${[...this.tlsQueryFields].join(' ')}
                             addresses { 
                                 mode remoteTopic localTopic removePath qos 
                                 noLocal retainHandling retainAsPublished
@@ -159,7 +336,6 @@ class MqttClientDetailManager {
             }
 
             this.clientData = result.mqttClients[0];
-            console.log('[DEBUG] Loaded client data:', JSON.stringify(this.clientData.config, null, 2));
             this.renderClientInfo();
             this.renderAddressesList();
 
@@ -215,6 +391,7 @@ class MqttClientDetailManager {
         document.getElementById('client-buffer-size').value = cfg.bufferSize || 5000;
         document.getElementById('client-persist-buffer').checked = cfg.persistBuffer || false;
         document.getElementById('client-delete-oldest').checked = cfg.deleteOldestMessages !== undefined ? cfg.deleteOldestMessages : false;
+        this.renderTlsConfig(cfg);
 
         // Timestamps (read-only)
         this.setText('client-created-at', new Date(d.createdAt).toLocaleString());
@@ -319,7 +496,8 @@ class MqttClientDetailManager {
                 sessionExpiryInterval: protocolVersion === 5 ? parseInt(document.getElementById('client-session-expiry').value) : null,
                 receiveMaximum: protocolVersion === 5 ? parseInt(document.getElementById('client-receive-maximum').value) : null,
                 maximumPacketSize: protocolVersion === 5 ? parseInt(document.getElementById('client-max-packet-size').value) : null,
-                topicAliasMaximum: protocolVersion === 5 ? parseInt(document.getElementById('client-topic-alias-max').value) : null
+                topicAliasMaximum: protocolVersion === 5 ? parseInt(document.getElementById('client-topic-alias-max').value) : null,
+                ...this.collectTlsConfig()
             }
         };
     }
@@ -368,6 +546,11 @@ class MqttClientDetailManager {
             return;
         }
 
+        if (this.tlsSupportState === 'unknown') {
+            this.showError('Cannot determine this broker\'s MQTT TLS fields. Reload the page and try again before saving.');
+            return;
+        }
+
         const data = this.collectFormData();
 
         const nameError = window.validateNameInput(data.name, 'Bridge');
@@ -375,6 +558,16 @@ class MqttClientDetailManager {
             this.showError(nameError);
             return;
         }
+
+        const tlsError = this.validateTlsConfig(data.config);
+        if (tlsError) {
+            const hidden = document.getElementById('tls-client-cert-section')?.style.display === 'none';
+            this.showError(hidden
+                ? `${tlsError} (TLS settings are editable when the broker URL uses ssl://, tls:// or wss://.)`
+                : tlsError);
+            return;
+        }
+        this.stripUnsupportedTlsInput(data.config);
 
         if (this.isNew) {
             try {

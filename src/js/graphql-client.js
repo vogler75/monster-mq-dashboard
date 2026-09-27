@@ -313,28 +313,14 @@ class GraphQLDashboardClient {
 
         // Extract query/mutation name for better debugging
         const queryMatch = query.match(/(?:query|mutation|subscription)\s+(\w+)/);
-        const queryName = queryMatch ? queryMatch[1] : query.substring(0, 50) + '...';
-
-        // Clean up query for display (remove extra whitespace)
-        const cleanQuery = query.trim().replace(/\s+/g, ' ').replace(/\n/g, ' ');
+        const queryName = queryMatch ? queryMatch[1] : 'anonymous';
 
         const endpoint = await this.resolveEndpoint();
 
-        // Debug logging
-        console.log('=== GraphQL Request ===');
-        console.log('Endpoint:', endpoint);
-        console.log('Operation:', queryName);
-        console.log('Query:', cleanQuery);
-        console.log('Variables:', JSON.stringify(variables));
-        console.log('Headers:', {
-            'Content-Type': headers['Content-Type'],
-            'Authorization': headers.Authorization ? '[Token Present]' : '[No Token]'
-        });
-        const tokenKind = token && token !== 'null' && window.isJwtToken && !window.isJwtToken(token) ? 'session token' : 'JWT token';
-        console.log('Token Status:', token === 'null' ? 'null (auth disabled)' : token ? `${tokenKind} present (${token.substring(0, 20)}...)` : 'no token');
-
+        // Log only the operation name. Query text, variables and headers can
+        // contain credentials such as MQTT and TLS private-key passwords.
+        console.log('GraphQL request:', queryName);
         const requestBody = JSON.stringify({ query, variables });
-        console.log('Request Body:', requestBody);
 
         try {
             const response = await fetch(endpoint, {
@@ -343,9 +329,7 @@ class GraphQLDashboardClient {
                 body: requestBody
             });
 
-            console.log('=== GraphQL Response ===');
-            console.log('Status:', response.status, response.statusText);
-            console.log('Headers:', Object.fromEntries(response.headers.entries()));
+            console.log('GraphQL response status:', response.status, response.statusText);
 
             // Handle authentication errors (401/403)
             if (response.status === 401 || response.status === 403) {
@@ -364,30 +348,22 @@ class GraphQLDashboardClient {
                 const errorText = await response.text();
                 console.error('=== GraphQL HTTP Error ===');
                 console.error('Status:', response.status, response.statusText);
-                console.error('Response Body:', errorText);
                 console.error('========================');
                 throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
             }
 
             const responseText = await response.text();
-            console.log('Raw Response:', responseText.length > 500 ? responseText.substring(0, 500) + '...' : responseText);
-
             let result;
             try {
                 result = JSON.parse(responseText);
             } catch (parseError) {
                 console.error('Failed to parse GraphQL response as JSON:', parseError);
-                console.error('Response was:', responseText);
                 throw new Error('Invalid JSON response from GraphQL server');
             }
 
-            console.log('Parsed Response:', result);
-
             if (result.errors) {
                 console.error('=== GraphQL Query Errors ===');
-                result.errors.forEach((error, index) => {
-                    console.error(`Error ${index + 1}:`, error);
-                });
+                console.error('Operation:', queryName);
                 console.error('===========================');
 
                 // Check for authentication-related errors in GraphQL response
@@ -417,14 +393,12 @@ class GraphQLDashboardClient {
             }
 
             console.log('=== GraphQL Success ===');
-            console.log('Data:', result.data);
             console.log('=======================');
 
             return result.data;
         } catch (error) {
             console.error('=== GraphQL Exception ===');
-            console.error('Error:', error.message);
-            console.error('Stack:', error.stack);
+            console.error('Operation:', queryName);
             console.error('========================');
             throw error;
         }
@@ -898,7 +872,7 @@ window.debugAuth = function () {
     const isAdmin = localStorage.getItem('monstermq_isAdmin');
 
     console.log('=== Authentication Debug ===');
-    console.log('Token:', token);
+    console.log('Token present:', !!token && token !== 'null');
     console.log('Token type:', typeof token);
     console.log('Token === "null":', token === 'null');
     console.log('Token === null:', token === null);
@@ -912,7 +886,6 @@ window.debugAuth = function () {
             const parts = token.split('.');
             if (parts.length === 3) {
                 const decoded = window.decodeJwtPayload ? window.decodeJwtPayload(token) : JSON.parse(atob(parts[1]));
-                console.log('JWT Decoded:', decoded);
                 const now = Date.now() / 1000;
                 console.log('Token expired:', decoded.exp < now);
             }

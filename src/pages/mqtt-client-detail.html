@@ -147,7 +147,7 @@
                                 <label for="client-broker-url">Broker URL *</label>
                                 <input type="text" id="client-broker-url" required placeholder="e.g., ssl://broker.example.com:8883">
                                 <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
-                                    Examples: tcp://host:1883, ssl://host:8883, wss://host:443/mqtt
+                                    Examples: tcp://host:1883, ssl://host:8883, tls://host:8883 (edge), wss://host:443/mqtt
                                 </small>
                             </div>
                             <div class="form-group">
@@ -255,6 +255,68 @@
                             <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
                                 Uncheck to allow self-signed certificates (not recommended for production)
                             </small>
+                        </div>
+
+                        <!-- TLS / Client Certificate (mutual TLS); shown for ssl://, tls:// and wss:// broker URLs -->
+                        <div id="tls-client-cert-section" style="display: none;">
+                            <h4 style="margin: 1.5rem 0 1rem 0; color: var(--monster-purple); font-size: 1rem; font-weight: 600; border-bottom: 1px solid var(--dark-border); padding-bottom: 0.5rem;">
+                                TLS / Client Certificate
+                            </h4>
+                            <small style="color: var(--text-muted); margin-bottom: 1rem; display: block;">
+                                All paths refer to files on the broker host, on the cluster node running this bridge. Leave empty to use the default trust store and no client certificate.
+                            </small>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="client-tls-ca-cert-path">CA Certificate Path</label>
+                                    <input type="text" id="client-tls-ca-cert-path" placeholder="/etc/monstermq/certs/ca.pem">
+                                    <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
+                                        PEM file with trusted CA certificates; replaces the default trust store when set
+                                    </small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="client-tls-key-format">Client Key Format</label>
+                                    <select id="client-tls-key-format">
+                                        <option value="PEM">PEM</option>
+                                        <option value="PKCS12">PKCS12</option>
+                                    </select>
+                                    <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
+                                        PEM: separate certificate and key files. PKCS12: single .p12/.pfx bundle.
+                                    </small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="client-tls-cert-path" id="client-tls-cert-path-label">Client Certificate Path</label>
+                                    <input type="text" id="client-tls-cert-path" placeholder="/etc/monstermq/certs/client.pem">
+                                </div>
+                                <div class="form-group" id="client-tls-key-path-group">
+                                    <label for="client-tls-key-path">Client Private Key Path</label>
+                                    <input type="text" id="client-tls-key-path" placeholder="/etc/monstermq/certs/client.key">
+                                </div>
+                                <div class="form-group">
+                                    <label for="client-tls-key-password">Key Password</label>
+                                    <input type="password" id="client-tls-key-password" autocomplete="new-password">
+                                    <div class="checkbox-group" id="client-tls-key-password-clear-group" style="display: none; margin-top: 0.5rem;">
+                                        <input type="checkbox" id="client-tls-key-password-clear">
+                                        <label for="client-tls-key-password-clear"><small>Clear stored password</small></label>
+                                    </div>
+                                    <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
+                                        Password of the private key or PKCS12 bundle. Leave blank to keep the stored value.
+                                    </small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="client-tls-alpn">ALPN Protocols</label>
+                                    <input type="text" id="client-tls-alpn" placeholder="e.g., x-amzn-mqtt-ca">
+                                    <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
+                                        Comma-separated. Example: x-amzn-mqtt-ca for AWS IoT Core on port 443.
+                                    </small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="client-tls-server-name">TLS Server Name (SNI)</label>
+                                    <input type="text" id="client-tls-server-name">
+                                    <small style="color: var(--text-muted); margin-top: 0.5rem; display: block;">
+                                        Server name sent via SNI and used for hostname verification; defaults to the broker URL host
+                                    </small>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-section">
