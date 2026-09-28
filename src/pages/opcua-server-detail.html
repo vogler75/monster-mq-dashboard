@@ -107,6 +107,56 @@
                     </div>
 
                     <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--dark-border);">
+                        <h3 style="color:var(--text-primary); margin-bottom:1rem;">Security</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Security Policies *</label>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="security-policy-none" class="security-policy" value="None">
+                                    <label for="security-policy-none">None</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="security-policy-basic256sha256" class="security-policy" value="Basic256Sha256">
+                                    <label for="security-policy-basic256sha256">Basic256Sha256</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="security-policy-basic128rsa15" class="security-policy" value="Basic128Rsa15">
+                                    <label for="security-policy-basic128rsa15">Basic128Rsa15 (deprecated)</label>
+                                </div>
+                                <span class="form-hint">Encrypted policies offer Sign and SignAndEncrypt endpoints.</span>
+                            </div>
+                            <div class="form-group">
+                                <label>Access Control</label>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="security-allow-unencrypted">
+                                    <label for="security-allow-unencrypted">Allow Unencrypted Connections</label>
+                                </div>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="security-allow-anonymous">
+                                    <label for="security-allow-anonymous">Allow Anonymous Access</label>
+                                </div>
+                                <span class="form-hint">Username/password logins are validated against MonsterMQ users when user management is enabled. Disabling anonymous access requires user management.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="security-certificate-dir">Certificate Directory</label>
+                                <input type="text" id="security-certificate-dir" placeholder="./security">
+                                <span class="form-hint">Holds the server certificate <code>monstermq-opcua-server-{name}.pfx</code> (alias <code>opcua-server</code>) and trusted client certificates.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="security-keystore-password">Certificate Password</label>
+                                <input type="password" id="security-keystore-password" autocomplete="new-password">
+                                <span class="form-hint" id="security-keystore-password-hint">Password of the server certificate keystore.</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="security-create-self-signed">
+                                <label for="security-create-self-signed">Create Self-Signed Certificate if missing</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:2rem; padding-top:1.5rem; border-top:1px solid var(--dark-border);">
                         <h3 style="color:var(--text-primary); margin-bottom:1rem;">Timestamps</h3>
                         <div class="form-grid">
                             <div class="form-group">

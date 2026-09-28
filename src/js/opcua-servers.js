@@ -68,11 +68,9 @@ async function loadServers() {
                         unit
                     }
                     security {
-                        keystorePath
-                        certificateAlias
                         securityPolicies
                         allowAnonymous
-                        requireAuthentication
+                        allowUnencrypted
                     }
                 }
             }

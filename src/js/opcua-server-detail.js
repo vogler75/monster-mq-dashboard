@@ -74,6 +74,13 @@ class OpcUaServerDetailManager {
                         bufferSize
                         createdAt
                         updatedAt
+                        security {
+                            securityPolicies
+                            allowAnonymous
+                            allowUnencrypted
+                            certificateDir
+                            createSelfSigned
+                        }
                         addresses {
                             mqttTopic
                             dataType
@@ -131,6 +138,7 @@ class OpcUaServerDetailManager {
         document.getElementById('server-update-interval').value = d.updateInterval;
         document.getElementById('server-buffer-size').value = d.bufferSize;
         document.getElementById('server-enabled').checked = d.enabled;
+        this.renderSecurity(d.security, false);
 
         // Status badge
         const statusBadge = document.getElementById('server-status');
@@ -172,6 +180,7 @@ class OpcUaServerDetailManager {
         document.getElementById('server-update-interval').value = '1000';
         document.getElementById('server-buffer-size').value = '1000';
         document.getElementById('server-enabled').checked = true;
+        this.renderSecurity(null, true);
 
         // Hide status badge, toggle/delete buttons, addresses section, timestamps
         const statusBadge = document.getElementById('server-status');
@@ -192,6 +201,46 @@ class OpcUaServerDetailManager {
         if (saveBtn) saveBtn.innerHTML = saveBtn.innerHTML.replace('Save Server', 'Create Server');
 
         document.getElementById('server-content').style.display = 'block';
+    }
+
+    renderSecurity(security, isNew) {
+        const sec = security || {
+            securityPolicies: ['None', 'Basic256Sha256'],
+            allowAnonymous: true,
+            allowUnencrypted: true,
+            certificateDir: './security',
+            createSelfSigned: true
+        };
+        document.querySelectorAll('.security-policy').forEach(cb => {
+            cb.checked = (sec.securityPolicies || []).includes(cb.value);
+        });
+        document.getElementById('security-allow-unencrypted').checked = sec.allowUnencrypted;
+        document.getElementById('security-allow-anonymous').checked = sec.allowAnonymous;
+        document.getElementById('security-certificate-dir').value = sec.certificateDir || '';
+        document.getElementById('security-create-self-signed').checked = sec.createSelfSigned;
+        // The password is never returned by the API
+        const password = document.getElementById('security-keystore-password');
+        password.value = '';
+        password.placeholder = isNew ? 'password' : 'Unchanged';
+        this.setText('security-keystore-password-hint', isNew
+            ? 'Password of the server certificate keystore. Leave empty to use the default "password".'
+            : 'Password of the server certificate keystore. Leave empty to keep the current password.');
+    }
+
+    collectSecurity() {
+        const securityPolicies = Array.from(document.querySelectorAll('.security-policy'))
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        const security = {
+            securityPolicies,
+            allowUnencrypted: document.getElementById('security-allow-unencrypted').checked,
+            allowAnonymous: document.getElementById('security-allow-anonymous').checked,
+            certificateDir: document.getElementById('security-certificate-dir').value.trim() || null,
+            createSelfSigned: document.getElementById('security-create-self-signed').checked
+        };
+        const password = document.getElementById('security-keystore-password').value;
+        if (password) security.keystorePassword = password;
+        return security;
     }
 
     renderAddresses() {
@@ -258,8 +307,18 @@ class OpcUaServerDetailManager {
             bindAddress: document.getElementById('server-bind-address').value.trim() || null,
             namespaceUri: document.getElementById('server-namespace-uri').value.trim() || null,
             updateInterval: parseInt(document.getElementById('server-update-interval').value),
-            bufferSize: parseInt(document.getElementById('server-buffer-size').value)
+            bufferSize: parseInt(document.getElementById('server-buffer-size').value),
+            security: this.collectSecurity()
         };
+
+        if (serverInput.security.securityPolicies.length === 0) {
+            this.showError('Select at least one security policy');
+            return;
+        }
+        if (serverInput.security.securityPolicies.every(p => p === 'None') && !serverInput.security.allowUnencrypted) {
+            this.showError('Security policy "None" requires "Allow Unencrypted Connections"');
+            return;
+        }
 
         const nameError = window.validateNameInput(serverInput.name, 'Server');
         if (this.isNew && nameError) {
