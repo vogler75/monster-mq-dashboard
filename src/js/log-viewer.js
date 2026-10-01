@@ -428,7 +428,14 @@ class LogViewer {
     this.updateStatus('connecting', 'Connecting...');
     try {
       this.ws = new WebSocket(this.options.wsUrl, 'graphql-transport-ws');
-      this.ws.onopen = () => this.send({ type: 'connection_init', payload: {} });
+      this.ws.onopen = () => {
+        // With user management the server only accepts an authenticated
+        // subscription; the token is passed in the init payload.
+        const payload = {};
+        const token = safeStorage.getItem('monstermq_token');
+        if (token && token !== 'null') payload.authorization = `Bearer ${token}`;
+        this.send({ type: 'connection_init', payload });
+      };
       this.ws.onmessage = ev => { try { this.handleMessage(JSON.parse(ev.data)); } catch (e) { console.error('LogViewer parse error', e); } };
       this.ws.onerror = err => { console.error('LogViewer WS error', err); this.updateStatus('disconnected', 'Error'); };
       this.ws.onclose = () => { this.isConnected = false; this.updateStatus('disconnected', 'Disconnected'); this.attemptReconnect(); };
