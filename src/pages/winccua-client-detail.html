@@ -240,6 +240,13 @@
                                         <input type="text" id="client-websocket-endpoint" placeholder="Optional (auto-derived)">
                                         <small class="form-hint">Auto-derived from GraphQL endpoint if not specified</small>
                                     </div>
+                                    <div class="form-group">
+                                        <div class="checkbox-group">
+                                            <input type="checkbox" id="client-trust-all-certificates">
+                                            <label for="client-trust-all-certificates">Ignore Certificate Errors</label>
+                                        </div>
+                                        <small class="form-hint">Accept self-signed/untrusted TLS certificates and skip hostname verification for https/wss. Use for test systems only.</small>
+                                    </div>
                                 </div>
                                 <div id="pipe-path-field" style="display: none;">
                                     <div class="form-group">

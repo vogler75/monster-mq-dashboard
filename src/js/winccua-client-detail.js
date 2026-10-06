@@ -167,6 +167,7 @@ class WinCCUaClientDetailManager {
                             dataAccessMode
                             graphqlEndpoint
                             websocketEndpoint
+                            trustAllCertificates
                             username
                             pipePath
                             reconnectDelay
@@ -231,6 +232,7 @@ class WinCCUaClientDetailManager {
         document.getElementById('client-data-access-mode').value = dataAccessMode;
         document.getElementById('client-graphql-endpoint').value = this.clientData.config.graphqlEndpoint || '';
         document.getElementById('client-websocket-endpoint').value = this.clientData.config.websocketEndpoint || '';
+        document.getElementById('client-trust-all-certificates').checked = !!this.clientData.config.trustAllCertificates;
         document.getElementById('client-pipe-path').value = this.clientData.config.pipePath || '';
         document.getElementById('client-node').value = this.clientData.nodeId;
         document.getElementById('client-message-format').value = this.clientData.config.messageFormat;
@@ -692,6 +694,7 @@ class WinCCUaClientDetailManager {
         } else {
             config.graphqlEndpoint = graphqlEndpoint;
             config.websocketEndpoint = document.getElementById('client-websocket-endpoint').value.trim() || null;
+            config.trustAllCertificates = document.getElementById('client-trust-all-certificates').checked;
             config.username = username;
             config.password = password;
         }
