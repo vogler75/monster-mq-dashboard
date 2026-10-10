@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonsterMQ - PeerLink</title>
+    <script type="module" src="/js/ix-init.js"></script>
+    <script src="/js/vendor/echarts.min.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/graphql-client.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/log-viewer.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
+    <style>
+        .peerlink-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr);
+            gap: var(--sp-4);
+            align-items: start;
+            margin-bottom: var(--sp-4);
+        }
+        @media (max-width: 1100px) {
+            .peerlink-layout { grid-template-columns: 1fr; }
+        }
+
+        #peerlink-graph {
+            width: 100%;
+            height: 460px;
+        }
+
+        .peerlink-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--sp-2) var(--sp-4);
+            padding-top: var(--sp-3);
+            border-top: 1px solid var(--dark-border);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .peerlink-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-1);
+        }
+        .peerlink-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+        .peerlink-legend-line {
+            width: 22px;
+            height: 0;
+            border-top: 2px solid var(--text-muted);
+        }
+        .peerlink-legend-line.is-dashed { border-top-style: dashed; }
+
+        .peerlink-muted { color: var(--text-muted); }
+
+        .peerlink-direction {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--sp-1);
+            white-space: nowrap;
+        }
+
+        #peers-table tbody tr { cursor: pointer; }
+        #peers-table tbody tr.is-selected td { background: var(--c-accent-bg); }
+
+        #detail-content .info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+        .peerlink-detail-group + .peerlink-detail-group { margin-top: var(--sp-4); }
+        .peerlink-detail-heading {
+            display: flex;
+            align-items: center;
+            gap: var(--sp-2);
+            margin: 0 0 var(--sp-2);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+        .peerlink-raw {
+            margin: var(--sp-2) 0 0;
+            max-height: 320px;
+            overflow: auto;
+            padding: var(--sp-3);
+            background: var(--dark-bg);
+            border: 1px solid var(--dark-border);
+            border-radius: var(--r-sm);
+            font-size: 0.75rem;
+            color: var(--text-primary);
+        }
+        .peerlink-raw-toggle {
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <ix-application force-breakpoint="lg">
+    <ix-menu application-name="MonsterMQ" pinned start-expanded>
+    </ix-menu>
+    <div class="main-content" id="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div class="page-header-content">
+                    <div>
+                        <h1 class="page-title">PeerLink</h1>
+                        <p class="page-subtitle" id="peerlink-subtitle">Brokers linked to this node and the direction their messages flow</p>
+                    </div>
+                    <div class="page-header-actions">
+                        <ix-icon-button icon="refresh" variant="subtle-tertiary" id="peerlink-refresh" title="Refresh"></ix-icon-button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-message" class="error-message" style="display:none;">
+                <div class="error-content">
+                    <span class="error-icon">&#9888;</span>
+                    <span class="error-text"></span>
+                </div>
+            </div>
+
+            <div class="section-card" id="peerlink-disabled" style="display:none;">
+                <div class="section-content">
+                    <div class="empty-state">
+                        <div class="empty-state-title" id="peerlink-disabled-title">PeerLink is not enabled on this broker</div>
+                        <div class="empty-state-hint" id="peerlink-disabled-hint">Enable the PeerLink section in the broker configuration to link brokers.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="peerlink-content" style="display:none;">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Peers</span>
+                            <div class="metric-icon"><ix-icon name="project-server" size="12"></ix-icon></div>
+                        </div>
+                        <div class="metric-value" id="metric-peers">0</div>
+                        <div class="metric-label">Configured Brokers</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Receiving From</span>
+                            <div class="metric-icon is-info"><ix-icon name="import" size="12"></ix-icon></div>
+                        </div>
+                        <div class="metric-value" id="metric-pull">0</div>
+                        <div class="metric-label" id="metric-pull-label">Pull Links Streaming</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Sending To</span>
+                            <div class="metric-icon is-info"><ix-icon name="export" size="12"></ix-icon></div>
+                        </div>
+                        <div class="metric-value" id="metric-serve">0</div>
+                        <div class="metric-label" id="metric-serve-label">Serve Links Connected</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-header">
+                            <span class="metric-title">Links Down</span>
+                            <div class="metric-icon is-err" id="metric-down-icon"><ix-icon name="link-break" size="12"></ix-icon></div>
+                        </div>
+                        <div class="metric-value" id="metric-down">0</div>
+                        <div class="metric-label">Not Streaming or Connected</div>
+                    </div>
+                </div>
+
+                <div class="peerlink-layout">
+                    <div class="section-card">
+                        <div class="section-header">
+                            <div class="section-title"><h2>Topology</h2></div>
+                            <span class="status-badge badge-neutral" id="peerlink-node-badge"></span>
+                        </div>
+                        <div class="section-content">
+                            <div id="peerlink-graph" role="img" aria-label="PeerLink topology"></div>
+                            <div class="peerlink-legend">
+                                <span class="peerlink-legend-item"><span class="peerlink-legend-dot" style="background:var(--c-ok)"></span> Streaming / connected</span>
+                                <span class="peerlink-legend-item"><span class="peerlink-legend-dot" style="background:var(--c-warn)"></span> Connecting</span>
+                                <span class="peerlink-legend-item"><span class="peerlink-legend-dot" style="background:var(--c-err)"></span> Down</span>
+                                <span class="peerlink-legend-item"><span class="peerlink-legend-dot" style="background:var(--text-muted)"></span> Never connected</span>
+                                <span class="peerlink-legend-item"><span class="peerlink-legend-line"></span> Arrow = message flow</span>
+                                <span class="peerlink-legend-item"><span class="peerlink-legend-line is-dashed"></span> Link not active</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <div class="section-header">
+                            <div class="section-title"><h2 id="detail-title">Details</h2></div>
+                            <span id="detail-badge"></span>
+                        </div>
+                        <div class="section-content" id="detail-content"></div>
+                    </div>
+                </div>
+
+                <div id="peers-table" class="data-table">
+                    <div class="table-header">
+                        <div class="table-title"><h2>Peers</h2></div>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Node</th>
+                                    <th>Direction</th>
+                                    <th>Address</th>
+                                    <th>Pull Link</th>
+                                    <th>Serve Link</th>
+                                    <th class="num">Pull Lag</th>
+                                    <th class="num">Serve Lag</th>
+                                    <th>Last Error</th>
+                                </tr>
+                            </thead>
+                            <tbody id="peers-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loading-indicator" class="loading-indicator" style="display:none;">
+                <div class="loading-spinner"></div>
+                <span>Loading PeerLink status&hellip;</span>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="/js/peerlink.js"></script>
+    </ix-application>
+</body>
+</html>
