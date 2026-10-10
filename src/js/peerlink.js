@@ -6,9 +6,10 @@ const { window, document, ui, setInterval, ResizeObserver } = page;
 const PEERLINK_QUERY = `
     query PeerLinkOverview {
         peerLink {
-            enabled nodeId listen tls status
+            enabled nodeId listen tls brokerType brokerVersion protocolVersion status
             peers {
-                nodeId address pull serve interest pullState serveState remote lastError source consumer
+                nodeId address pull serve interest pullState serveState remote lastError
+                brokerType brokerVersion protocolVersion source consumer
             }
         }
     }
@@ -51,6 +52,26 @@ function direction(peer) {
     if (peer.pull) return { label: 'Receives from', icon: 'import' };
     if (peer.serve) return { label: 'Sends to', icon: 'export' };
     return { label: 'None', icon: 'link-break' };
+}
+
+const BROKER_TYPES = { FULL: 'Full (Java)', EDGE: 'Edge (Go)' };
+const BROKER_SHORT = { FULL: 'Full', EDGE: 'Edge' };
+
+// "Edge (Go) 1.2.3"; null while the peer has not announced itself.
+function brokerText(type, version) {
+    if (!type && !version) return null;
+    return [BROKER_TYPES[type] || type, version].filter(Boolean).join(' ');
+}
+
+function protocolMajor(version) {
+    return version ? String(version).split('.')[0] : null;
+}
+
+// A peer on another protocol minor version still links; another major version is refused.
+function protocolBadge(peerVersion, ownVersion) {
+    if (!peerVersion) return '<span class="peerlink-muted">&ndash;</span>';
+    const tone = peerVersion === ownVersion ? 'neutral' : (protocolMajor(peerVersion) === protocolMajor(ownVersion) ? 'info' : 'err');
+    return ui.statusBadge(peerVersion, tone);
 }
 
 // Peer labels sit on the outside of the ring, away from the links.
@@ -227,7 +248,10 @@ class PeerLinkOverview {
                 borderColor: this.selected === LOCAL_ID ? c.text : c.accent,
                 borderWidth: this.selected === LOCAL_ID ? 3 : 0
             },
-            label: { show: true, position: 'inside', color: '#fff', fontWeight: 600, formatter: '{b}\nthis node' }
+            label: {
+                show: true, position: 'inside', color: '#fff', fontWeight: 600,
+                formatter: `{b}\n${BROKER_SHORT[info.brokerType] || 'this node'}`
+            }
         }];
         const links = [];
         peers.forEach((peer, i) => {
@@ -245,7 +269,11 @@ class PeerLinkOverview {
                     borderColor: isSelected ? c.text : c.surface,
                     borderWidth: isSelected ? 3 : 2
                 },
-                label: { show: true, position: labelPosition(angle), color: c.text, fontWeight: isSelected ? 700 : 500 }
+                label: {
+                    show: true, position: labelPosition(angle), color: c.text, fontWeight: isSelected ? 700 : 500,
+                    formatter: peer.brokerType ? `{b}\n{type|${BROKER_SHORT[peer.brokerType] || peer.brokerType}}` : '{b}',
+                    rich: { type: { color: c.muted, fontSize: 11, fontWeight: 400 } }
+                }
             });
             const curve = peer.pull && peer.serve ? 0.18 : 0;
             if (peer.pull) links.push(this.link(peer.nodeId, LOCAL_ID, peer, 'pull', peer.pullState, curve, c));
@@ -261,6 +289,11 @@ class PeerLinkOverview {
             series: [{
                 type: 'graph',
                 layout: 'none',
+                // Room for the two-line labels outside the ring.
+                top: 56,
+                bottom: 40,
+                left: 90,
+                right: 90,
                 roam: true,
                 draggable: false,
                 edgeSymbol: ['none', 'arrow'],
@@ -307,9 +340,14 @@ class PeerLinkOverview {
             const to = d.target === LOCAL_ID ? this.info.nodeId : d.target;
             return `${escapeHtml(from)} &rarr; ${escapeHtml(to)}<br>${d.kind === 'pull' ? 'Pull' : 'Serve'} link: ${escapeHtml(stateText(d.state))}`;
         }
-        if (params.data.id === LOCAL_ID) return `${escapeHtml(this.info.nodeId)} (this node)`;
+        if (params.data.id === LOCAL_ID) {
+            const own = brokerText(this.info.brokerType, this.info.brokerVersion);
+            return `${escapeHtml(this.info.nodeId)} (this node)${own ? '<br>' + escapeHtml(own) : ''}`;
+        }
         const peer = this.peer(params.data.id);
-        return peer ? `${escapeHtml(peer.nodeId)}<br>${direction(peer).label}` : '';
+        if (!peer) return '';
+        const broker = brokerText(peer.brokerType, peer.brokerVersion);
+        return `${escapeHtml(peer.nodeId)}<br>${direction(peer).label}${broker ? '<br>' + escapeHtml(broker) : ''}`;
     }
 
     // ===================== Table =====================
@@ -318,7 +356,7 @@ class PeerLinkOverview {
         const tbody = document.getElementById('peers-table-body');
         const peers = this.info.peers;
         if (peers.length === 0) {
-            tbody.innerHTML = ui.emptyRow(8, 'No peers configured', 'Add entries to PeerLink.Peers in the broker configuration.');
+            tbody.innerHTML = ui.emptyRow(10, 'No peers configured', 'Add entries to PeerLink.Peers in the broker configuration.');
             return;
         }
         tbody.innerHTML = peers.map(peer => {
@@ -326,6 +364,8 @@ class PeerLinkOverview {
             return `
                 <tr data-peer="${escapeHtml(peer.nodeId)}" class="${this.selected === peer.nodeId ? 'is-selected' : ''}">
                     <td><strong>${escapeHtml(peer.nodeId)}</strong></td>
+                    <td>${escapeHtml(brokerText(peer.brokerType, peer.brokerVersion) ?? '–')}</td>
+                    <td>${protocolBadge(peer.protocolVersion, this.info.protocolVersion)}</td>
                     <td><span class="peerlink-direction"><ix-icon name="${dir.icon}" size="12"></ix-icon> ${dir.label}</span></td>
                     <td>${peer.address ? escapeHtml(peer.address) : (peer.remote ? escapeHtml(peer.remote) + ' <span class="peerlink-muted">(inbound)</span>' : '–')}</td>
                     <td>${peer.pull ? badge(peer.pullState) : '–'}</td>
@@ -383,6 +423,8 @@ class PeerLinkOverview {
             content.innerHTML =
                 this.group('Node', 'project-server', this.items([
                     ['NodeId', escapeHtml(info.nodeId)],
+                    ['Broker', escapeHtml(brokerText(info.brokerType, info.brokerVersion) ?? '–')],
+                    ['PeerLink protocol', escapeHtml(info.protocolVersion ?? '–')],
                     ['Listener', info.listen ? escapeHtml(info.listen) : 'Pull only'],
                     ['TLS', info.tls ? 'Yes' : 'No'],
                     ['Peers', num(info.peers.length)]
@@ -413,6 +455,12 @@ class PeerLinkOverview {
             peer.remote ? ['Inbound from', escapeHtml(peer.remote)] : null
         ]));
 
+        html += this.group('Broker', 'project-server', peer.protocolVersion ? this.items([
+            ['Type', escapeHtml(BROKER_TYPES[peer.brokerType] || peer.brokerType || 'Not announced')],
+            ['Version', escapeHtml(peer.brokerVersion || 'Not announced')],
+            ['PeerLink protocol', protocolBadge(peer.protocolVersion, this.info.protocolVersion)]
+        ]) : '<p class="peerlink-muted">Known after the first handshake with this peer.</p>');
+
         if (peer.pull) {
             const s = peer.source || {};
             const delay = s.applyDelayMs || {};
@@ -426,7 +474,7 @@ class PeerLinkOverview {
                 ['Reconnects', num(s.reconnects)],
                 ['Lost (gaps)', num(s.gapLostTotal)],
                 ['Dropped', num(sumValues(s.dropped))],
-                peer.lastError ? ['Last error', escapeHtml(peer.lastError)] : null
+                peer.lastError && peer.pullState !== 'STREAMING' ? ['Last error', escapeHtml(peer.lastError)] : null
             ]));
         }
         if (peer.serve) {

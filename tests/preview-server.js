@@ -13,16 +13,20 @@ const peerSource = (nodeId, state, extra = {}) => ({ nodeId, state, lagRecords: 
     reconnects: 1, gapLostTotal: 0, dropped: {}, applyDelayMs: { p50: 2, p99: 7, p99_9: 15 }, lastError: '', ...extra });
 const peerConsumer = (nodeId, state, extra = {}) => ({ nodeId, state, remote: '10.0.0.12:51544', lag: 0, servedRecords: 18110, servedBytes: 2388000,
     sessions: 1, lostTotal: 0, lastFetch: '2026-10-10T06:00:00Z', ...extra });
-const peerLink = { enabled: true, nodeId: 'fixture', listen: '0.0.0.0:1890', tls: true,
+const peerLink = { enabled: true, nodeId: 'fixture', listen: '0.0.0.0:1890', tls: true, brokerType: 'EDGE', brokerVersion: '1.2.0', protocolVersion: '1.0',
     status: { enabled: true, nodeId: 'fixture', epoch: 42, log: { records: 1200, bytes: 180224, maxBytes: 268435456, appended: { client: 1180, inline: 20, will: 0 }, evictedUnread: 0, active: true } },
     peers: [
         { nodeId: 'main-1', address: 'main-1:1890', pull: true, serve: true, interest: 'INHERIT', pullState: 'STREAMING', serveState: 'CONNECTED', remote: '10.0.0.10:50122', lastError: null,
+            brokerType: 'FULL', brokerVersion: '1.8.33', protocolVersion: '1.0',
             source: peerSource('main-1', 'STREAMING', { lagRecords: 12 }), consumer: peerConsumer('main-1', 'CONNECTED') },
         { nodeId: 'edge-line-a', address: 'edge-line-a:1890', pull: true, serve: false, interest: 'INHERIT', pullState: 'STREAMING', serveState: null, remote: null, lastError: null,
+            brokerType: 'EDGE', brokerVersion: '1.2.0', protocolVersion: '1.0',
             source: peerSource('edge-line-a', 'STREAMING'), consumer: null },
         { nodeId: 'edge-line-b', address: null, pull: false, serve: true, interest: 'OFF', pullState: null, serveState: 'CONNECTED', remote: '10.0.0.14:40210', lastError: null,
+            brokerType: 'EDGE', brokerVersion: '1.1.4', protocolVersion: '1.1',
             source: null, consumer: peerConsumer('edge-line-b', 'CONNECTED', { lag: 3 }) },
         { nodeId: 'edge-yard', address: 'edge-yard:1890', pull: true, serve: true, interest: 'INHERIT', pullState: 'BACKOFF', serveState: 'NEVER_CONNECTED', remote: null, lastError: 'dial tcp 10.0.0.20:1890: connection refused',
+            brokerType: null, brokerVersion: null, protocolVersion: null,
             source: peerSource('edge-yard', 'BACKOFF', { lastError: 'dial tcp 10.0.0.20:1890: connection refused', reconnects: 7 }), consumer: peerConsumer('edge-yard', 'NEVER_CONNECTED', { remote: '', sessions: 0, servedRecords: 0, servedBytes: 0 }) }
     ] };
 function response(query, variables = {}) {
