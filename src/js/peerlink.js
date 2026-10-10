@@ -258,11 +258,13 @@ class PeerLinkOverview {
             const angle = (2 * Math.PI * i) / Math.max(peers.length, 1) - Math.PI / 2;
             const tone = peerTone(peer);
             const isSelected = this.selected === peer.nodeId;
+            const rawX = Math.cos(angle) * radius;
+            const rawY = Math.sin(angle) * radius;
             nodes.push({
                 id: peer.nodeId,
                 name: peer.nodeId,
-                x: Math.cos(angle) * radius,
-                y: Math.sin(angle) * radius,
+                x: Math.abs(rawX) < 1e-6 ? 0 : Math.round(rawX * 100) / 100,
+                y: Math.abs(rawY) < 1e-6 ? 0 : Math.round(rawY * 100) / 100,
                 symbolSize: 48,
                 itemStyle: {
                     color: c[tone],
@@ -279,6 +281,13 @@ class PeerLinkOverview {
             if (peer.pull) links.push(this.link(peer.nodeId, LOCAL_ID, peer, 'pull', peer.pullState, curve, c));
             if (peer.serve) links.push(this.link(LOCAL_ID, peer.nodeId, peer, 'serve', peer.serveState, curve, c));
         });
+
+        // Anchor the graph bounds so layout is always symmetric and centered around (0, 0),
+        // preventing coordinate collapse when nodes are collinear (e.g. 1 or 2 peers).
+        nodes.push(
+            { id: '__anchor_min', x: -radius, y: -radius, symbolSize: 0, itemStyle: { opacity: 0 }, label: { show: false }, tooltip: { show: false }, silent: true },
+            { id: '__anchor_max', x: radius, y: radius, symbolSize: 0, itemStyle: { opacity: 0 }, label: { show: false }, tooltip: { show: false }, silent: true }
+        );
 
         this.chart.setOption({
             animation: false,
@@ -340,6 +349,7 @@ class PeerLinkOverview {
             const to = d.target === LOCAL_ID ? this.info.nodeId : d.target;
             return `${escapeHtml(from)} &rarr; ${escapeHtml(to)}<br>${d.kind === 'pull' ? 'Pull' : 'Serve'} link: ${escapeHtml(stateText(d.state))}`;
         }
+        if (!params.data || (typeof params.data.id === 'string' && params.data.id.startsWith('__anchor'))) return '';
         if (params.data.id === LOCAL_ID) {
             const own = brokerText(this.info.brokerType, this.info.brokerVersion);
             return `${escapeHtml(this.info.nodeId)} (this node)${own ? '<br>' + escapeHtml(own) : ''}`;
@@ -387,7 +397,7 @@ class PeerLinkOverview {
     }
 
     select(id) {
-        if (!id) return;
+        if (!id || (typeof id === 'string' && id.startsWith('__anchor'))) return;
         this.selected = id;
         this.renderGraph();
         this.renderTable();
