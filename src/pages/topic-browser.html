@@ -11,947 +11,862 @@
     <script src="/js/log-viewer.js"></script>
     <script type="module" src="/js/sidebar.js"></script>
     <style>
-        .topic-browser-layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1.65fr) minmax(360px, 1fr);
-            gap: 1.25rem;
-            height: calc(100vh - 165px);
-        }
-
-        .topic-browser-panel {
-            background: var(--dark-surface);
-            border-radius: 12px;
-            border: 1px solid var(--dark-border);
+        /* =====================================================================
+           Topic Browser (MonsterMQ Explorer Style)
+           ===================================================================== */
+        
+        .explorer-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 120px);
+            min-height: 500px;
+            background: var(--dark-surface, #1e293b);
+            border: 1px solid var(--dark-border, #334155);
+            border-radius: 10px;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
         }
 
-        .panel-header {
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid var(--dark-border);
-            background: var(--dark-surface-2);
-            flex-shrink: 0;
-        }
-
-        .panel-title {
-            font-size: 1.15rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-        }
-
-        .panel-header-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 0.65rem;
-            margin-top: 0.75rem;
-        }
-
-        .panel-control-row {
+        /* Top Toolbar */
+        .explorer-toolbar {
             display: flex;
             align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 1rem;
+            background: var(--dark-surface-2, #182234);
+            border-bottom: 1px solid var(--dark-border, #334155);
             gap: 0.75rem;
             flex-wrap: wrap;
+            flex-shrink: 0;
+            z-index: 10;
         }
 
-        .panel-control-group {
+        .explorer-toolbar-left {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.85rem;
         }
 
-        .control-label {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .sub-bar-container {
-            background: rgba(0, 0, 0, 0.2);
-            border: 1px solid var(--dark-border);
-            border-radius: 8px;
-            padding: 0.5rem 0.75rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .sub-input-row {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .sub-tags-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.35rem;
-            align-items: center;
-            min-height: 24px;
-        }
-
-        .sub-tag-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.15rem 0.5rem;
-            background: rgba(6, 182, 212, 0.15);
-            border: 1px solid rgba(6, 182, 212, 0.4);
-            border-radius: 12px;
-            color: #38bdf8;
-            font-size: 0.75rem;
-            font-family: 'Fira Code', 'JetBrains Mono', monospace;
-            line-height: 1.2;
-        }
-
-        .sub-tag-chip .remove-chip-btn {
-            background: none;
-            border: none;
-            color: #38bdf8;
-            cursor: pointer;
-            padding: 0 0.1rem;
-            font-size: 0.85rem;
-            line-height: 1;
-            display: inline-flex;
-            align-items: center;
-            opacity: 0.7;
-            transition: opacity 0.15s;
-        }
-
-        .sub-tag-chip .remove-chip-btn:hover {
-            opacity: 1;
-            color: var(--monster-red);
-        }
-
-        .sub-status-indicator {
+        .explorer-status-badge {
             display: inline-flex;
             align-items: center;
             gap: 0.4rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--monster-green, #10b981);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .explorer-status-badge.offline {
+            background: rgba(239, 68, 68, 0.12);
+            color: var(--monster-red, #ef4444);
+            border-color: rgba(239, 68, 68, 0.25);
+        }
+
+        .explorer-status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .explorer-stat-rate {
+            font-size: 0.75rem;
+            color: var(--text-muted, #94a3b8);
+            font-family: monospace;
+        }
+
+        .explorer-toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .explorer-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.65rem;
             font-size: 0.75rem;
             font-weight: 500;
-        }
-
-        .sub-status-indicator.active {
-            color: #38bdf8;
-        }
-
-        .sub-status-indicator.inactive {
-            color: var(--text-muted);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-
-        .status-dot.active {
-            background-color: #38bdf8;
-            box-shadow: 0 0 6px rgba(56, 189, 248, 0.8);
-            animation: pulse-dot 2s infinite ease-in-out;
-        }
-
-        .status-dot.inactive {
-            background-color: var(--text-muted);
-        }
-
-        @keyframes pulse-dot {
-            0%, 100% { transform: scale(1); opacity: 0.9; }
-            50% { transform: scale(1.25); opacity: 1; }
-        }
-
-        .search-container {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .search-input {
-            flex: 1;
-            padding: 0.75rem;
-            background: var(--dark-bg);
-            border: 1px solid var(--dark-border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 0.875rem;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: var(--monster-purple);
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
-        }
-
-        .search-button {
-            padding: 0.75rem 1.5rem;
-            background: var(--monster-purple);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .search-button:hover {
-            background: var(--monster-dark);
-        }
-
-        .tree-container {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1rem;
-        }
-
-        .tree-node {
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
-
-        .tree-item {
-            display: flex;
-            align-items: center;
-            padding: 0.5rem;
-            cursor: pointer;
             border-radius: 6px;
-            transition: background-color 0.2s;
-            user-select: none;
-        }
-
-        .tree-item:hover {
-            background: rgba(124, 58, 237, 0.1);
-        }
-
-        .tree-item.selected {
-            background: rgba(124, 58, 237, 0.2);
-            color: var(--monster-light);
-        }
-
-        .tree-item.has-data {
-            color: var(--monster-green);
-            font-weight: 500;
-        }
-
-        .tree-item.from-live {
-            color: #38bdf8 !important;
-            font-weight: 500;
-        }
-
-        .tree-item.from-archive {
-            color: var(--monster-green);
-            font-weight: 500;
-        }
-
-        .tree-item.flash-update {
-            animation: row-flash-live 1s ease-out;
-        }
-
-        @keyframes row-flash-live {
-            0% { background-color: rgba(56, 189, 248, 0.4); }
-            100% { background-color: transparent; }
-        }
-
-        .tree-badge {
-            margin-left: auto;
-            font-size: 0.65rem;
-            padding: 0.1rem 0.4rem;
-            border-radius: 999px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            line-height: 1;
-            flex-shrink: 0;
-        }
-
-        .tree-badge.badge-live {
-            background: rgba(56, 189, 248, 0.15);
-            border: 1px solid rgba(56, 189, 248, 0.4);
-            color: #38bdf8;
-        }
-
-        .tree-badge.badge-archive {
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            color: var(--monster-green);
-        }
-
-        .tree-toggle {
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 0.5rem;
-            border: none;
-            background: none;
-            color: var(--text-muted);
+            background: var(--dark-bg, #0f172a);
+            border: 1px solid var(--dark-border, #334155);
+            color: var(--text-primary, #f1f5f9);
             cursor: pointer;
-            border-radius: 3px;
-            transition: all 0.2s;
-            flex-shrink: 0;
+            transition: all 0.15s ease;
+            user-select: none;
+            height: 28px;
+            box-sizing: border-box;
         }
 
-        .tree-toggle:hover {
-            background: var(--dark-border);
-            color: var(--text-primary);
+        .explorer-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--monster-purple, #7c3aed);
         }
 
-        .tree-toggle.expanded {
-            transform: rotate(90deg);
+        .explorer-btn.active {
+            background: var(--monster-purple, #7c3aed);
+            border-color: var(--monster-purple, #7c3aed);
+            color: #fff;
         }
 
-        .tree-toggle:empty {
-            visibility: hidden;
-        }
-
-        .tree-children {
-            margin-left: 1.5rem;
-            border-left: 1px solid var(--dark-border);
-            padding-left: 0.5rem;
-        }
-
-        .tree-children.collapsed {
-            display: none;
-        }
-
-        .tree-icon {
-            margin-right: 0.5rem;
-            color: var(--text-muted);
-            flex-shrink: 0;
-        }
-
-        .tree-icon.folder {
-            color: var(--monster-purple);
-        }
-
-        .tree-icon.topic {
-            color: var(--monster-green);
-        }
-
-        .tree-icon.topic-live {
-            color: #38bdf8;
-        }
-
-        .data-viewer {
-            flex: 1;
-            padding: 1.5rem;
-            overflow-y: auto;
-        }
-
-        .data-viewer.empty {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-muted);
-            text-align: center;
-        }
-
-        .data-header {
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--dark-border);
-        }
-
-        .data-topic {
-            font-size: 1.1rem;
+        .explorer-btn-publish {
+            background: var(--monster-purple, #7c3aed);
+            border-color: var(--monster-purple, #7c3aed);
+            color: #fff;
             font-weight: 600;
-            color: var(--monster-light);
-            margin-bottom: 0.5rem;
         }
 
-        .data-info {
+        .explorer-btn-publish:hover {
+            background: #6d28d9;
+            border-color: #6d28d9;
+        }
+
+        .explorer-btn-icon {
+            padding: 0.3rem 0.45rem;
+            color: var(--text-muted, #94a3b8);
+        }
+
+        .explorer-btn-icon:hover {
+            color: var(--text-primary, #f1f5f9);
+        }
+
+        .explorer-btn-icon.active {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        .archive-select {
+            background: var(--dark-bg, #0f172a);
+            border: 1px solid var(--dark-border, #334155);
+            color: var(--text-primary, #f1f5f9);
+            border-radius: 6px;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            outline: none;
+            height: 28px;
+        }
+
+        /* 3-Pane Body */
+        .explorer-main {
             display: flex;
-            gap: 1rem;
-            font-size: 0.875rem;
-            color: var(--text-muted);
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            position: relative;
         }
 
-        .data-content {
-            background: var(--dark-bg);
-            border: 1px solid var(--dark-border);
-            border-radius: 8px;
-            padding: 1rem;
-            max-height: 400px;
-            overflow-y: auto;
+        /* Resizers */
+        .splitter-x {
+            width: 5px;
+            background: var(--dark-border, #334155);
+            cursor: col-resize;
+            transition: background 0.15s;
+            flex-shrink: 0;
+            z-index: 5;
         }
 
-        .data-json {
-            font-family: 'Fira Code', 'JetBrains Mono', monospace;
-            font-size: 0.875rem;
-            line-height: 1.5;
-            color: var(--text-primary);
-            white-space: pre-wrap;
-            word-wrap: break-word;
+        .splitter-x:hover,
+        .splitter-x.dragging {
+            background: var(--monster-purple, #7c3aed);
         }
 
-        .data-text {
-            font-family: 'Fira Code', 'JetBrains Mono', monospace;
-            font-size: 0.875rem;
-            line-height: 1.5;
-            color: var(--text-primary);
-            white-space: pre-wrap;
-            word-wrap: break-word;
+        .splitter-y {
+            height: 5px;
+            background: var(--dark-border, #334155);
+            cursor: row-resize;
+            transition: background 0.15s;
+            flex-shrink: 0;
+            z-index: 5;
         }
 
-        .data-binary {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            color: var(--monster-orange);
-            font-weight: 500;
+        .splitter-y:hover,
+        .splitter-y.dragging {
+            background: var(--monster-purple, #7c3aed);
         }
 
-        .binary-icon {
-            font-size: 1.5rem;
-        }
-
-        .data-image-container {
+        /* Left: Topic Tree */
+        .tree-pane {
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
+            min-width: 180px;
+            max-width: 60%;
+            width: 320px;
+            background: var(--dark-surface, #1e293b);
+            border-right: none;
+            overflow: hidden;
+            flex-shrink: 0;
         }
 
-        .data-image-wrapper {
-            background: rgba(0, 0, 0, 0.25);
-            border: 1px solid var(--dark-border);
-            border-radius: 6px;
-            padding: 0.5rem;
+        .tree-pane-header {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.4rem 0.6rem;
+            border-bottom: 1px solid var(--dark-border, #334155);
+            background: rgba(15, 23, 42, 0.4);
+            flex-shrink: 0;
+        }
+
+        .tree-filter-input {
+            flex: 1;
+            min-width: 0;
+            background: var(--dark-bg, #0f172a);
+            border: 1px solid var(--dark-border, #334155);
+            border-radius: 4px;
+            padding: 0.2rem 0.45rem;
+            color: var(--text-primary, #f1f5f9);
+            font-size: 0.75rem;
+            outline: none;
+        }
+
+        .tree-filter-input:focus {
+            border-color: var(--monster-purple, #7c3aed);
+        }
+
+        .tree-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0.25rem 0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.75rem;
+        }
+
+        /* Tree Items */
+        .tree-item-row {
+            display: flex;
+            align-items: center;
+            height: 26px;
+            padding-right: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+            color: var(--text-secondary, #cbd5e1);
+            transition: background 0.1s;
+            white-space: nowrap;
+        }
+
+        .tree-item-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tree-item-row.selected {
+            background: rgba(124, 58, 237, 0.25);
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .tree-item-row.row-updated {
+            animation: tree-row-flash 0.8s ease-out;
+        }
+
+        @keyframes tree-row-flash {
+            0% { background: rgba(56, 189, 248, 0.4); }
+            100% { background: transparent; }
+        }
+
+        .tree-chevron {
+            width: 18px;
+            height: 18px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            max-width: 100%;
+            font-size: 10px;
+            color: var(--text-muted, #64748b);
+            transition: transform 0.15s ease;
+            flex-shrink: 0;
         }
 
-        .data-image {
-            max-width: 100%;
-            max-height: 350px;
-            object-fit: contain;
-            border-radius: 4px;
+        .tree-chevron.expanded {
+            transform: rotate(90deg);
         }
 
-        .data-image-meta {
+        .tree-chevron.hidden {
+            visibility: hidden;
+        }
+
+        .tree-icon {
+            margin-right: 0.35rem;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .tree-label {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tree-badge-count {
+            margin-left: auto;
+            padding: 0.05rem 0.4rem;
+            border-radius: 9999px;
+            font-size: 0.65rem;
+            font-family: inherit;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-muted, #94a3b8);
+            flex-shrink: 0;
+        }
+
+        /* Center Pane (Table on top, Detail on bottom) */
+        .center-pane {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 250px;
+            overflow: hidden;
+            background: var(--dark-bg, #0f172a);
+        }
+
+        /* Top: Message Table */
+        .table-pane {
+            display: flex;
+            flex-direction: column;
+            height: 50%;
+            min-height: 100px;
+            max-height: calc(100% - 100px);
+            overflow: hidden;
+            background: var(--dark-bg, #0f172a);
+        }
+
+        .table-toolbar {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            padding: 0.35rem 0.75rem;
+            background: var(--dark-surface-2, #182234);
+            border-bottom: 1px solid var(--dark-border, #334155);
             font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            color: var(--text-muted);
-        }
-
-        .error {
-            color: var(--monster-red);
-            padding: 1rem;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 8px;
-            margin: 1rem;
-        }
-
-        
-        .json-key {
-            color: var(--monster-light);
-        }
-
-        .json-string {
-            color: var(--monster-green);
-        }
-
-        .json-number {
-            color: var(--monster-orange);
-        }
-
-        .json-boolean {
-            color: var(--monster-teal);
-        }
-
-        .json-null {
-            color: var(--text-muted);
-        }
-
-        
-        .topic-browser-layout.ai-open {
-            grid-template-columns: 1fr;
-        }
-
-        .topic-browser-layout.ai-open .topic-browser-panel:nth-child(1),
-        .topic-browser-layout.ai-open .topic-browser-panel:nth-child(2) {
-            display: none;
-        }
-
-        .ai-panel {
-            display: flex;
-            flex-direction: column;
-            max-height: calc(100vh - 200px);
-        }
-
-        .ai-toggle-btn {
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            background: linear-gradient(135deg, var(--monster-purple), var(--monster-dark));
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.875rem;
-            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
-            transition: all 0.2s;
-        }
-
-        .ai-toggle-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
-        }
-
-        .ai-toggle-btn.active {
-            background: var(--monster-green);
-            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-        }
-
-        .panel-toggle {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 1.5rem;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
-        .panel-toggle:hover {
-            background: var(--dark-border);
-            color: var(--text-primary);
-        }
-
-        .ai-panel .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 1rem;
-            min-height: auto;
-        }
-
-        .ai-panel .panel-header .panel-title {
-            font-size: 1rem;
-            margin: 0;
-        }
-
-        .ai-quick-actions {
-            display: flex;
-            gap: 0.375rem;
-            padding: 0.5rem 1rem;
-            border-bottom: 1px solid var(--dark-border);
+            flex-shrink: 0;
             flex-wrap: wrap;
         }
 
-        .ai-action-btn {
-            padding: 0.375rem 0.625rem;
-            background: var(--dark-bg);
-            border: 1px solid var(--dark-border);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-size: 0.7rem;
-            cursor: pointer;
-            transition: all 0.2s;
+        .table-scroll {
+            flex: 1;
+            overflow: auto;
         }
 
-        .ai-action-btn:hover {
-            background: var(--monster-purple);
-            border-color: var(--monster-purple);
-            color: white;
-        }
-
-        .system-prompt-section {
-            padding: 0.375rem 1rem;
-            border-bottom: 1px solid var(--dark-border);
-            font-size: 0.75rem;
-        }
-
-        .system-prompt-section summary {
-            cursor: pointer;
-            color: var(--text-muted);
-            font-weight: 500;
-            user-select: none;
-            font-size: 0.7rem;
-        }
-
-        .system-prompt-section summary:hover {
-            color: var(--text-primary);
-        }
-
-        .system-prompt-section textarea {
+        .explorer-table {
             width: 100%;
-            margin-top: 0.375rem;
-            padding: 0.375rem;
-            background: var(--dark-bg);
-            border: 1px solid var(--dark-border);
-            border-radius: 6px;
-            color: var(--text-primary);
+            border-collapse: collapse;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.75rem;
+            table-layout: fixed;
+        }
+
+        .explorer-table th {
+            position: sticky;
+            top: 0;
+            background: var(--dark-surface-2, #182234);
+            color: var(--text-muted, #94a3b8);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.35rem 0.5rem;
+            border-bottom: 1px solid var(--dark-border, #334155);
+            user-select: none;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            z-index: 2;
+        }
+
+        .explorer-table td {
+            padding: 0.3rem 0.5rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-secondary, #cbd5e1);
+        }
+
+        .explorer-table tr {
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+
+        .explorer-table tr:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .explorer-table tr.selected {
+            background: rgba(124, 58, 237, 0.25) !important;
+            color: #fff;
+        }
+
+        .explorer-table tr.row-updated {
+            animation: table-row-flash 0.8s ease-out;
+        }
+
+        @keyframes table-row-flash {
+            0% { background: rgba(56, 189, 248, 0.35); }
+            100% { background: transparent; }
+        }
+
+        .badge-retain {
+            color: var(--monster-orange, #f59e0b);
+            font-weight: 700;
+            padding: 0 0.2rem;
+        }
+
+        .badge-qos {
+            color: var(--text-muted, #94a3b8);
             font-size: 0.7rem;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 60px;
         }
 
-        .system-prompt-section textarea:focus {
-            outline: none;
-            border-color: var(--monster-purple);
-        }
-
-        .ai-input-area {
-            display: flex;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            border-bottom: 1px solid var(--dark-border);
-        }
-
-        .ai-input-area textarea {
-            flex: 1;
-            padding: 0.375rem;
-            background: var(--dark-bg);
-            border: 1px solid var(--dark-border);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-size: 0.8rem;
-            font-family: inherit;
-            resize: none;
-        }
-
-        .ai-input-area textarea:focus {
-            outline: none;
-            border-color: var(--monster-purple);
-        }
-
-        .ai-input-area .search-button {
-            padding: 0.5rem 1rem;
-            align-self: flex-end;
-        }
-
-        .ai-chat-history {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1rem;
+        /* Bottom: Detail Pane */
+        .detail-pane {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            flex: 1;
+            min-height: 100px;
+            overflow: hidden;
+            background: var(--dark-surface, #1e293b);
         }
 
-        .chat-message {
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            line-height: 1.5;
-            max-width: 95%;
-        }
-
-        .chat-user {
-            background: var(--monster-purple);
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
-        }
-
-        .chat-assistant {
-            background: var(--dark-bg);
-            border: 1px solid var(--dark-border);
-            color: var(--text-primary);
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
-        }
-
-        .chat-assistant.loading {
-            color: var(--text-muted);
-            font-style: italic;
-        }
-
-        .chat-assistant.error {
-            background: rgba(239, 68, 68, 0.1);
-            border-color: rgba(239, 68, 68, 0.3);
-            color: var(--monster-red);
-        }
-
-        .chat-message code {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 0.125rem 0.375rem;
-            border-radius: 3px;
-            font-family: 'Fira Code', 'JetBrains Mono', monospace;
-            font-size: 0.8em;
-        }
-
-        
-        .chat-assistant h1, .chat-assistant h2, .chat-assistant h3, .chat-assistant h4 {
-            margin: 0.75rem 0 0.5rem 0;
-            color: var(--text-primary);
-        }
-        .chat-assistant h1:first-child, .chat-assistant h2:first-child, .chat-assistant h3:first-child {
-            margin-top: 0;
-        }
-        .chat-assistant h1 { font-size: 1.25rem; }
-        .chat-assistant h2 { font-size: 1.1rem; color: var(--monster-teal); }
-        .chat-assistant h3 { font-size: 1rem; color: var(--monster-purple); }
-        .chat-assistant h4 { font-size: 0.9rem; }
-
-        .chat-assistant ul, .chat-assistant ol {
-            margin: 0.5rem 0;
-            padding-left: 1.5rem;
-        }
-        .chat-assistant li {
-            margin: 0.25rem 0;
-        }
-        .chat-assistant p {
-            margin: 0.5rem 0;
-        }
-        .chat-assistant p:first-child {
-            margin-top: 0;
-        }
-        .chat-assistant p:last-child {
-            margin-bottom: 0;
-        }
-        .chat-assistant pre {
-            background: rgba(0, 0, 0, 0.4);
-            padding: 0.75rem;
-            border-radius: 6px;
+        .detail-tabs-bar {
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--dark-border, #334155);
+            background: var(--dark-surface-2, #182234);
+            padding: 0 0.5rem;
+            gap: 0.25rem;
+            flex-shrink: 0;
             overflow-x: auto;
-            margin: 0.5rem 0;
-        }
-        .chat-assistant pre code {
-            background: none;
-            padding: 0;
-            font-size: 0.8rem;
-        }
-        .chat-assistant blockquote {
-            border-left: 3px solid var(--monster-purple);
-            margin: 0.5rem 0;
-            padding-left: 1rem;
-            color: var(--text-muted);
-        }
-        .chat-assistant table {
-            border-collapse: collapse;
-            margin: 0.5rem 0;
-            width: 100%;
-            font-size: 0.8rem;
-        }
-        .chat-assistant th, .chat-assistant td {
-            border: 1px solid var(--dark-border);
-            padding: 0.375rem 0.5rem;
-            text-align: left;
-        }
-        .chat-assistant th {
-            background: var(--dark-surface-2);
-            color: var(--monster-teal);
-        }
-        .chat-assistant strong {
-            color: var(--monster-green);
-        }
-        .chat-assistant em {
-            color: var(--text-muted);
-        }
-        .chat-assistant hr {
-            border: none;
-            border-top: 1px solid var(--dark-border);
-            margin: 0.75rem 0;
         }
 
-        .ai-context-info {
-            padding: 0.25rem 1rem;
-            background: var(--dark-surface-2);
-            border-bottom: 1px solid var(--dark-border);
+        .detail-tab {
+            padding: 0.45rem 0.75rem;
+            font-size: 0.75rem;
+            color: var(--text-muted, #94a3b8);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .detail-tab:hover {
+            color: var(--text-primary, #f1f5f9);
+        }
+
+        .detail-tab.active {
+            color: #38bdf8;
+            border-bottom-color: #38bdf8;
+            font-weight: 600;
+        }
+
+        .detail-info-strip {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
             font-size: 0.7rem;
-            color: var(--text-muted);
+            color: var(--text-muted, #94a3b8);
+            padding: 0 0.5rem;
+            white-space: nowrap;
         }
 
-        .ai-context-info span {
-            color: var(--monster-green);
-            font-weight: 500;
+        .detail-topic-link {
+            font-family: monospace;
+            color: var(--text-primary, #f1f5f9);
+            font-weight: 600;
         }
 
-        .ai-input-area .search-button {
-            padding: 0.375rem 0.75rem;
+        .detail-body {
+            flex: 1;
+            overflow: auto;
+            padding: 0.75rem 1rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-size: 0.8rem;
-        }@media (max-width: 1200px) {
-            .topic-browser-layout.ai-open {
-                grid-template-columns: 1fr;
-            }
+            line-height: 1.5;
+            color: var(--text-primary, #f1f5f9);
+        }
 
-            .ai-panel {
-                position: fixed;
-                right: 0;
-                top: 0;
-                bottom: 0;
-                width: 400px;
-                max-width: 100vw;
-                z-index: 200;
-                box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
-            }
-}</style>
+        /* Right: Publish Panel */
+        .publish-pane {
+            width: 320px;
+            min-width: 240px;
+            max-width: 50%;
+            display: flex;
+            flex-direction: column;
+            background: var(--dark-surface-2, #182234);
+            border-left: none;
+            overflow-y: auto;
+            flex-shrink: 0;
+            box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .publish-pane-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 0.85rem;
+            border-bottom: 1px solid var(--dark-border, #334155);
+            background: var(--dark-bg, #0f172a);
+        }
+
+        .publish-pane-body {
+            padding: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .pub-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .pub-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary, #cbd5e1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .pub-input {
+            background: var(--dark-bg, #0f172a);
+            border: 1px solid var(--dark-border, #334155);
+            border-radius: 6px;
+            padding: 0.4rem 0.6rem;
+            color: var(--text-primary, #f1f5f9);
+            font-family: monospace;
+            font-size: 0.8rem;
+            outline: none;
+        }
+
+        .pub-input:focus {
+            border-color: var(--monster-purple, #7c3aed);
+        }
+
+        .pub-textarea {
+            min-height: 140px;
+            resize: vertical;
+            line-height: 1.4;
+        }
+
+        .pub-options-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            font-size: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .pub-qos-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Right: AI Panel (Sliding Drawer) */
+        .ai-drawer {
+            width: 380px;
+            min-width: 280px;
+            max-width: 50%;
+            display: flex;
+            flex-direction: column;
+            background: var(--dark-surface, #1e293b);
+            border-left: none;
+            flex-shrink: 0;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Subscriptions Modal / Dropdown */
+        .sub-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 480px;
+            max-width: 90vw;
+            background: var(--dark-surface, #1e293b);
+            border: 1px solid var(--dark-border, #334155);
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sub-dialog-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 9999;
+        }
+
+        /* JSON formatting colors */
+        .json-key { color: #a78bfa; }
+        .json-string { color: #34d399; }
+        .json-number { color: #fb923c; }
+        .json-boolean { color: #38bdf8; }
+        .json-null { color: #94a3b8; }
+    </style>
 </head>
 <body>
     <ix-application force-breakpoint="lg">
     <ix-menu application-name="MonsterMQ" pinned start-expanded>
     </ix-menu>
     <div class="main-content" id="main-content">
-        <div class="container">
-            <div class="page-header">
-                <div style="display: flex; align-items: center; gap: 1rem;">
-                    <h1 class="page-title">Topic Browser</h1>
-                    <button id="toggle-ai-panel" class="ai-toggle-btn" title="AI Analysis">✨ AI</button>
-                </div>
-                <p class="page-subtitle">Browse and explore MQTT topics in your cluster</p>
-            </div>
-
-            <div class="topic-browser-layout">
-                <!-- Left Panel: Topic Tree -->
-                <div class="topic-browser-panel">
-                    <div class="panel-header">
-                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                            <h2 class="panel-title">Topic Tree</h2>
-                            <div class="panel-control-group">
-                                <label for="archive-group-select" class="control-label">Archive:</label>
-                                <select id="archive-group-select"
-                                        class="search-input"
-                                        style="padding: 0.35rem 0.5rem; font-size: 0.8rem; cursor: pointer; min-width: 140px; max-width: 200px;">
-                                    <option value="">Loading&hellip;</option>
-                                </select>
-                            </div>
+        <div class="container" style="max-width: 100%;">
+            <!-- Explorer Container -->
+            <div class="explorer-container">
+                <!-- Top Toolbar -->
+                <div class="explorer-toolbar">
+                    <div class="explorer-toolbar-left">
+                        <div id="connection-status-badge" class="explorer-status-badge" title="Status of GraphQL and WebSocket subscriptions">
+                            <span class="explorer-status-dot"></span>
+                            <span id="connection-status-text">Connected</span>
                         </div>
-
-                        <div class="panel-header-controls">
-                            <!-- Browse / Search row -->
-                            <div class="panel-control-row" style="justify-content: space-between;">
-                                <div class="panel-control-group">
-                                    <label style="display: flex; align-items: center; gap: 0.35rem; color: var(--text-primary); cursor: pointer; font-size: 0.8rem;">
-                                        <input type="radio" name="browse-mode" value="browse" checked style="margin: 0;">
-                                        Browse
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 0.35rem; color: var(--text-primary); cursor: pointer; font-size: 0.8rem; margin-left: 0.5rem;">
-                                        <input type="radio" name="browse-mode" value="search" style="margin: 0;">
-                                        Search
-                                    </label>
-                                </div>
-                                <div id="sub-status-indicator" class="sub-status-indicator inactive">
-                                    <span id="sub-status-dot" class="status-dot inactive"></span>
-                                    <span id="sub-status-text">Live: Off</span>
-                                </div>
-                            </div>
-
-                            <!-- Search & Browse Input -->
-                            <div class="search-container">
-                                <input type="text"
-                                       id="search-input"
-                                       class="search-input"
-                                       style="padding: 0.45rem 0.65rem;"
-                                       placeholder="Search topics (e.g., sensor/+/temperature)..."
-                                       disabled data-ignore-dirty>
-                                <button id="browse-button" class="search-button" style="padding: 0.45rem 1rem; font-size: 0.82rem;">Browse Root</button>
-                                <button id="search-button" class="search-button" style="display: none; padding: 0.45rem 1rem; font-size: 0.82rem;">Search</button>
-                            </div>
-
-                            <!-- Live Topic Subscriptions Box -->
-                            <div class="sub-bar-container">
-                                <div class="sub-input-row">
-                                    <input type="text"
-                                           id="sub-filter-input"
-                                           class="search-input"
-                                           style="padding: 0.4rem 0.6rem; font-size: 0.8rem; font-family: 'Fira Code', 'JetBrains Mono', monospace;"
-                                           placeholder="Subscribe filter with wildcards (e.g., sensors/# or device/+/status)" data-ignore-dirty>
-                                    <button id="sub-add-btn" class="btn btn-secondary btn-sm" title="Add topic filter" style="font-size: 0.75rem;">+ Add</button>
-                                    <button id="sub-toggle-btn" class="btn btn-primary btn-sm" style="font-size: 0.75rem; min-width: 80px;">Start Live</button>
-                                </div>
-                                <div id="sub-tags-list" class="sub-tags-list">
-                                    <!-- Subscription chips will be rendered here -->
-                                </div>
-                            </div>
-                        </div>
+                        <div id="stat-rate" class="explorer-stat-rate">0 msg/s</div>
+                        <button id="toggle-flash-btn" class="explorer-btn explorer-btn-icon active" title="Flash highlight on incoming message">
+                            ⚡ Flash
+                        </button>
                     </div>
-                    <div class="tree-container">
-                        <ul id="topic-tree" class="tree-node">
-                            <!-- Tree will be populated here -->
-                        </ul>
+
+                    <div class="explorer-toolbar-right">
+                        <!-- Archive Group Selector -->
+                        <div style="display: flex; align-items: center; gap: 0.35rem;">
+                            <label for="archive-group-select" style="font-size: 0.75rem; color: var(--text-muted);">Archive:</label>
+                            <select id="archive-group-select" class="archive-select" title="Selected ArchiveGroup for topic browsing & history">
+                                <option value="">Loading&hellip;</option>
+                            </select>
+                        </div>
+
+                        <!-- Subscriptions Button -->
+                        <button id="subscriptions-btn" class="explorer-btn" title="Manage live topic subscriptions">
+                            <span>📡 Subscriptions</span>
+                            <span id="sub-count-badge" class="tree-badge-count" style="margin-left: 2px;">0</span>
+                        </button>
+
+                        <!-- AI Panel Toggle -->
+                        <button id="toggle-ai-panel" class="explorer-btn" title="Open AI topic analysis">
+                            <span>✨ AI</span>
+                        </button>
+
+                        <!-- Publish Button -->
+                        <button id="toggle-publish-btn" class="explorer-btn explorer-btn-publish" title="Open Publish Panel">
+                            <span>→ Publish</span>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Right Panel: Data Viewer -->
-                <div class="topic-browser-panel">
-                    <div class="panel-header">
-                        <h2 class="panel-title">Message Data</h2>
-                    </div>
-                    <div id="data-viewer" class="data-viewer empty">
-                        <div>
-                            <p>Select a topic from the tree to view its message data</p>
-                            <p style="margin-top: 0.5rem; font-size: 0.875rem;">Topics with data are highlighted in green</p>
+                <!-- Main Resizable 3-Pane Body -->
+                <div class="explorer-main">
+                    <!-- 1. Left: Topic Tree -->
+                    <div id="tree-pane" class="tree-pane">
+                        <div class="tree-pane-header">
+                            <input id="tree-filter" type="text" class="tree-filter-input" placeholder="Filter topics..." />
+                            <button id="tree-sort-btn" class="explorer-btn explorer-btn-icon" title="Toggle Sort A-Z">
+                                ⇅
+                            </button>
+                            <button id="tree-expand-all-btn" class="explorer-btn explorer-btn-icon" title="Expand All">
+                                ⊞
+                            </button>
+                            <button id="tree-collapse-all-btn" class="explorer-btn explorer-btn-icon" title="Collapse All">
+                                ⊟
+                            </button>
+                            <button id="tree-clear-btn" class="explorer-btn explorer-btn-icon" title="Reload & clear tree view">
+                                ⟳
+                            </button>
+                        </div>
+                        <div id="tree-content" class="tree-content">
+                            <!-- Populated dynamically by TopicBrowser -->
                         </div>
                     </div>
-                </div>
 
-                <!-- AI Analysis Panel -->
-                <div class="topic-browser-panel ai-panel" id="ai-panel" style="display: none;">
-                    <div class="panel-header">
-                        <h2 class="panel-title">AI Analysis</h2>
-                        <button id="close-ai-panel" class="panel-toggle" title="Close panel">&times;</button>
-                    </div>
+                    <!-- Splitter 1: Between Tree and Center Pane -->
+                    <div id="resizer-tree-center" class="splitter-x" title="Drag to resize tree width"></div>
 
-                    <!-- Context Info -->
-                    <div class="ai-context-info" id="ai-context-info">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                <span>Analyzing: <span id="ai-topic-pattern">#</span> in <span id="ai-archive-group">-</span></span>
-                                <span id="ai-context-status" style="font-size: 0.65rem; color: var(--text-muted);" title="Next question will load topic data.">○ No context</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                <span style="color: var(--text-muted);">Topics: <span id="ai-topic-count" style="color: var(--monster-teal);">-</span></span>
-                                <label style="display: flex; align-items: center; gap: 0.25rem;">
-                                    Max:
-                                    <select id="ai-max-topics" style="background: var(--dark-bg); border: 1px solid var(--dark-border); border-radius: 4px; color: var(--text-primary); padding: 0.125rem 0.25rem; font-size: 0.75rem;">
-                                        <option value="50">50</option>
-                                        <option value="100" selected>100</option>
-                                        <option value="250">250</option>
-                                        <option value="500">500</option>
-                                        <option value="1000">1000</option>
-                                    </select>
+                    <!-- 2. Middle: Center Pane (Table on top, Detail on bottom) -->
+                    <div id="center-pane" class="center-pane">
+                        <!-- Top: Message Table -->
+                        <div id="table-pane" class="table-pane">
+                            <div class="table-toolbar">
+                                <button id="table-clear-btn" class="explorer-btn explorer-btn-icon" title="Clear message log (preserves tree)">
+                                    🗑 Clear
+                                </button>
+                                <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; user-select: none;">
+                                    <input id="table-active-checkbox" type="checkbox" checked style="accent-color: #38bdf8;">
+                                    <span>Active</span>
                                 </label>
-                                <button id="ai-clear-context" class="btn-small" title="Clear chat history and reload topic data on next question" style="margin-top: 0;">Clear</button>
+                                <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                    <button id="mode-live-btn" class="explorer-btn active" style="height: 22px; padding: 0 0.4rem; font-size: 0.7rem;">Live</button>
+                                    <button id="mode-history-btn" class="explorer-btn" style="height: 22px; padding: 0 0.4rem; font-size: 0.7rem;">History</button>
+                                </div>
+                                <button id="table-autoscroll-btn" class="explorer-btn explorer-btn-icon active" style="height: 22px;" title="Auto-scroll to latest message">
+                                    ⬇ Auto-scroll
+                                </button>
+                                <input id="table-filter" type="text" class="tree-filter-input" style="max-width: 180px; height: 22px;" placeholder="Filter..." />
+                                <span id="table-row-count" style="margin-left: auto; color: var(--text-muted); font-size: 0.7rem;">0 rows</span>
+                            </div>
+
+                            <div class="table-scroll">
+                                <table class="explorer-table">
+                                    <thead>
+                                        <tr>
+                                            <th id="col-time" style="width: 100px;">Time</th>
+                                            <th id="col-topic" style="width: 260px;">Topic</th>
+                                            <th id="col-qos" style="width: 38px; text-align: center;">Q</th>
+                                            <th id="col-retain" style="width: 32px; text-align: center;">R</th>
+                                            <th id="col-payload">Payload</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="message-table-body">
+                                        <!-- Messages populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Splitter 2: Between Table and Detail -->
+                        <div id="resizer-table-detail" class="splitter-y" title="Drag to resize table height"></div>
+
+                        <!-- Bottom: Detail Pane -->
+                        <div id="detail-pane" class="detail-pane">
+                            <div class="detail-tabs-bar">
+                                <div class="detail-tab active" data-tab="formatted">Formatted</div>
+                                <div class="detail-tab" data-tab="raw">Raw</div>
+                                <div class="detail-tab" data-tab="hex">Hex</div>
+                                <div class="detail-tab" data-tab="pic">Pic</div>
+
+                                <div class="detail-info-strip">
+                                    <span id="detail-topic-text" class="detail-topic-link" title="Click to copy topic">Select a topic</span>
+                                    <button id="detail-copy-topic-btn" class="explorer-btn explorer-btn-icon" style="height: 20px; font-size: 0.65rem;" title="Copy topic">
+                                        Copy
+                                    </button>
+                                    <span id="detail-payload-size">0 B</span>
+                                    <span id="detail-qos-badge" class="badge-qos">QoS 0</span>
+                                    <span id="detail-retain-badge" class="badge-retain" style="display: none;">R</span>
+                                    <button id="detail-quick-sub-btn" class="explorer-btn" style="height: 20px; font-size: 0.65rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border-color: rgba(56, 189, 248, 0.3);" title="Subscribe to topic wildcard">
+                                        + Sub
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="detail-body" class="detail-body">
+                                <div style="color: var(--text-muted); padding: 1rem 0;">Click a topic in the tree or message table to inspect its payload</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Quick Actions (dynamically loaded from /config/prompts.json) -->
-                    <div id="ai-quick-actions" class="ai-quick-actions">
-                        <!-- Buttons are created dynamically by TopicBrowserAI.renderQuickActionButtons() -->
+                    <!-- Splitter 3: Between Center Pane and Publish Pane -->
+                    <div id="resizer-center-publish" class="splitter-x" style="display: none;" title="Drag to resize publish panel"></div>
+
+                    <!-- 3. Right: Publish Panel (Collapsible) -->
+                    <div id="publish-pane" class="publish-pane" style="display: none;">
+                        <div class="publish-pane-header">
+                            <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">Publish Message</span>
+                            <button id="close-publish-btn" class="explorer-btn explorer-btn-icon" style="height: 22px; width: 22px; justify-content: center;">✕</button>
+                        </div>
+                        <div class="publish-pane-body">
+                            <div class="pub-form-group">
+                                <div class="pub-label">
+                                    <span>Topic</span>
+                                    <label style="display: flex; align-items: center; gap: 0.25rem; font-weight: normal; cursor: pointer;">
+                                        <input id="pub-autofill-checkbox" type="checkbox" checked style="accent-color: #38bdf8;">
+                                        <span style="font-size: 0.65rem; color: #38bdf8;">Sync with tree</span>
+                                    </label>
+                                </div>
+                                <input id="pub-topic-input" type="text" class="pub-input" placeholder="e.g. sensors/temperature" />
+                            </div>
+
+                            <div class="pub-form-group">
+                                <div class="pub-label">
+                                    <span>Payload</span>
+                                    <button id="pub-format-json-btn" class="explorer-btn explorer-btn-icon" style="height: 18px; font-size: 0.65rem;" title="Prettify JSON">
+                                        Format JSON
+                                    </button>
+                                </div>
+                                <textarea id="pub-payload-input" class="pub-input pub-textarea" placeholder='{"value": 24.5, "unit": "°C"}'></textarea>
+                            </div>
+
+                            <div class="pub-options-row">
+                                <div class="pub-qos-group">
+                                    <span style="color: var(--text-muted);">QoS:</span>
+                                    <label><input type="radio" name="pub-qos" value="0" checked> 0</label>
+                                    <label><input type="radio" name="pub-qos" value="1"> 1</label>
+                                    <label><input type="radio" name="pub-qos" value="2"> 2</label>
+                                </div>
+                                <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer;">
+                                    <input id="pub-retain-checkbox" type="checkbox" style="accent-color: #f59e0b;">
+                                    <span style="color: var(--monster-orange, #f59e0b); font-weight: 600;">Retain</span>
+                                </label>
+                            </div>
+
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.5rem;">
+                                <button id="pub-submit-btn" class="explorer-btn explorer-btn-publish" style="height: 32px; padding: 0 1.25rem;">
+                                    Publish
+                                </button>
+                                <span style="font-size: 0.7rem; color: var(--text-muted);">⌘↵ or Ctrl+↵ to send</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- System Prompt (collapsible) -->
-                    <details class="system-prompt-section">
-                        <summary>System Prompt</summary>
-                        <textarea id="ai-system-prompt" rows="4" placeholder="Custom system prompt..."></textarea>
-                        <button id="ai-reset-prompt" class="btn-small">Reset Default</button>
-                    </details>
-
-                    <!-- Chat Input -->
-                    <div class="ai-input-area">
-                        <textarea id="ai-question" placeholder="Ask about your topics..." rows="2"></textarea>
-                        <button id="ai-send" class="search-button">Analyze</button>
+                    <!-- 4. Right: AI Panel (Drawer) -->
+                    <div id="ai-panel" class="ai-drawer" style="display: none;">
+                        <div class="publish-pane-header">
+                            <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">✨ AI Topic Analysis</span>
+                            <button id="close-ai-btn" class="explorer-btn explorer-btn-icon" style="height: 22px; width: 22px; justify-content: center;">✕</button>
+                        </div>
+                        <div style="display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 0.75rem; gap: 0.5rem;">
+                            <div style="font-size: 0.75rem; color: var(--text-muted);" id="ai-context-desc">
+                                Analyzing topics in selected archive group...
+                            </div>
+                            <div id="ai-quick-actions" style="display: flex; gap: 0.35rem; flex-wrap: wrap;"></div>
+                            <div id="ai-chat-history" style="flex: 1; overflow-y: auto; background: var(--dark-bg); border-radius: 6px; padding: 0.5rem; font-size: 0.75rem;"></div>
+                            <div style="display: flex; gap: 0.35rem;">
+                                <textarea id="ai-question" class="pub-input" style="flex: 1; min-height: 48px; resize: none;" placeholder="Ask about topics..."></textarea>
+                                <button id="ai-send" class="explorer-btn explorer-btn-publish" style="align-self: flex-end; height: 48px;">Ask</button>
+                            </div>
+                        </div>
                     </div>
-
-                    <!-- Chat History -->
-                    <div id="ai-chat-history" class="ai-chat-history"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Markdown parser for AI responses -->
+    <!-- Subscriptions Modal Dialog -->
+    <div id="sub-modal-backdrop" class="sub-dialog-backdrop" style="display: none;"></div>
+    <div id="sub-modal-dialog" class="sub-dialog" style="display: none;">
+        <div class="publish-pane-header">
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">Live Topic Subscriptions</span>
+            <button id="sub-modal-close" class="explorer-btn explorer-btn-icon" style="height: 22px; width: 22px; justify-content: center;">✕</button>
+        </div>
+        <div style="padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+            <p style="margin: 0; font-size: 0.75rem; color: var(--text-muted);">
+                Subscribe to real-time MQTT message updates over WebSocket. Wildcards such as <code style="color: #38bdf8;">sensor/+/temp</code> or <code style="color: #38bdf8;">#</code> are supported.
+            </p>
+            <div style="display: flex; gap: 0.5rem;">
+                <input id="sub-modal-input" type="text" class="pub-input" style="flex: 1;" placeholder="e.g. sensor/+/temp or #" />
+                <button id="sub-modal-add-btn" class="explorer-btn" style="background: var(--monster-purple); color: #fff;">+ Add</button>
+            </div>
+            <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); margin-top: 0.25rem;">Active Filters:</div>
+            <div id="sub-modal-tags" style="display: flex; flex-wrap: wrap; gap: 0.35rem; min-height: 40px; max-height: 160px; overflow-y: auto; padding: 0.5rem; background: var(--dark-bg); border-radius: 6px; border: 1px solid var(--dark-border);">
+                <!-- Dynamic filter chips -->
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+                <button id="sub-modal-toggle-active" class="explorer-btn">
+                    Pause Subscription
+                </button>
+                <button id="sub-modal-done" class="explorer-btn" style="background: var(--dark-border);">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vendor libraries -->
     <script src="/js/vendor/marked.umd.js"></script>
     <script type="module" src="/js/topic-browser.js"></script>
     </ix-application>

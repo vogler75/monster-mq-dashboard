@@ -1,103 +1,476 @@
 // Mounted by the SPA router; resources and handler bindings belong to this visit.
 export function mount(page) {
 const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
-    requestAnimationFrame, cancelAnimationFrame, MutationObserver, ResizeObserver,
-    IntersectionObserver, WebSocket, EventSource } = page;
-// State persistence keys
-const STATE_KEYS = {
-    SELECTED_TOPIC: 'monstermq_topic_browser_selected_topic',
-    EXPANDED_NODES: 'monstermq_topic_browser_expanded_nodes',
-    SEARCH_QUERY: 'monstermq_topic_browser_search_query',
-    BROWSE_MODE: 'monstermq_topic_browser_mode',
-    AI_PANEL_OPEN: 'monstermq_topic_browser_ai_open',
-    AI_CHAT_HISTORY: 'monstermq_topic_browser_chat_history',
-    AI_CONTEXT_LOADED: 'monstermq_topic_browser_ai_context_loaded',
-    AI_CONTEXT_TOPIC: 'monstermq_topic_browser_ai_context_topic',
-    AI_CONTEXT_ARCHIVE_GROUP: 'monstermq_topic_browser_ai_context_archive_group',
+    requestAnimationFrame, cancelAnimationFrame, WebSocket } = page;
+
+const safeStorage = window.safeStorage || localStorage;
+
+// Storage keys
+const STORAGE_KEYS = {
+    TREE_WIDTH: 'monstermq_explorer_tree_width',
+    TABLE_HEIGHT: 'monstermq_explorer_table_height',
+    PUB_WIDTH: 'monstermq_explorer_pub_width',
+    FLASH_ENABLED: 'monstermq_explorer_flash_enabled',
+    SUBSCRIPTIONS: 'monstermq_explorer_subscriptions',
+    SUB_ENABLED: 'monstermq_explorer_sub_enabled',
     ARCHIVE_GROUP: 'monstermq_selected_archive_group',
-    AI_SYSTEM_PROMPT: 'monstermq_ai_system_prompt',
-    SUBSCRIPTIONS: 'monstermq_topic_browser_subscriptions',
-    SUB_ENABLED: 'monstermq_topic_browser_sub_enabled'
+    VIEW_MODE: 'monstermq_explorer_view_mode',
+    AUTOSCROLL: 'monstermq_explorer_autoscroll'
 };
 
-class TopicBrowser {
+class TopicExplorer {
     constructor() {
-        this.tree = document.getElementById('topic-tree');
-        this.dataViewer = document.getElementById('data-viewer');
-        this.searchInput = document.getElementById('search-input');
-        this.searchButton = document.getElementById('search-button');
-        this.archiveGroupSelect = document.getElementById('archive-group-select');
+        // UI Elements - Toolbar
+        this.statusBadge = document.getElementById('connection-status-badge');
+        this.statusText = document.getElementById('connection-status-text');
+        this.statRate = document.getElementById('stat-rate');
+        this.toggleFlashBtn = document.getElementById('toggle-flash-btn');
+        this.archiveSelect = document.getElementById('archive-group-select');
+        this.subscriptionsBtn = document.getElementById('subscriptions-btn');
+        this.subCountBadge = document.getElementById('sub-count-badge');
+        this.toggleAiBtn = document.getElementById('toggle-ai-panel');
+        this.togglePublishBtn = document.getElementById('toggle-publish-btn');
 
-        // Subscription controls
-        this.subFilterInput = document.getElementById('sub-filter-input');
-        this.subAddBtn = document.getElementById('sub-add-btn');
-        this.subToggleBtn = document.getElementById('sub-toggle-btn');
-        this.subTagsList = document.getElementById('sub-tags-list');
-        this.subStatusIndicator = document.getElementById('sub-status-indicator');
-        this.subStatusDot = document.getElementById('sub-status-dot');
-        this.subStatusText = document.getElementById('sub-status-text');
-        this.subscriptions = [];
-        this.isSubscribed = false;
-        this.ws = null;
-        this.subscriptionId = 0;
-        this.reconnectTimer = null;
+        // UI Elements - Panes & Resizers
+        this.treePane = document.getElementById('tree-pane');
+        this.centerPane = document.getElementById('center-pane');
+        this.tablePane = document.getElementById('table-pane');
+        this.detailPane = document.getElementById('detail-pane');
+        this.publishPane = document.getElementById('publish-pane');
+        this.aiPanel = document.getElementById('ai-panel');
 
-        this.treeNodes = new Map(); // topic path -> TreeNode
+        this.resizerTreeCenter = document.getElementById('resizer-tree-center');
+        this.resizerTableDetail = document.getElementById('resizer-table-detail');
+        this.resizerCenterPublish = document.getElementById('resizer-center-publish');
+
+        // UI Elements - Tree
+        this.treeFilter = document.getElementById('tree-filter');
+        this.treeSortBtn = document.getElementById('tree-sort-btn');
+        this.treeExpandAllBtn = document.getElementById('tree-expand-all-btn');
+        this.treeCollapseAllBtn = document.getElementById('tree-collapse-all-btn');
+        this.treeClearBtn = document.getElementById('tree-clear-btn');
+        this.treeContent = document.getElementById('tree-content');
+
+        // UI Elements - Table
+        this.tableClearBtn = document.getElementById('table-clear-btn');
+        this.tableActiveCheckbox = document.getElementById('table-active-checkbox');
+        this.modeLiveBtn = document.getElementById('mode-live-btn');
+        this.modeHistoryBtn = document.getElementById('mode-history-btn');
+        this.tableAutoScrollBtn = document.getElementById('table-autoscroll-btn');
+        this.tableFilter = document.getElementById('table-filter');
+        this.tableRowCount = document.getElementById('table-row-count');
+        this.tableBody = document.getElementById('message-table-body');
+
+        // UI Elements - Detail
+        this.detailTabs = document.querySelectorAll('.detail-tab');
+        this.detailTopicText = document.getElementById('detail-topic-text');
+        this.detailCopyTopicBtn = document.getElementById('detail-copy-topic-btn');
+        this.detailPayloadSize = document.getElementById('detail-payload-size');
+        this.detailQosBadge = document.getElementById('detail-qos-badge');
+        this.detailRetainBadge = document.getElementById('detail-retain-badge');
+        this.detailQuickSubBtn = document.getElementById('detail-quick-sub-btn');
+        this.detailBody = document.getElementById('detail-body');
+
+        // UI Elements - Publish Pane
+        this.closePublishBtn = document.getElementById('close-publish-btn');
+        this.pubAutofillCheckbox = document.getElementById('pub-autofill-checkbox');
+        this.pubTopicInput = document.getElementById('pub-topic-input');
+        this.pubPayloadInput = document.getElementById('pub-payload-input');
+        this.pubFormatJsonBtn = document.getElementById('pub-format-json-btn');
+        this.pubSubmitBtn = document.getElementById('pub-submit-btn');
+
+        // UI Elements - Subscriptions Modal
+        this.subModalBackdrop = document.getElementById('sub-modal-backdrop');
+        this.subModalDialog = document.getElementById('sub-modal-dialog');
+        this.subModalInput = document.getElementById('sub-modal-input');
+        this.subModalAddBtn = document.getElementById('sub-modal-add-btn');
+        this.subModalTags = document.getElementById('sub-modal-tags');
+        this.subModalToggleActive = document.getElementById('sub-modal-toggle-active');
+        this.subModalClose = document.getElementById('sub-modal-close');
+        this.subModalDone = document.getElementById('sub-modal-done');
+
+        // UI Elements - AI
+        this.closeAiBtn = document.getElementById('close-ai-btn');
+        this.aiQuickActions = document.getElementById('ai-quick-actions');
+        this.aiChatHistory = document.getElementById('ai-chat-history');
+        this.aiQuestion = document.getElementById('ai-question');
+        this.aiSend = document.getElementById('ai-send');
+
+        // State variables
+        this.treeNodes = new Map(); // path -> { element, label, isLeaf, children: Set, expanded, messageCount, lastMessage }
+        this.expandedPaths = new Set();
         this.selectedTopic = null;
-        this.selectedArchiveGroup = 'Default'; // Default archiveGroup
-        this.expandedPaths = new Set(); // Track expanded node paths for persistence
+        this.selectedMessage = null;
+        this.isSortedAZ = false;
+        this.flashEnabled = safeStorage.getItem(STORAGE_KEYS.FLASH_ENABLED) !== 'false';
+        this.viewMode = safeStorage.getItem(STORAGE_KEYS.VIEW_MODE) || 'live';
+        this.autoScroll = safeStorage.getItem(STORAGE_KEYS.AUTOSCROLL) !== 'false';
+        this.activeTab = 'formatted';
+        this.selectedArchiveGroup = safeStorage.getItem(STORAGE_KEYS.ARCHIVE_GROUP) || 'Default';
+
+        // Message store
+        this.liveTopics = new Map(); // topic -> message object
+        this.historyMessages = []; // array of message objects
+        this.maxHistory = 500;
+        this.messageIdCounter = 0;
+
+        // Rate tracking
+        this.messageCountWindow = 0;
+        this.rateInterval = null;
+
+        // Subscriptions & WebSocket
+        this.subscriptions = [];
+        try {
+            const saved = safeStorage.getItem(STORAGE_KEYS.SUBSCRIPTIONS);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) this.subscriptions = parsed.filter(t => typeof t === 'string' && t.trim().length > 0);
+            }
+        } catch { this.subscriptions = []; }
+        this.subEnabled = safeStorage.getItem(STORAGE_KEYS.SUB_ENABLED) === 'true';
+        this.ws = null;
+        this.wsSubscriptionId = 0;
+        this.wsReconnectTimer = null;
 
         this.init();
     }
 
     async init() {
-        // Check authentication first
-        if (!this.isLoggedIn()) {
-            window.location.href = '/pages/login.html';
-            return;
+        this.applySavedDimensions();
+        this.setupResizers();
+        this.setupEventListeners();
+        this.setupFlashBtn();
+        this.setupViewModeButtons();
+        this.setupTableAutoScroll();
+        this.setupRateMeter();
+        await this.loadArchiveGroups();
+        this.renderSubscriptionTags();
+
+        // Connect live subscriptions if enabled and filters exist
+        if (this.subEnabled && this.subscriptions.length > 0) {
+            this.connectWebSocket();
+        } else {
+            this.updateConnectionStatus(false, 'Live Off');
         }
 
-        this.setupUI();
+        // Initial browse of topic tree
+        await this.browseRoot();
+    }
 
-        // Set up event listeners
-        this.browseButton = document.getElementById('browse-button');
-        this.browseMode = document.querySelector('input[name="browse-mode"][value="browse"]');
-        this.searchMode = document.querySelector('input[name="browse-mode"][value="search"]');
+    // =========================================================================
+    // Dimension & Resizers
+    // =========================================================================
 
-        this.searchButton.addEventListener('click', () => this.performSearch());
-        this.browseButton.addEventListener('click', () => this.browseRoot());
+    applySavedDimensions() {
+        const savedTreeW = safeStorage.getItem(STORAGE_KEYS.TREE_WIDTH);
+        if (savedTreeW && this.treePane) {
+            this.treePane.style.width = `${parseInt(savedTreeW, 10)}px`;
+        }
 
-        this.searchInput.addEventListener('keypress', (e) => {
+        const savedTableH = safeStorage.getItem(STORAGE_KEYS.TABLE_HEIGHT);
+        if (savedTableH && this.tablePane) {
+            this.tablePane.style.height = `${parseInt(savedTableH, 10)}px`;
+        }
+
+        const savedPubW = safeStorage.getItem(STORAGE_KEYS.PUB_WIDTH);
+        if (savedPubW && this.publishPane) {
+            this.publishPane.style.width = `${parseInt(savedPubW, 10)}px`;
+        }
+    }
+
+    setupResizers() {
+        // 1. Resizer: Tree <-> Center Pane (Horizontal)
+        if (this.resizerTreeCenter && this.treePane) {
+            this.attachHorizontalResizer(this.resizerTreeCenter, (deltaX) => {
+                const currentW = this.treePane.getBoundingClientRect().width;
+                const newW = Math.max(180, Math.min(window.innerWidth * 0.6, currentW + deltaX));
+                this.treePane.style.width = `${newW}px`;
+                safeStorage.setItem(STORAGE_KEYS.TREE_WIDTH, String(Math.round(newW)));
+            });
+        }
+
+        // 2. Resizer: Table <-> Detail Pane (Vertical)
+        if (this.resizerTableDetail && this.tablePane && this.centerPane) {
+            this.attachVerticalResizer(this.resizerTableDetail, (deltaY) => {
+                const currentH = this.tablePane.getBoundingClientRect().height;
+                const centerH = this.centerPane.getBoundingClientRect().height;
+                const newH = Math.max(80, Math.min(centerH - 80, currentH + deltaY));
+                this.tablePane.style.height = `${newH}px`;
+                safeStorage.setItem(STORAGE_KEYS.TABLE_HEIGHT, String(Math.round(newH)));
+            });
+        }
+
+        // 3. Resizer: Center <-> Publish Pane (Horizontal)
+        if (this.resizerCenterPublish && this.publishPane) {
+            this.attachHorizontalResizer(this.resizerCenterPublish, (deltaX) => {
+                const currentW = this.publishPane.getBoundingClientRect().width;
+                // dragging left increases publish pane width
+                const newW = Math.max(220, Math.min(window.innerWidth * 0.5, currentW - deltaX));
+                this.publishPane.style.width = `${newW}px`;
+                safeStorage.setItem(STORAGE_KEYS.PUB_WIDTH, String(Math.round(newW)));
+            });
+        }
+
+        // 4. Resizers for Table Columns
+        this.setupTableColumnResizers();
+    }
+
+    setupTableColumnResizers() {
+        const resizableCols = ['col-time', 'col-topic', 'col-qos', 'col-retain'];
+        resizableCols.forEach(id => {
+            const th = document.getElementById(id);
+            if (!th) return;
+            th.style.position = 'relative';
+            const handle = document.createElement('div');
+            handle.style.cssText = 'position: absolute; right: 0; top: 0; bottom: 0; width: 5px; cursor: col-resize; user-select: none; z-index: 10;';
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                let startX = e.clientX;
+                let startW = th.getBoundingClientRect().width;
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+
+                const onMouseMove = (moveEv) => {
+                    const newW = Math.max(30, startW + (moveEv.clientX - startX));
+                    th.style.width = `${newW}px`;
+                };
+
+                const onMouseUp = () => {
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                };
+
+                window.addEventListener('mousemove', onMouseMove);
+                window.addEventListener('mouseup', onMouseUp);
+            });
+            th.appendChild(handle);
+        });
+    }
+
+    attachHorizontalResizer(handle, onResize) {
+        handle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            handle.classList.add('dragging');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+
+            let lastX = e.clientX;
+            const onMouseMove = (moveEv) => {
+                const deltaX = moveEv.clientX - lastX;
+                lastX = moveEv.clientX;
+                onResize(deltaX);
+            };
+
+            const onMouseUp = () => {
+                handle.classList.remove('dragging');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            };
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        });
+    }
+
+    attachVerticalResizer(handle, onResize) {
+        handle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            handle.classList.add('dragging');
+            document.body.style.cursor = 'row-resize';
+            document.body.style.userSelect = 'none';
+
+            let lastY = e.clientY;
+            const onMouseMove = (moveEv) => {
+                const deltaY = moveEv.clientY - lastY;
+                lastY = moveEv.clientY;
+                onResize(deltaY);
+            };
+
+            const onMouseUp = () => {
+                handle.classList.remove('dragging');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            };
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        });
+    }
+
+    // =========================================================================
+    // UI Event Listeners
+    // =========================================================================
+
+    setupEventListeners() {
+        // Flash toggle
+        this.toggleFlashBtn?.addEventListener('click', () => {
+            this.flashEnabled = !this.flashEnabled;
+            safeStorage.setItem(STORAGE_KEYS.FLASH_ENABLED, String(this.flashEnabled));
+            this.setupFlashBtn();
+        });
+
+        // Archive selector change
+        this.archiveSelect?.addEventListener('change', async (e) => {
+            this.selectedArchiveGroup = e.target.value;
+            safeStorage.setItem(STORAGE_KEYS.ARCHIVE_GROUP, this.selectedArchiveGroup);
+            await this.browseRoot();
+        });
+
+        // Subscriptions dialog toggle
+        this.subscriptionsBtn?.addEventListener('click', () => this.openSubscriptionsModal());
+        this.subModalClose?.addEventListener('click', () => this.closeSubscriptionsModal());
+        this.subModalDone?.addEventListener('click', () => this.closeSubscriptionsModal());
+        this.subModalBackdrop?.addEventListener('click', () => this.closeSubscriptionsModal());
+
+        this.subModalAddBtn?.addEventListener('click', () => this.handleAddSubscriptionFilter());
+        this.subModalInput?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                if (this.searchMode.checked) {
-                    this.performSearch();
-                }
+                e.preventDefault();
+                this.handleAddSubscriptionFilter();
             }
         });
 
-        // Mode switching
-        this.browseMode.addEventListener('change', () => this.switchMode('browse'));
-        this.searchMode.addEventListener('change', () => this.switchMode('search'));
-
-        // Archive group selection
-        this.archiveGroupSelect.addEventListener('change', (e) => {
-            this.selectedArchiveGroup = e.target.value;
-            localStorage.setItem('monstermq_selected_archive_group', this.selectedArchiveGroup);
-            this.browseRoot();
+        this.subModalToggleActive?.addEventListener('click', () => {
+            this.subEnabled = !this.subEnabled;
+            safeStorage.setItem(STORAGE_KEYS.SUB_ENABLED, String(this.subEnabled));
+            this.updateSubscriptionActiveButton();
+            if (this.subEnabled) {
+                this.connectWebSocket();
+            } else {
+                this.disconnectWebSocket();
+                this.updateConnectionStatus(false, 'Live Paused');
+            }
         });
 
-        // Subscription event listeners
-        this.initSubscriptionsUI();
+        // Publish panel toggle
+        this.togglePublishBtn?.addEventListener('click', () => this.togglePublishPane());
+        this.closePublishBtn?.addEventListener('click', () => this.togglePublishPane(false));
 
-        // Load archive groups first, then load initial tree
-        await this.loadArchiveGroups();
+        // Publish actions
+        this.pubFormatJsonBtn?.addEventListener('click', () => this.formatPublishPayload());
+        this.pubSubmitBtn?.addEventListener('click', () => this.doPublish());
+        this.pubPayloadInput?.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                this.doPublish();
+            }
+        });
+        this.pubTopicInput?.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                this.doPublish();
+            }
+        });
 
-        // Load initial tree structure with root node and wait for it to complete
-        await this.createRootNode();
+        // AI panel toggle
+        this.toggleAiBtn?.addEventListener('click', () => this.toggleAiPanel());
+        this.closeAiBtn?.addEventListener('click', () => this.toggleAiPanel(false));
+        this.aiSend?.addEventListener('click', () => this.sendAiQuestion());
+        this.aiQuestion?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendAiQuestion();
+            }
+        });
 
-        // Restore state after root nodes are loaded
-        await this.restoreState();
+        // Tree actions
+        this.treeFilter?.addEventListener('input', () => this.filterTree());
+        this.treeSortBtn?.addEventListener('click', () => {
+            this.isSortedAZ = !this.isSortedAZ;
+            this.treeSortBtn.classList.toggle('active', this.isSortedAZ);
+            this.renderTree();
+        });
+        this.treeExpandAllBtn?.addEventListener('click', () => this.expandAllTree());
+        this.treeCollapseAllBtn?.addEventListener('click', () => this.collapseAllTree());
+        this.treeClearBtn?.addEventListener('click', () => this.browseRoot());
+
+        // Table actions
+        this.tableClearBtn?.addEventListener('click', () => this.clearTableLog());
+        this.modeLiveBtn?.addEventListener('click', () => this.switchViewMode('live'));
+        this.modeHistoryBtn?.addEventListener('click', () => this.switchViewMode('history'));
+        this.tableAutoScrollBtn?.addEventListener('click', () => {
+            this.autoScroll = !this.autoScroll;
+            safeStorage.setItem(STORAGE_KEYS.AUTOSCROLL, String(this.autoScroll));
+            this.tableAutoScrollBtn.classList.toggle('active', this.autoScroll);
+        });
+        this.tableFilter?.addEventListener('input', () => this.renderTableRows());
+
+        // Detail pane tabs
+        this.detailTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                this.detailTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                this.activeTab = tab.dataset.tab;
+                this.renderDetailContent();
+            });
+        });
+
+        this.detailCopyTopicBtn?.addEventListener('click', () => {
+            if (!this.selectedTopic) return;
+            navigator.clipboard?.writeText(this.selectedTopic);
+            ui.showToast('Topic copied to clipboard', 'info');
+        });
+
+        this.detailQuickSubBtn?.addEventListener('click', () => {
+            if (!this.selectedTopic) return;
+            const filter = `${this.selectedTopic}/#`;
+            if (!this.subscriptions.includes(filter)) {
+                this.subscriptions.push(filter);
+                safeStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
+                this.renderSubscriptionTags();
+                this.subEnabled = true;
+                safeStorage.setItem(STORAGE_KEYS.SUB_ENABLED, 'true');
+                this.connectWebSocket();
+                ui.showToast(`Subscribed to ${filter}`, 'success');
+            } else {
+                ui.showToast(`Already subscribed to ${filter}`, 'info');
+            }
+        });
     }
+
+    setupFlashBtn() {
+        if (!this.toggleFlashBtn) return;
+        this.toggleFlashBtn.classList.toggle('active', this.flashEnabled);
+    }
+
+    setupViewModeButtons() {
+        if (!this.modeLiveBtn || !this.modeHistoryBtn) return;
+        this.modeLiveBtn.classList.toggle('active', this.viewMode === 'live');
+        this.modeHistoryBtn.classList.toggle('active', this.viewMode === 'history');
+    }
+
+    setupTableAutoScroll() {
+        if (!this.tableAutoScrollBtn) return;
+        this.tableAutoScrollBtn.classList.toggle('active', this.autoScroll);
+    }
+
+    switchViewMode(mode) {
+        this.viewMode = mode;
+        safeStorage.setItem(STORAGE_KEYS.VIEW_MODE, mode);
+        this.setupViewModeButtons();
+        this.renderTableRows();
+    }
+
+    setupRateMeter() {
+        this.rateInterval = setInterval(() => {
+            const count = this.messageCountWindow;
+            this.messageCountWindow = 0;
+            if (this.statRate) {
+                this.statRate.textContent = `${count} msg/s`;
+            }
+        }, 1000);
+    }
+
+    // =========================================================================
+    // Archive Groups & Topic Browsing
+    // =========================================================================
 
     async loadArchiveGroups() {
         try {
@@ -108,377 +481,453 @@ class TopicBrowser {
                     }
                 }
             `;
-
-            const response = await graphqlClient.query(query);
-
-            if (response && response.archiveGroups && response.archiveGroups.length > 0) {
-                const groups = response.archiveGroups;
-
-                // Clear loading option
-                this.archiveGroupSelect.innerHTML = '';
-
-                // Populate dropdown
-                groups.forEach(group => {
-                    const option = document.createElement('option');
-                    option.value = group.name;
-                    option.textContent = group.name;
-                    this.archiveGroupSelect.appendChild(option);
+            const response = await window.graphqlClient.query(query);
+            if (response?.archiveGroups && response.archiveGroups.length > 0) {
+                this.archiveSelect.innerHTML = '';
+                response.archiveGroups.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.name;
+                    opt.textContent = g.name;
+                    this.archiveSelect.appendChild(opt);
                 });
-
-                // Set first group as default or restore saved selection
-                const savedGroup = localStorage.getItem('monstermq_selected_archive_group');
-                if (savedGroup && groups.some(g => g.name === savedGroup)) {
-                    this.selectedArchiveGroup = savedGroup;
-                    this.archiveGroupSelect.value = savedGroup;
-                } else if (groups.length > 0) {
-                    this.selectedArchiveGroup = groups[0].name;
-                    this.archiveGroupSelect.value = groups[0].name;
+                if (response.archiveGroups.some(g => g.name === this.selectedArchiveGroup)) {
+                    this.archiveSelect.value = this.selectedArchiveGroup;
+                } else {
+                    this.selectedArchiveGroup = response.archiveGroups[0].name;
+                    this.archiveSelect.value = this.selectedArchiveGroup;
                 }
             } else {
-                // No groups found - show error
-                this.archiveGroupSelect.innerHTML = '<option value="">No archive groups available</option>';
-                console.error('No archive groups with lastValType found');
-            }
-        } catch (error) {
-            console.error('Error loading archive groups:', error);
-            this.archiveGroupSelect.innerHTML = '<option value="">Error loading groups</option>';
-        }
-    }
-
-    isLoggedIn() {
-        return window.isLoggedIn();
-    }
-
-    setupUI() {
-        // UI setup is now handled by sidebar.js
-    }
-
-    logout() {
-        localStorage.removeItem('monstermq_token');
-        localStorage.removeItem('monstermq_username');
-        localStorage.removeItem('monstermq_isAdmin');
-        window.location.href = '/';
-    }
-
-    switchMode(mode) {
-        if (mode === 'browse') {
-            this.searchInput.disabled = true;
-            this.searchInput.placeholder = 'Select "Search Topics" mode to search';
-            this.browseButton.style.display = 'inline-block';
-            this.searchButton.style.display = 'none';
-        } else {
-            this.searchInput.disabled = false;
-            this.searchInput.placeholder = 'Search topics (e.g., sensor/+/temperature)...';
-            this.browseButton.style.display = 'none';
-            this.searchButton.style.display = 'inline-block';
-        }
-        this.saveState(); // Persist mode change
-    }
-
-    async browseRoot(preserveState = true) {
-        // Save expanded paths before clearing (they're already saved, just don't clear them)
-        const savedExpandedPaths = preserveState ? new Set(this.expandedPaths) : new Set();
-        const savedSelectedTopic = preserveState ? this.selectedTopic : null;
-
-        // Clear current tree and reload from root
-        this.tree.innerHTML = '';
-        this.treeNodes.clear();
-        this.selectedTopic = null;
-        this.showEmptyDataViewer();
-
-        // Restore expanded paths (don't clear them)
-        this.expandedPaths = savedExpandedPaths;
-
-        // Wait for root nodes to load
-        await this.createRootNode();
-
-        // Restore expanded nodes after tree loads
-        if (preserveState && (savedExpandedPaths.size > 0 || savedSelectedTopic)) {
-            await this.restoreExpandedNodes(savedSelectedTopic);
-        }
-    }
-
-    /**
-     * Restore expanded nodes and selection after tree reload
-     */
-    async restoreExpandedNodes(selectedTopic = null) {
-        try {
-            // Expand nodes in order (parent first)
-            const sortedPaths = Array.from(this.expandedPaths).sort((a, b) =>
-                a.split('/').length - b.split('/').length
-            );
-
-            for (const path of sortedPaths) {
-                await this.expandToPath(path);
-            }
-
-            // Restore selected topic
-            if (selectedTopic) {
-                await this.restoreSelectedTopic(selectedTopic);
+                this.archiveSelect.innerHTML = '<option value="Default">Default</option>';
             }
         } catch (e) {
-            console.warn('Failed to restore expanded nodes:', e);
+            console.warn('Failed to load archive groups:', e);
+            this.archiveSelect.innerHTML = '<option value="Default">Default</option>';
         }
     }
 
-    async createRootNode() {
-        // Load the root level topics directly (don't create a synthetic root)
-        await this.loadTopicLevel('+', this.tree, '');
-    }
+    async browseRoot() {
+        this.treeNodes.clear();
+        this.expandedPaths.clear();
+        if (this.treeContent) {
+            this.treeContent.innerHTML = '<div style="padding: 1rem; color: var(--text-muted); font-size: 0.75rem;">Loading topics&hellip;</div>';
+        }
 
-    async loadTopicLevel(pattern, container, parentPath = '') {
         try {
-            // Show loading state
-            const loadingItem = this.createLoadingItem();
-            container.appendChild(loadingItem);
-
-            // Use GraphQL to browse topics
-            const query = `
-                query BrowseTopics($topic: String!, $archiveGroup: String!) {
-                    browseTopics(topic: $topic, archiveGroup: $archiveGroup) {
-                        name
+            await this.loadTopicLevel('+', '');
+            // Restore any previously expanded nodes
+            if (this.expandedPaths.size > 0) {
+                const pathsToRestore = Array.from(this.expandedPaths);
+                for (const path of pathsToRestore) {
+                    const node = this.treeNodes.get(path);
+                    if (node && node.canHaveChildren && !node.childrenLoaded) {
+                        await this.loadTopicLevel(`${path}/+`, path);
                     }
                 }
-            `;
+            }
+        } catch (err) {
+            console.error('Failed to browse root topics:', err);
+            if (this.treeContent) {
+                this.treeContent.innerHTML = '<div style="padding: 1rem; color: var(--monster-red); font-size: 0.75rem;">Failed to load topics</div>';
+            }
+        }
+    }
 
-            const response = await graphqlClient.query(query, {
+    async loadTopicLevel(pattern, parentPath = '') {
+        const query = `
+            query BrowseTopics($topic: String!, $archiveGroup: String!) {
+                browseTopics(topic: $topic, archiveGroup: $archiveGroup) {
+                    name
+                    value {
+                        topic
+                        payload
+                        format
+                        timestamp
+                        qos
+                    }
+                }
+            }
+        `;
+        try {
+            const response = await window.graphqlClient.query(query, {
                 topic: pattern,
                 archiveGroup: this.selectedArchiveGroup
             });
 
-            // Remove loading item
-            container.removeChild(loadingItem);
+            const topics = response?.browseTopics || [];
 
-            if (response && response.browseTopics && response.browseTopics.length > 0) {
-                const topics = response.browseTopics;
+            if (parentPath) {
+                const parentNode = this.treeNodes.get(parentPath);
+                if (parentNode) {
+                    parentNode.childrenLoaded = true;
+                    if (topics.length === 0) {
+                        parentNode.canHaveChildren = false;
+                        parentNode.isLeaf = true;
+                    }
+                }
+                // Clear table first before populating the opened node's subnodes
+                this.liveTopics.clear();
+                this.historyMessages = [];
+            }
 
-                // Convert topic names to our expected format and check for values
-                const topicList = topics.map(topic => ({
-                    topic: topic.name,
-                    hasValue: true // browseTopics only returns topics that have values
-                }));
-
-                const groupedTopics = this.groupTopicsByLevel(topicList, parentPath);
-
-                if (groupedTopics.size === 0) {
-                    const emptyItem = document.createElement('li');
-                    emptyItem.className = 'tree-node';
-                    emptyItem.innerHTML = '<div class="tree-item" style="color: var(--text-muted); font-style: italic;">No topics found after grouping</div>';
-                    container.appendChild(emptyItem);
-                    return;
+            topics.forEach(t => {
+                const topicName = t.name;
+                let childFullPath;
+                if (!parentPath) {
+                    childFullPath = topicName.split('/')[0];
+                } else {
+                    if (topicName.startsWith(parentPath + '/')) {
+                        const remainder = topicName.slice(parentPath.length + 1);
+                        const nextSegment = remainder.split('/')[0];
+                        childFullPath = `${parentPath}/${nextSegment}`;
+                    } else {
+                        const remainder = topicName.replace(new RegExp(`^${parentPath}/?`), '');
+                        const nextSegment = remainder.split('/')[0] || topicName;
+                        childFullPath = `${parentPath}/${nextSegment}`;
+                    }
                 }
 
-                for (const [levelName, topicData] of groupedTopics) {
-                    const fullPath = parentPath ? `${parentPath}/${levelName}` : levelName;
-                    const treeItem = this.createTreeItem(levelName, fullPath, topicData.hasValue, topicData.hasChildren);
-                    container.appendChild(treeItem);
+                // If this topic has a value, store it in liveTopics & historyMessages
+                let messageData = null;
+                if (t.value) {
+                    messageData = {
+                        id: ++this.messageIdCounter,
+                        topic: t.value.topic || childFullPath,
+                        payload: t.value.payload || '',
+                        format: t.value.format || 'TEXT',
+                        qos: t.value.qos || 0,
+                        retain: true,
+                        timestamp: Number(t.value.timestamp) || Date.now(),
+                        isNew: false
+                    };
+                    this.liveTopics.set(messageData.topic, messageData);
+                    this.historyMessages.push(messageData);
+                }
+
+                this.ensureTreeNode(childFullPath, false, messageData);
+                const node = this.treeNodes.get(childFullPath);
+                if (node && !node.childrenLoaded) {
+                    node.canHaveChildren = true;
+                }
+
+                if (parentPath) {
+                    const parentNode = this.treeNodes.get(parentPath);
+                    if (parentNode) {
+                        parentNode.children.add(childFullPath);
+                        parentNode.canHaveChildren = true;
+                        parentNode.childrenLoaded = true;
+                        parentNode.isLeaf = false;
+                    }
+                }
+            });
+
+            if (this.historyMessages.length > this.maxHistory) {
+                this.historyMessages.splice(0, this.historyMessages.length - this.maxHistory);
+            }
+
+            this.renderTree();
+            this.renderTableRows();
+        } catch (err) {
+            console.error('Failed to load topic level:', err);
+            if (parentPath) {
+                const parentNode = this.treeNodes.get(parentPath);
+                if (parentNode) {
+                    parentNode.childrenLoaded = true;
+                }
+            }
+            this.renderTree();
+        }
+    }
+
+    ensureTreeNode(fullPath, isLeaf = false, messageData = null) {
+        const parts = fullPath.split('/');
+        let currentPath = '';
+
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            const prevPath = currentPath;
+            currentPath = i === 0 ? part : `${currentPath}/${part}`;
+            const leaf = (i === parts.length - 1) && isLeaf;
+
+            let node = this.treeNodes.get(currentPath);
+            if (!node) {
+                node = {
+                    path: currentPath,
+                    name: part,
+                    depth: i,
+                    isLeaf: leaf,
+                    children: new Set(),
+                    expanded: false,
+                    canHaveChildren: !leaf,
+                    childrenLoaded: false,
+                    messageCount: 0,
+                    lastMessage: null,
+                    updatedAt: 0
+                };
+                this.treeNodes.set(currentPath, node);
+
+                if (prevPath) {
+                    const parentNode = this.treeNodes.get(prevPath);
+                    if (parentNode) {
+                        parentNode.children.add(currentPath);
+                        parentNode.isLeaf = false;
+                        parentNode.canHaveChildren = true;
+                        parentNode.childrenLoaded = true;
+                    }
                 }
             } else {
-                // Show a message when no topics are found
-                const emptyItem = document.createElement('li');
-                emptyItem.className = 'tree-node';
-                emptyItem.innerHTML = '<div class="tree-item" style="color: var(--text-muted); font-style: italic;">No topics found</div>';
-                container.appendChild(emptyItem);
+                if (prevPath) {
+                    const parentNode = this.treeNodes.get(prevPath);
+                    if (parentNode) {
+                        parentNode.children.add(currentPath);
+                        parentNode.isLeaf = false;
+                        parentNode.canHaveChildren = true;
+                    }
+                }
             }
-        } catch (error) {
-            console.error('Error loading topic level:', error);
-            const loadingItems = container.querySelectorAll('.loading-item');
-            loadingItems.forEach(item => container.removeChild(item));
-            const errorItem = this.createErrorItem(error.message);
-            container.appendChild(errorItem);
+
+            if (i === parts.length - 1 && messageData) {
+                node.messageCount = Math.max(1, node.messageCount + 1);
+                node.lastMessage = messageData;
+                node.updatedAt = messageData.timestamp || Date.now();
+            }
         }
     }
 
-    groupTopicsByLevel(topics, parentPath) {
-        const grouped = new Map();
-        const parentLevels = parentPath ? parentPath.split('/').length : 0;
+    // =========================================================================
+    // Tree Rendering & Filtering
+    // =========================================================================
 
-        for (const topic of topics) {
-            const levels = topic.topic.split('/');
-
-            if (parentLevels === 0) {
-                // Root level - show the first part of each topic
-                const topLevel = levels[0];
-
-                // For browse mode, assume all first-level topics can be expanded
-                // since browseTopics only returns topics that exist
-                const hasChildren = true; // Always assume children for browse results
-                const hasValue = levels.length === 1 && topic.hasValue;
-
-                if (!grouped.has(topLevel)) {
-                    grouped.set(topLevel, {
-                        hasValue: hasValue,
-                        hasChildren: hasChildren
-                    });
-                } else {
-                    const existing = grouped.get(topLevel);
-                    existing.hasValue = existing.hasValue || hasValue;
-                    existing.hasChildren = existing.hasChildren || hasChildren;
-                }
-            } else if (levels.length > parentLevels) {
-                // Deeper levels
-                const nextLevel = levels[parentLevels];
-
-                // For browse mode, assume all returned topics can potentially have children
-                // since browseTopics only returns topics that exist in the hierarchy
-                const hasChildren = true; // Always assume children for browse results
-                const hasValue = levels.length === parentLevels + 1 && topic.hasValue;
-
-                if (!grouped.has(nextLevel)) {
-                    grouped.set(nextLevel, {
-                        hasValue: hasValue,
-                        hasChildren: hasChildren
-                    });
-                } else {
-                    const existing = grouped.get(nextLevel);
-                    existing.hasValue = existing.hasValue || hasValue;
-                    existing.hasChildren = existing.hasChildren || hasChildren;
-                }
-            }
-        }
-
-        return grouped;
+    filterTree() {
+        this.renderTree();
     }
 
-    createTreeItem(name, fullPath, hasValue, hasChildren, dataSource = 'archive') {
-        const li = document.createElement('li');
-        li.className = 'tree-node';
+    async expandAllTree() {
+        const toLoad = [];
+        for (const [path, node] of this.treeNodes.entries()) {
+            if (node.canHaveChildren && !node.childrenLoaded) {
+                toLoad.push(path);
+            }
+        }
+        for (const path of toLoad) {
+            await this.loadTopicLevel(`${path}/+`, path);
+        }
+        for (const [path, node] of this.treeNodes.entries()) {
+            if (node.children.size > 0 || (node.canHaveChildren && !node.childrenLoaded)) {
+                node.expanded = true;
+                this.expandedPaths.add(path);
+            }
+        }
+        this.renderTree();
+    }
 
-        const item = document.createElement('div');
-        item.className = 'tree-item';
-        if (hasValue) {
-            item.classList.add('has-data');
-            item.classList.add(dataSource === 'live' ? 'from-live' : 'from-archive');
+    collapseAllTree() {
+        for (const [path, node] of this.treeNodes.entries()) {
+            node.expanded = false;
+        }
+        this.expandedPaths.clear();
+        this.renderTree();
+    }
+
+    async toggleNode(path) {
+        const node = this.treeNodes.get(path);
+        if (!node) return;
+
+        if (!node.expanded) {
+            node.expanded = true;
+            this.expandedPaths.add(path);
+            if (node.canHaveChildren && !node.childrenLoaded) {
+                await this.loadTopicLevel(`${path}/+`, path);
+            }
+        } else {
+            node.expanded = false;
+            this.expandedPaths.delete(path);
+        }
+        this.renderTree();
+    }
+
+    renderTree() {
+        if (!this.treeContent) return;
+        this.treeContent.innerHTML = '';
+
+        const filter = (this.treeFilter?.value || '').trim().toLowerCase();
+        const rootPaths = [];
+
+        for (const [path, node] of this.treeNodes.entries()) {
+            if (node.depth === 0) rootPaths.push(path);
         }
 
-        // Toggle button for expandable nodes
-        const toggle = document.createElement('button');
-        toggle.className = 'tree-toggle';
-        if (hasChildren) {
-            toggle.innerHTML = '▶';
-            toggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleNode(li, fullPath);
-            });
+        if (this.isSortedAZ) {
+            rootPaths.sort();
         }
+
+        const fragment = document.createDocumentFragment();
+        for (const path of rootPaths) {
+            this.renderTreeNode(path, fragment, filter);
+        }
+
+        if (fragment.children.length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'padding: 1rem; color: var(--text-muted); font-size: 0.75rem;';
+            empty.textContent = filter ? 'No matching topics' : 'No topics found';
+            fragment.appendChild(empty);
+        }
+
+        this.treeContent.appendChild(fragment);
+    }
+
+    renderTreeNode(path, parentEl, filter) {
+        const node = this.treeNodes.get(path);
+        if (!node) return;
+
+        // Check if this node or any descendant matches filter
+        if (filter && !this.nodeMatchesFilter(node, filter)) {
+            return;
+        }
+
+        const isExpanded = filter ? true : (node.expanded || this.expandedPaths.has(path));
+        const isSelected = this.selectedTopic === path;
+        const canExpand = node.children.size > 0 || (node.canHaveChildren && !node.childrenLoaded);
+
+        const row = document.createElement('div');
+        row.className = `tree-item-row ${isSelected ? 'selected' : ''}`;
+        row.style.paddingLeft = `${node.depth * 14 + 6}px`;
+
+        // Chevron
+        const chevron = document.createElement('span');
+        chevron.className = `tree-chevron ${canExpand ? '' : 'hidden'} ${isExpanded ? 'expanded' : ''}`;
+        chevron.textContent = '▶';
+        chevron.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleNode(path);
+        });
+        row.appendChild(chevron);
 
         // Icon
         const icon = document.createElement('span');
-        const iconType = hasChildren ? 'folder' : (dataSource === 'live' ? 'topic-live' : 'topic');
-        icon.className = `tree-icon ${iconType}`;
-        icon.innerHTML = hasChildren ? '📁' : '📄';
+        icon.className = 'tree-icon';
+        icon.textContent = canExpand ? '📁' : '📄';
+        if (canExpand) {
+            icon.style.cursor = 'pointer';
+            icon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleNode(path);
+            });
+        }
+        row.appendChild(icon);
 
         // Label
         const label = document.createElement('span');
         label.className = 'tree-label';
-        label.textContent = name;
+        label.textContent = node.name;
+        row.appendChild(label);
 
-        // Source badge (Live vs Archive)
-        const badge = document.createElement('span');
-        badge.className = 'tree-badge';
-        if (hasValue) {
-            badge.className = `tree-badge ${dataSource === 'live' ? 'badge-live' : 'badge-archive'}`;
-            badge.textContent = dataSource === 'live' ? 'Live' : 'Archive';
+        // Count badge
+        if (node.messageCount > 0) {
+            const count = document.createElement('span');
+            count.className = 'tree-badge-count';
+            count.textContent = String(node.messageCount);
+            row.appendChild(count);
         }
 
-        item.appendChild(toggle);
-        item.appendChild(icon);
-        item.appendChild(label);
-        item.appendChild(badge);
-
-        // Click handler for topic selection
-        item.addEventListener('click', () => {
-            this.selectTopic(fullPath, item);
+        // Row Click: select topic
+        row.addEventListener('click', () => {
+            this.handleTopicSelected(path);
         });
 
-        li.appendChild(item);
-
-        // Store reference
-        this.treeNodes.set(fullPath, {
-            element: li,
-            item: item,
-            toggle: toggle,
-            icon: icon,
-            badge: badge,
-            expanded: false,
-            hasChildren: hasChildren,
-            hasValue: hasValue,
-            dataSource: dataSource,
-            lastMessage: null
+        // Double click: toggle expand/collapse
+        row.addEventListener('dblclick', () => {
+            if (canExpand) {
+                this.toggleNode(path);
+            }
         });
 
-        return li;
+        parentEl.appendChild(row);
+
+        // Render children if expanded
+        if (isExpanded && node.children.size > 0) {
+            const children = Array.from(node.children);
+            if (this.isSortedAZ) children.sort();
+            for (const childPath of children) {
+                this.renderTreeNode(childPath, parentEl, filter);
+            }
+        }
     }
 
-    async toggleNode(nodeElement, topicPath) {
-        const nodeData = this.treeNodes.get(topicPath);
-        if (!nodeData || !nodeData.hasChildren) return;
+    nodeMatchesFilter(node, filter) {
+        if (node.path.toLowerCase().includes(filter)) return true;
+        for (const childPath of node.children) {
+            const childNode = this.treeNodes.get(childPath);
+            if (childNode && this.nodeMatchesFilter(childNode, filter)) return true;
+        }
+        return false;
+    }
 
-        if (nodeData.expanded) {
-            // Collapse
-            const childContainer = nodeElement.querySelector('.tree-children');
-            if (childContainer) {
-                childContainer.classList.add('collapsed');
-                nodeData.toggle.classList.remove('expanded');
-                nodeData.expanded = false;
-                this.trackExpandedState(topicPath, false);
+    async handleTopicSelected(topic) {
+        this.selectedTopic = topic;
+        this.renderTree();
+
+        // Update Topic string in Detail strip
+        if (this.detailTopicText) {
+            this.detailTopicText.textContent = topic;
+            this.detailTopicText.title = topic;
+        }
+
+        // If publish panel auto-sync is on, populate publish topic
+        if (this.pubAutofillCheckbox?.checked && this.pubTopicInput) {
+            this.pubTopicInput.value = topic;
+        }
+
+        const node = this.treeNodes.get(topic);
+
+        // If this node can have children and they haven't been loaded yet, load them first
+        if (node && node.canHaveChildren && !node.childrenLoaded) {
+            await this.loadTopicLevel(`${topic}/+`, topic);
+        }
+
+        // Clear table first
+        this.liveTopics.clear();
+        this.historyMessages = [];
+
+        // Collect all subnodes under this topic (paths starting with `${topic}/`)
+        const prefix = topic + '/';
+        const subMessages = [];
+
+        for (const [path, n] of this.treeNodes.entries()) {
+            if (path.startsWith(prefix) && n.lastMessage) {
+                subMessages.push(n.lastMessage);
             }
+        }
+
+        if (subMessages.length > 0) {
+            subMessages.sort((a, b) => a.topic.localeCompare(b.topic));
+            for (const msg of subMessages) {
+                this.liveTopics.set(msg.topic, msg);
+                this.historyMessages.push(msg);
+            }
+            this.selectedMessage = node?.lastMessage || subMessages[0];
+            this.renderDetailContent();
+            this.renderTableRows();
         } else {
-            // Expand
-            let childContainer = nodeElement.querySelector('.tree-children');
-            if (!childContainer) {
-                childContainer = document.createElement('ul');
-                childContainer.className = 'tree-children';
-                nodeElement.appendChild(childContainer);
-
-                // Load children with correct pattern format
-                const pattern = topicPath === 'root' ? '+' : `${topicPath}/+`;
-                const parentPath = topicPath === 'root' ? '' : topicPath;
-                await this.loadTopicLevel(pattern, childContainer, parentPath);
+            // No subnodes found — this is a leaf node or has no subtopic messages
+            const existingMsg = node?.lastMessage;
+            if (existingMsg) {
+                this.liveTopics.set(topic, existingMsg);
+                this.historyMessages.push(existingMsg);
+                this.selectedMessage = existingMsg;
+                this.renderDetailContent();
+                this.renderTableRows();
             } else {
-                childContainer.classList.remove('collapsed');
+                // Fetch currentValue from GraphQL
+                await this.fetchTopicCurrentValue(topic);
             }
-
-            nodeData.toggle.classList.add('expanded');
-            nodeData.expanded = true;
-            this.trackExpandedState(topicPath, true);
         }
+
+        // Highlight matching table row
+        this.highlightSelectedTableRow();
     }
 
-    async selectTopic(topicPath, itemElement) {
-        // Update UI selection
-        document.querySelectorAll('.tree-item.selected').forEach(item => {
-            item.classList.remove('selected');
-        });
-        itemElement.classList.add('selected');
-
-        this.selectedTopic = topicPath;
-        this.saveState(); // Persist selected topic
-
-        // Don't try to load message data for the root node
-        if (topicPath === 'root') {
-            this.showEmptyDataViewer('Select a topic from the tree to view its message data');
-            return;
-        }
-
-        // Check if node exists and has value
-        const nodeData = this.treeNodes.get(topicPath);
-        if (nodeData && nodeData.hasValue) {
-            if (nodeData.dataSource === 'live' && nodeData.lastMessage) {
-                // If this is a live topic and we already have the latest live payload in memory, display it directly!
-                this.displayMessageData(nodeData.lastMessage, 'live');
-            } else {
-                await this.loadMessageData(topicPath);
-            }
-        } else {
-            this.showEmptyDataViewer();
-        }
-    }
-
-    async loadMessageData(topicPath) {
+    async fetchTopicCurrentValue(topic) {
         try {
-            this.showLoadingDataViewer();
-
             const query = `
                 query GetCurrentValue($topic: String!, $archiveGroup: String!) {
                     currentValue(topic: $topic, archiveGroup: $archiveGroup) {
@@ -487,846 +936,550 @@ class TopicBrowser {
                         format
                         timestamp
                         qos
-                        messageExpiryInterval
-                        contentType
-                        responseTopic
-                        payloadFormatIndicator
-                        userProperties { key value }
                     }
                 }
             `;
-
-            const response = await graphqlClient.query(query, {
-                topic: topicPath,
+            const res = await window.graphqlClient.query(query, {
+                topic,
                 archiveGroup: this.selectedArchiveGroup
             });
-
-            if (response && response.currentValue) {
-                const nodeData = this.treeNodes.get(topicPath);
-                if (nodeData) {
-                    nodeData.lastMessage = response.currentValue;
-                }
-                const source = (nodeData && nodeData.dataSource === 'live') ? 'live' : 'archive';
-                this.displayMessageData(response.currentValue, source);
+            if (res?.currentValue) {
+                const cv = res.currentValue;
+                const msg = {
+                    id: ++this.messageIdCounter,
+                    topic: cv.topic,
+                    payload: cv.payload,
+                    format: cv.format,
+                    qos: cv.qos || 0,
+                    retain: true,
+                    timestamp: Number(cv.timestamp) || Date.now()
+                };
+                this.liveTopics.set(topic, msg);
+                this.selectedMessage = msg;
+                this.renderDetailContent();
+                this.renderTableRows();
             } else {
-                this.showEmptyDataViewer('No message data found for this topic');
-            }
-        } catch (error) {
-            console.error('Error loading message data:', error);
-            this.showErrorDataViewer(error.message);
-        }
-    }
-
-    displayMessageData(message, source = 'archive') {
-        const { topic, payload, qos, format, timestamp, messageExpiryInterval, contentType, responseTopic, payloadFormatIndicator, userProperties } = message;
-
-        this.dataViewer.className = 'data-viewer';
-
-        const header = document.createElement('div');
-        header.className = 'data-header';
-
-        const topicRow = document.createElement('div');
-        topicRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;';
-
-        const topicDiv = document.createElement('div');
-        topicDiv.className = 'data-topic';
-        topicDiv.style.marginBottom = '0';
-        topicDiv.textContent = topic;
-
-        const sourceBadge = document.createElement('span');
-        sourceBadge.className = `status-badge ${source === 'live' ? 'status-info' : 'status-ok'}`;
-        sourceBadge.style.fontSize = '0.7rem';
-        sourceBadge.innerHTML = source === 'live' ? '● Live Subscription' : '● Archive Query';
-
-        topicRow.appendChild(topicDiv);
-        topicRow.appendChild(sourceBadge);
-
-        const infoDiv = document.createElement('div');
-        infoDiv.className = 'data-info';
-        infoDiv.innerHTML = `
-            <span>QoS: ${qos != null ? qos : 'Unknown'}</span>
-            <span>Format: ${format || 'Unknown'}</span>
-            <span>Time: ${timestamp ? new Date(Number(timestamp) || timestamp).toLocaleString() : 'Unknown'}</span>
-        `;
-
-        header.appendChild(topicRow);
-        header.appendChild(infoDiv);
-
-        const content = document.createElement('div');
-        content.className = 'data-content';
-
-        // Determine payload type and display accordingly based on format
-        if (format === 'JSON') {
-            try {
-                const jsonData = JSON.parse(payload);
-                const formattedJson = this.formatJson(jsonData);
-                content.innerHTML = `<div class="data-json">${formattedJson}</div>`;
-            } catch {
-                // If JSON parsing fails, display as text
-                content.innerHTML = `<div class="data-text">${this.escapeHtml(payload)}</div>`;
-            }
-        } else if (format === 'BINARY' || format === 'BASE64') {
-            const imageInfo = this.detectImage(payload, contentType);
-            if (imageInfo) {
-                const size = typeof payload === 'string' ? payload.length : 0;
-                const displaySize = Math.floor(size * 3 / 4);
-                content.innerHTML = `
-                    <div class="data-image-container">
-                        <div class="data-image-wrapper">
-                            <img src="${imageInfo.dataUrl}" alt="${this.escapeHtml(imageInfo.formatName || 'Image')}" class="data-image" />
-                        </div>
-                        <div class="data-image-meta">
-                            <span>${this.escapeHtml(imageInfo.formatName || imageInfo.mimeType)}</span>
-                            <span>•</span>
-                            <span>${this.formatBytes(displaySize)}</span>
-                        </div>
-                    </div>
-                `;
-            } else {
-                const decodedText = this.tryDecodeBinaryToText(payload);
-                if (decodedText !== null) {
-                    // Check if decoded text is JSON
-                    try {
-                        const jsonData = JSON.parse(decodedText);
-                        const formattedJson = this.formatJson(jsonData);
-                        content.innerHTML = `<div class="data-json">${formattedJson}</div>`;
-                    } catch {
-                        content.innerHTML = `<div class="data-text">${this.escapeHtml(decodedText)}</div>`;
-                    }
-                } else {
-                    // Binary data
-                    const size = typeof payload === 'string' ? payload.length : (payload?.byteLength || payload?.length || 0);
-                    const displaySize = format === 'BASE64' || typeof payload === 'string' ? Math.floor(size * 3 / 4) : size; // Estimate original size for base64
-                    content.innerHTML = `
-                        <div class="data-binary">
-                            <span class="binary-icon">🗄️</span>
-                            <div>
-                                <div>Binary Data (${format})</div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">Size: ${this.formatBytes(displaySize)}</div>
-                            </div>
-                        </div>
-                    `;
-                }
-            }
-        } else {
-            // TEXT or unknown format - display as plain text
-            content.innerHTML = `<div class="data-text">${this.escapeHtml(String(payload))}</div>`;
-        }
-
-        this.dataViewer.innerHTML = '';
-        this.dataViewer.appendChild(header);
-        this.dataViewer.appendChild(content);
-        
-        // Add MQTT v5 properties section if any properties exist
-        const hasMqtt5Props = messageExpiryInterval || contentType || responseTopic || payloadFormatIndicator || (userProperties && userProperties.length > 0);
-        if (hasMqtt5Props) {
-            const mqtt5Section = this.createMqtt5PropertiesSection({
-                messageExpiryInterval,
-                contentType,
-                responseTopic,
-                payloadFormatIndicator,
-                userProperties
-            });
-            this.dataViewer.appendChild(mqtt5Section);
-        }
-    }
-
-    detectImage(payload, contentType) {
-        if (!payload || typeof payload !== 'string') return null;
-
-        const clean = payload.trim();
-
-        // If contentType explicitly specifies an image MIME type
-        if (contentType && contentType.startsWith('image/')) {
-            return {
-                mimeType: contentType,
-                formatName: contentType.replace('image/', '').toUpperCase() + ' Image',
-                dataUrl: `data:${contentType};base64,${clean}`
-            };
-        }
-
-        try {
-            // Decode the header bytes (up to 32 bytes) from base64
-            const binaryString = atob(clean.slice(0, 64));
-            const len = binaryString.length;
-            if (len < 3) return null;
-
-            const b = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                b[i] = binaryString.charCodeAt(i);
-            }
-
-            // PNG: 89 50 4E 47 0D 0A 1A 0A
-            if (len >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47 &&
-                b[4] === 0x0D && b[5] === 0x0A && b[6] === 0x1A && b[7] === 0x0A) {
-                return {
-                    mimeType: 'image/png',
-                    formatName: 'PNG Image',
-                    dataUrl: `data:image/png;base64,${clean}`
+                this.selectedMessage = {
+                    topic,
+                    payload: '',
+                    format: 'TEXT',
+                    qos: 0,
+                    retain: false,
+                    timestamp: null
                 };
+                this.renderDetailContent();
             }
-
-            // JPEG / JPG: FF D8 FF
-            if (len >= 3 && b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) {
-                return {
-                    mimeType: 'image/jpeg',
-                    formatName: 'JPEG Image',
-                    dataUrl: `data:image/jpeg;base64,${clean}`
-                };
-            }
-
-            // GIF: GIF87a or GIF89a (47 49 46 38 37/39 61)
-            if (len >= 6 && b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x38 &&
-                (b[4] === 0x37 || b[4] === 0x39) && b[5] === 0x61) {
-                return {
-                    mimeType: 'image/gif',
-                    formatName: 'GIF Image',
-                    dataUrl: `data:image/gif;base64,${clean}`
-                };
-            }
-
-            // WebP: RIFF (bytes 0-3) ... WEBP (bytes 8-11)
-            if (len >= 12 && b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
-                b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50) {
-                return {
-                    mimeType: 'image/webp',
-                    formatName: 'WebP Image',
-                    dataUrl: `data:image/webp;base64,${clean}`
-                };
-            }
-
-            // BMP: BM (42 4D)
-            if (len >= 2 && b[0] === 0x42 && b[1] === 0x4D) {
-                return {
-                    mimeType: 'image/bmp',
-                    formatName: 'BMP Image',
-                    dataUrl: `data:image/bmp;base64,${clean}`
-                };
-            }
-        } catch {
-            // Not valid base64
-        }
-
-        return null;
-    }
-
-    tryDecodeBinaryToText(payload) {
-        if (!payload || typeof payload !== 'string') return null;
-        try {
-            const binaryString = atob(payload.trim());
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            const decoder = new TextDecoder('utf-8', { fatal: true });
-            const decoded = decoder.decode(bytes);
-
-            // Check if string contains unprintable control characters (excluding whitespace: \t, \n, \r)
-            if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(decoded)) {
-                return null;
-            }
-            return decoded;
-        } catch {
-            return null;
+        } catch (e) {
+            console.warn('Failed to fetch currentValue for topic:', e);
         }
     }
 
-    formatJson(obj, indent = 0) {
-        const indentStr = '  '.repeat(indent);
+    // =========================================================================
+    // Table (Live vs History)
+    // =========================================================================
 
-        if (obj === null) {
-            return '<span class="json-null">null</span>';
-        }
+    handleIncomingMessage(update) {
+        if (!update || !update.topic) return;
+        this.messageCountWindow++;
 
-        if (typeof obj === 'boolean') {
-            return `<span class="json-boolean">${obj}</span>`;
-        }
+        const msg = {
+            id: ++this.messageIdCounter,
+            topic: update.topic,
+            payload: update.payload || '',
+            format: update.format || 'TEXT',
+            qos: update.qos || 0,
+            retain: !!update.retained,
+            timestamp: Number(update.timestamp) || Date.now(),
+            isNew: true
+        };
 
-        if (typeof obj === 'number') {
-            return `<span class="json-number">${obj}</span>`;
-        }
+        // Update Tree node
+        this.ensureTreeNode(msg.topic, true, msg);
 
-        if (typeof obj === 'string') {
-            return `<span class="json-string">"${this.escapeHtml(obj)}"</span>`;
-        }
-
-        if (Array.isArray(obj)) {
-            if (obj.length === 0) return '[]';
-
-            const items = obj.map(item => `${indentStr}  ${this.formatJson(item, indent + 1)}`);
-            return `[\n${items.join(',\n')}\n${indentStr}]`;
-        }
-
-        if (typeof obj === 'object') {
-            const keys = Object.keys(obj);
-            if (keys.length === 0) return '{}';
-
-            const items = keys.map(key => {
-                const keySpan = `<span class="json-key">"${this.escapeHtml(key)}"</span>`;
-                const value = this.formatJson(obj[key], indent + 1);
-                return `${indentStr}  ${keySpan}: ${value}`;
-            });
-            return `{\n${items.join(',\n')}\n${indentStr}}`;
-        }
-
-        return String(obj);
-    }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    formatBytes(bytes) {
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        if (bytes === 0) return '0 Bytes';
-        const i = Math.floor(Math.log(bytes) / Math.log(1024));
-        return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-    }
-
-    createMqtt5PropertiesSection(properties) {
-        const section = document.createElement('div');
-        section.className = 'mqtt5-properties-section';
-        section.style.cssText = 'margin-top: 1.5rem; padding: 1rem; background: var(--dark-surface-2); border-radius: 8px; border: 1px solid var(--dark-border);';
-        
-        const header = document.createElement('div');
-        header.style.cssText = 'display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; cursor: pointer;';
-        header.innerHTML = `
-            <h4 style="margin: 0; color: var(--monster-purple); font-size: 0.9rem; font-weight: 600;">
-                🏷️ MQTT v5.0 Properties
-            </h4>
-            <span class="toggle-icon" style="color: var(--text-muted); font-size: 1.2rem;">▼</span>
-        `;
-        
-        const content = document.createElement('div');
-        content.className = 'mqtt5-properties-content';
-        content.style.cssText = 'display: grid; grid-template-columns: 1fr; gap: 0.75rem;';
-        
-        // Message Expiry Interval
-        if (properties.messageExpiryInterval !== null && properties.messageExpiryInterval !== undefined) {
-            const prop = document.createElement('div');
-            prop.style.cssText = 'display: flex; justify-content: space-between; padding: 0.5rem; background: var(--dark-bg); border-radius: 6px;';
-            prop.innerHTML = `
-                <span style="color: var(--text-muted); font-size: 0.85rem;">Message Expiry</span>
-                <span style="color: var(--text-primary); font-size: 0.85rem; font-weight: 500;">${properties.messageExpiryInterval}s</span>
-            `;
-            content.appendChild(prop);
-        }
-        
-        // Content Type
-        if (properties.contentType) {
-            const prop = document.createElement('div');
-            prop.style.cssText = 'display: flex; justify-content: space-between; padding: 0.5rem; background: var(--dark-bg); border-radius: 6px;';
-            prop.innerHTML = `
-                <span style="color: var(--text-muted); font-size: 0.85rem;">Content Type</span>
-                <span style="color: var(--text-primary); font-size: 0.85rem; font-weight: 500;">${this.escapeHtml(properties.contentType)}</span>
-            `;
-            content.appendChild(prop);
-        }
-        
-        // Response Topic
-        if (properties.responseTopic) {
-            const prop = document.createElement('div');
-            prop.style.cssText = 'display: flex; justify-content: space-between; padding: 0.5rem; background: var(--dark-bg); border-radius: 6px;';
-            prop.innerHTML = `
-                <span style="color: var(--text-muted); font-size: 0.85rem;">Response Topic</span>
-                <span style="color: var(--text-primary); font-size: 0.85rem; font-weight: 500;"><code>${this.escapeHtml(properties.responseTopic)}</code></span>
-            `;
-            content.appendChild(prop);
-        }
-        
-        // Payload Format Indicator
-        if (properties.payloadFormatIndicator) {
-            const prop = document.createElement('div');
-            prop.style.cssText = 'display: flex; justify-content: space-between; padding: 0.5rem; background: var(--dark-bg); border-radius: 6px;';
-            prop.innerHTML = `
-                <span style="color: var(--text-muted); font-size: 0.85rem;">Payload Format</span>
-                <span style="color: var(--text-primary); font-size: 0.85rem; font-weight: 500;">✓ UTF-8 Text</span>
-            `;
-            content.appendChild(prop);
-        }
-        
-        // User Properties
-        if (properties.userProperties && properties.userProperties.length > 0) {
-            const userPropsDiv = document.createElement('div');
-            userPropsDiv.style.cssText = 'padding: 0.5rem; background: var(--dark-bg); border-radius: 6px;';
-            
-            const userPropsHeader = document.createElement('div');
-            userPropsHeader.style.cssText = 'color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;';
-            userPropsHeader.textContent = 'User Properties';
-            userPropsDiv.appendChild(userPropsHeader);
-            
-            const userPropsTable = document.createElement('table');
-            userPropsTable.style.cssText = 'width: 100%; border-collapse: collapse;';
-            
-            properties.userProperties.forEach(prop => {
-                const row = document.createElement('tr');
-                row.style.cssText = 'border-top: 1px solid var(--dark-border);';
-                row.innerHTML = `
-                    <td style="padding: 0.25rem 0; color: var(--text-primary); font-size: 0.8rem; font-weight: 500; width: 40%;">${this.escapeHtml(prop.key)}</td>
-                    <td style="padding: 0.25rem 0; color: var(--text-muted); font-size: 0.8rem;">${this.escapeHtml(prop.value)}</td>
-                `;
-                userPropsTable.appendChild(row);
-            });
-            
-            userPropsDiv.appendChild(userPropsTable);
-            content.appendChild(userPropsDiv);
-        }
-        
-        // Toggle functionality
-        let isExpanded = true;
-        header.addEventListener('click', () => {
-            isExpanded = !isExpanded;
-            content.style.display = isExpanded ? 'grid' : 'none';
-            header.querySelector('.toggle-icon').textContent = isExpanded ? '▼' : '▶';
-        });
-        
-        section.appendChild(header);
-        section.appendChild(content);
-        
-        return section;
-    }
-
-    async performSearch() {
-        const searchTerm = this.searchInput.value.trim();
-        if (!searchTerm) return;
-
-        this.saveState(); // Persist search query
-
-        try {
-            this.showSearchLoading();
-
-            // Use the search functionality
-            const query = `
-                query SearchTopics($pattern: String!) {
-                    searchTopics(pattern: $pattern)
-                }
-            `;
-
-            const response = await graphqlClient.query(query, { pattern: searchTerm });
-
-            if (response && response.searchTopics) {
-                this.buildSearchTree(response.searchTopics);
+        // Flash tree row
+        if (this.flashEnabled) {
+            const treeRow = document.querySelector(`.tree-item-row.selected`);
+            if (treeRow && this.selectedTopic === msg.topic) {
+                treeRow.classList.remove('row-updated');
+                void treeRow.offsetWidth;
+                treeRow.classList.add('row-updated');
             }
-        } catch (error) {
-            console.error('Error searching topics:', error);
-            this.showSearchError(error.message);
         }
-    }
 
-    buildSearchTree(topics) {
-        // Clear current tree
-        this.tree.innerHTML = '';
-        this.treeNodes.clear();
-
-        if (topics.length === 0) {
-            const emptyItem = document.createElement('li');
-            emptyItem.className = 'tree-node';
-            emptyItem.innerHTML = '<div class="tree-item" style="color: var(--text-muted);">No topics found</div>';
-            this.tree.appendChild(emptyItem);
+        // Active table check
+        if (this.tableActiveCheckbox && !this.tableActiveCheckbox.checked) {
             return;
         }
 
-        // Convert topic names to our expected format
-        // searchTopics returns an array of strings, not objects
-        const topicList = topics.map(topicName => ({
-            topic: topicName,
-            hasValue: true // searchTopics only returns topics that have values
-        }));
+        // Update Live store
+        this.liveTopics.set(msg.topic, msg);
 
-        // Build tree structure from search results
-        const treeStructure = this.buildTreeStructure(topicList);
-        this.renderTreeStructure(treeStructure, this.tree, '');
-    }
-
-    buildTreeStructure(topics) {
-        const structure = new Map();
-
-        for (const topic of topics) {
-            const parts = topic.topic.split('/');
-            let currentLevel = structure;
-
-            for (let i = 0; i < parts.length; i++) {
-                const part = parts[i];
-
-                if (!currentLevel.has(part)) {
-                    currentLevel.set(part, {
-                        children: new Map(),
-                        hasValue: false,
-                        fullPath: parts.slice(0, i + 1).join('/')
-                    });
-                }
-
-                const node = currentLevel.get(part);
-                if (i === parts.length - 1) {
-                    node.hasValue = topic.hasValue;
-                }
-
-                currentLevel = node.children;
-            }
+        // Update History store
+        this.historyMessages.push(msg);
+        if (this.historyMessages.length > this.maxHistory) {
+            this.historyMessages.shift();
         }
 
-        return structure;
+        // If this is currently selected topic, update detail pane live
+        if (this.selectedTopic === msg.topic) {
+            this.selectedMessage = msg;
+            this.renderDetailContent();
+        }
+
+        this.renderTableRows();
     }
 
-    renderTreeStructure(structure, container, parentPath, autoExpand = false) {
-        for (const [name, data] of structure) {
-            const hasChildren = data.children.size > 0;
-            const treeItem = this.createTreeItem(name, data.fullPath, data.hasValue, hasChildren);
-            container.appendChild(treeItem);
+    renderTableRows() {
+        if (!this.tableBody) return;
 
-            if (hasChildren) {
-                const childContainer = document.createElement('ul');
-                childContainer.className = 'tree-children';
-                treeItem.appendChild(childContainer);
+        const filter = (this.tableFilter?.value || '').trim().toLowerCase();
+        let messages = [];
 
-                this.renderTreeStructure(data.children, childContainer, data.fullPath, autoExpand);
+        if (this.viewMode === 'live') {
+            messages = Array.from(this.liveTopics.values());
+            // Sort by topic
+            messages.sort((a, b) => a.topic.localeCompare(b.topic));
+        } else {
+            messages = this.historyMessages;
+        }
 
-                // Only auto-expand if explicitly requested (e.g., new search)
-                // Otherwise, respect the saved expanded state
-                const nodeData = this.treeNodes.get(data.fullPath);
-                if (nodeData) {
-                    const shouldExpand = autoExpand || this.expandedPaths.has(data.fullPath);
-                    if (shouldExpand) {
-                        nodeData.toggle.classList.add('expanded');
-                        nodeData.expanded = true;
-                        this.expandedPaths.add(data.fullPath);
-                    } else {
-                        // Start collapsed
-                        childContainer.classList.add('collapsed');
+        if (filter) {
+            messages = messages.filter(m =>
+                m.topic.toLowerCase().includes(filter) ||
+                (typeof m.payload === 'string' && m.payload.toLowerCase().includes(filter))
+            );
+        }
+
+        if (this.tableRowCount) {
+            this.tableRowCount.textContent = `${messages.length} rows`;
+        }
+
+        this.tableBody.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
+        messages.forEach(msg => {
+            const tr = document.createElement('tr');
+            if (this.selectedTopic === msg.topic) {
+                tr.classList.add('selected');
+            }
+            if (this.flashEnabled && msg.isNew) {
+                tr.classList.add('row-updated');
+                msg.isNew = false;
+            }
+
+            // Time
+            const tdTime = document.createElement('td');
+            tdTime.textContent = msg.timestamp ? this.formatTimestamp(msg.timestamp) : '-';
+            tr.appendChild(tdTime);
+
+            // Topic
+            const tdTopic = document.createElement('td');
+            tdTopic.textContent = msg.topic;
+            tr.appendChild(tdTopic);
+
+            // QoS
+            const tdQos = document.createElement('td');
+            tdQos.style.textAlign = 'center';
+            tdQos.textContent = String(msg.qos ?? 0);
+            tr.appendChild(tdQos);
+
+            // Retain
+            const tdRetain = document.createElement('td');
+            tdRetain.style.textAlign = 'center';
+            tdRetain.innerHTML = msg.retain ? '<span class="badge-retain">R</span>' : '';
+            tr.appendChild(tdRetain);
+
+            // Payload preview
+            const tdPayload = document.createElement('td');
+            tdPayload.textContent = this.truncatePayload(msg.payload);
+            tr.appendChild(tdPayload);
+
+            // Click row
+            tr.addEventListener('click', () => {
+                this.selectedTopic = msg.topic;
+                this.selectedMessage = msg;
+                if (this.detailTopicText) {
+                    this.detailTopicText.textContent = msg.topic;
+                }
+                if (this.pubAutofillCheckbox?.checked && this.pubTopicInput) {
+                    this.pubTopicInput.value = msg.topic;
+                }
+                this.renderTree();
+                this.renderDetailContent();
+                this.highlightSelectedTableRow();
+            });
+
+            fragment.appendChild(tr);
+        });
+
+        this.tableBody.appendChild(fragment);
+
+        // Auto-scroll
+        if (this.autoScroll && this.viewMode === 'history') {
+            const scrollContainer = this.tableBody.closest('.table-scroll');
+            if (scrollContainer) {
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            }
+        }
+    }
+
+    highlightSelectedTableRow() {
+        if (!this.tableBody) return;
+        const rows = this.tableBody.querySelectorAll('tr');
+        rows.forEach(tr => {
+            const topicCell = tr.children[1];
+            if (topicCell && topicCell.textContent === this.selectedTopic) {
+                tr.classList.add('selected');
+            } else {
+                tr.classList.remove('selected');
+            }
+        });
+    }
+
+    clearTableLog() {
+        if (this.viewMode === 'live') {
+            this.liveTopics.clear();
+        } else {
+            this.historyMessages = [];
+        }
+        this.renderTableRows();
+    }
+
+    // =========================================================================
+    // Detail Pane
+    // =========================================================================
+
+    renderDetailContent() {
+        if (!this.detailBody) return;
+        const msg = this.selectedMessage;
+
+        if (!msg) {
+            this.detailBody.innerHTML = '<div style="color: var(--text-muted); padding: 1rem 0;">Click a topic in the tree or message table to inspect its payload</div>';
+            return;
+        }
+
+        // Info strip badges
+        if (this.detailPayloadSize) {
+            const byteLength = typeof msg.payload === 'string' ? msg.payload.length : (msg.payload?.byteLength || 0);
+            this.detailPayloadSize.textContent = this.formatBytes(byteLength);
+        }
+        if (this.detailQosBadge) {
+            this.detailQosBadge.textContent = `QoS ${msg.qos ?? 0}`;
+        }
+        if (this.detailRetainBadge) {
+            this.detailRetainBadge.style.display = msg.retain ? 'inline' : 'none';
+        }
+
+        const payloadStr = typeof msg.payload === 'string' ? msg.payload : '';
+
+        switch (this.activeTab) {
+            case 'formatted': {
+                const jsonObj = this.tryParseJson(payloadStr);
+                if (jsonObj !== null) {
+                    this.detailBody.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; word-break: break-all;">${this.formatJsonColored(jsonObj)}</pre>`;
+                } else {
+                    this.detailBody.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; word-break: break-all; color: var(--text-primary);">${this.escapeHtml(payloadStr)}</pre>`;
+                }
+                break;
+            }
+            case 'raw': {
+                this.detailBody.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; word-break: break-all; color: var(--text-primary);">${this.escapeHtml(payloadStr)}</pre>`;
+                break;
+            }
+            case 'hex': {
+                this.detailBody.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; word-break: break-all; color: #94a3b8; font-family: monospace;">${this.payloadToHex(payloadStr)}</pre>`;
+                break;
+            }
+            case 'pic': {
+                const imgData = this.detectImage(payloadStr);
+                if (imgData) {
+                    this.detailBody.innerHTML = `
+                        <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+                            <img src="${imgData.url}" alt="Payload Image" style="max-width: 100%; max-height: 400px; border-radius: 6px; border: 1px solid var(--dark-border); background: #000;" />
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">${imgData.mime}</div>
+                        </div>
+                    `;
+                } else {
+                    this.detailBody.innerHTML = '<div style="color: var(--text-muted);">Payload does not appear to be an image (JPEG, PNG, GIF, WebP).</div>';
+                }
+                break;
+            }
+        }
+    }
+
+    // =========================================================================
+    // Publish Panel
+    // =========================================================================
+
+    togglePublishPane(forceState = null) {
+        if (!this.publishPane) return;
+        const isHidden = this.publishPane.style.display === 'none';
+        const show = forceState !== null ? forceState : isHidden;
+
+        this.publishPane.style.display = show ? 'flex' : 'none';
+        if (this.resizerCenterPublish) {
+            this.resizerCenterPublish.style.display = show ? 'block' : 'none';
+        }
+        if (this.togglePublishBtn) {
+            this.togglePublishBtn.classList.toggle('active', show);
+        }
+
+        // Close AI panel if opening publish panel
+        if (show && this.aiPanel) {
+            this.toggleAiPanel(false);
+        }
+
+        if (show && this.pubTopicInput && this.selectedTopic && this.pubAutofillCheckbox?.checked) {
+            this.pubTopicInput.value = this.selectedTopic;
+        }
+    }
+
+    formatPublishPayload() {
+        if (!this.pubPayloadInput) return;
+        try {
+            const parsed = JSON.parse(this.pubPayloadInput.value);
+            this.pubPayloadInput.value = JSON.stringify(parsed, null, 2);
+        } catch {
+            ui.showToast('Invalid JSON payload', 'warning');
+        }
+    }
+
+    async doPublish() {
+        const topic = (this.pubTopicInput?.value || '').trim();
+        const payload = this.pubPayloadInput?.value || '';
+        const qosRadio = document.querySelector('input[name="pub-qos"]:checked');
+        const qos = qosRadio ? parseInt(qosRadio.value, 10) : 0;
+        const retain = !!document.getElementById('pub-retain-checkbox')?.checked;
+
+        if (!topic) {
+            ui.showToast('Please specify a topic to publish', 'warning');
+            return;
+        }
+
+        if (topic.includes('+') || topic.includes('#')) {
+            ui.showToast('Topic wildcard (+ or #) not allowed when publishing', 'error');
+            return;
+        }
+
+        try {
+            const mutation = `
+                mutation PublishMessage($input: PublishInput!) {
+                    publish(input: $input) {
+                        success
+                        error
                     }
                 }
+            `;
+
+            const res = await window.graphqlClient.query(mutation, {
+                input: {
+                    topic,
+                    payload,
+                    qos,
+                    retained: retain
+                }
+            });
+
+            if (res?.publish?.success) {
+                ui.showToast(`Published to ${topic}`, 'success');
+            } else {
+                ui.showToast(`Publish failed: ${res?.publish?.error || 'Unknown error'}`, 'error');
             }
+        } catch (err) {
+            console.error('Publish error:', err);
+            ui.showToast(`Publish failed: ${err.message}`, 'error');
         }
     }
 
-    showSearchLoading() {
-        this.tree.innerHTML = '<li class="loading">Searching topics...</li>';
+    // =========================================================================
+    // AI Analysis Panel
+    // =========================================================================
+
+    toggleAiPanel(forceState = null) {
+        if (!this.aiPanel) return;
+        const isHidden = this.aiPanel.style.display === 'none';
+        const show = forceState !== null ? forceState : isHidden;
+
+        this.aiPanel.style.display = show ? 'flex' : 'none';
+        if (this.toggleAiBtn) {
+            this.toggleAiBtn.classList.toggle('active', show);
+        }
+
+        // Close Publish panel if opening AI panel
+        if (show && this.publishPane) {
+            this.togglePublishPane(false);
+        }
+
+        if (show) {
+            this.initAiQuickActions();
+        }
     }
 
-    showSearchError(message) {
-        this.tree.innerHTML = `<li class="error">Search error: ${message}</li>`;
+    initAiQuickActions() {
+        if (!this.aiQuickActions || this.aiQuickActions.children.length > 0) return;
+        const actions = [
+            { label: 'Summarize', prompt: 'Provide a concise overview of the topics in this tree.' },
+            { label: 'Structure', prompt: 'Analyze the hierarchy and naming conventions of these topics.' },
+            { label: 'Anomalies', prompt: 'Are there any unusual or outlier topic patterns or values?' }
+        ];
+        actions.forEach(a => {
+            const btn = document.createElement('button');
+            btn.className = 'explorer-btn';
+            btn.style.fontSize = '0.7rem';
+            btn.textContent = a.label;
+            btn.addEventListener('click', () => {
+                if (this.aiQuestion) this.aiQuestion.value = a.prompt;
+                this.sendAiQuestion();
+            });
+            this.aiQuickActions.appendChild(btn);
+        });
     }
 
-    showLoadingDataViewer() {
-        this.dataViewer.className = 'data-viewer';
-        this.dataViewer.innerHTML = '<div class="loading">Loading message data...</div>';
-    }
+    async sendAiQuestion() {
+        const question = (this.aiQuestion?.value || '').trim();
+        if (!question || !this.aiChatHistory) return;
 
-    showEmptyDataViewer(message = 'Select a topic from the tree to view its message data') {
-        this.dataViewer.className = 'data-viewer empty';
-        this.dataViewer.innerHTML = `<div><p>${message}</p></div>`;
-    }
+        // Render user message
+        const userMsg = document.createElement('div');
+        userMsg.style.cssText = 'background: rgba(124, 58, 237, 0.2); padding: 0.4rem 0.6rem; border-radius: 6px; margin-bottom: 0.5rem; color: #fff;';
+        userMsg.textContent = question;
+        this.aiChatHistory.appendChild(userMsg);
+        this.aiQuestion.value = '';
 
-    showErrorDataViewer(message) {
-        this.dataViewer.className = 'data-viewer';
-        this.dataViewer.innerHTML = `<div class="error">Error loading data: ${message}</div>`;
-    }
+        // Query AI analysis via GraphQL
+        const botMsg = document.createElement('div');
+        botMsg.style.cssText = 'background: rgba(255, 255, 255, 0.05); padding: 0.4rem 0.6rem; border-radius: 6px; margin-bottom: 0.5rem; color: var(--text-secondary);';
+        botMsg.innerHTML = 'Thinking&hellip;';
+        this.aiChatHistory.appendChild(botMsg);
+        this.aiChatHistory.scrollTop = this.aiChatHistory.scrollHeight;
 
-    createLoadingItem() {
-        const li = document.createElement('li');
-        li.className = 'loading-item';
-        li.innerHTML = '<div class="loading">Loading...</div>';
-        return li;
-    }
-
-    createErrorItem(message) {
-        const li = document.createElement('li');
-        li.className = 'error-item';
-        li.innerHTML = `<div class="error">Error: ${message}</div>`;
-        return li;
-    }
-
-    // ========== State Persistence Methods ==========
-
-    /**
-     * Save the current state to localStorage
-     */
-    saveState() {
         try {
-            // Save selected topic
-            if (this.selectedTopic) {
-                localStorage.setItem(STATE_KEYS.SELECTED_TOPIC, this.selectedTopic);
+            const query = `
+                query AnalyzeTopics($archiveGroup: String!, $question: String!) {
+                    analyzeTopics(archiveGroup: $archiveGroup, question: $question)
+                }
+            `;
+            const res = await window.graphqlClient.query(query, {
+                archiveGroup: this.selectedArchiveGroup,
+                question
+            });
+            if (res?.analyzeTopics) {
+                botMsg.innerHTML = window.marked ? window.marked.parse(res.analyzeTopics) : this.escapeHtml(res.analyzeTopics);
             } else {
-                localStorage.removeItem(STATE_KEYS.SELECTED_TOPIC);
-            }
-
-            // Save expanded nodes
-            const expandedArray = Array.from(this.expandedPaths);
-            localStorage.setItem(STATE_KEYS.EXPANDED_NODES, JSON.stringify(expandedArray));
-
-            // Save search query and mode
-            if (this.searchInput) {
-                localStorage.setItem(STATE_KEYS.SEARCH_QUERY, this.searchInput.value);
-            }
-            if (this.searchMode && this.searchMode.checked) {
-                localStorage.setItem(STATE_KEYS.BROWSE_MODE, 'search');
-            } else {
-                localStorage.setItem(STATE_KEYS.BROWSE_MODE, 'browse');
+                botMsg.textContent = 'No response received from AI model.';
             }
         } catch (e) {
-            console.warn('Failed to save topic browser state:', e);
+            botMsg.textContent = `Analysis error: ${e.message}`;
         }
+        this.aiChatHistory.scrollTop = this.aiChatHistory.scrollHeight;
     }
 
-    /**
-     * Restore state from localStorage after tree is loaded
-     */
-    async restoreState() {
-        try {
-            // Restore browse mode
-            const savedMode = localStorage.getItem(STATE_KEYS.BROWSE_MODE);
-            if (savedMode === 'search' && this.searchMode) {
-                this.searchMode.checked = true;
-                this.switchMode('search');
-            }
+    // =========================================================================
+    // Subscriptions & WebSocket (graphql-transport-ws)
+    // =========================================================================
 
-            // Restore search query
-            const savedQuery = localStorage.getItem(STATE_KEYS.SEARCH_QUERY);
-            if (savedQuery && this.searchInput) {
-                this.searchInput.value = savedQuery;
-            }
-
-            // Restore expanded nodes (only the ones user manually expanded)
-            const savedExpanded = localStorage.getItem(STATE_KEYS.EXPANDED_NODES);
-            if (savedExpanded) {
-                const expandedArray = JSON.parse(savedExpanded);
-                console.log('Restoring expanded paths:', expandedArray);
-                this.expandedPaths = new Set(expandedArray);
-
-                // Expand nodes in order (parent first, shortest paths first)
-                const sortedPaths = expandedArray.sort((a, b) =>
-                    a.split('/').length - b.split('/').length
-                );
-
-                for (const path of sortedPaths) {
-                    console.log('Expanding path:', path);
-                    await this.expandToPath(path);
-                }
-            }
-
-            // Restore selected topic
-            const savedTopic = localStorage.getItem(STATE_KEYS.SELECTED_TOPIC);
-            if (savedTopic) {
-                console.log('Restoring selected topic:', savedTopic);
-                await this.restoreSelectedTopic(savedTopic);
-            }
-        } catch (e) {
-            console.warn('Failed to restore topic browser state:', e);
-        }
-    }
-
-    /**
-     * Expand the tree to show a specific path
-     */
-    async expandToPath(targetPath) {
-        const parts = targetPath.split('/');
-        let currentPath = '';
-
-        for (let i = 0; i < parts.length; i++) {
-            currentPath = i === 0 ? parts[i] : currentPath + '/' + parts[i];
-
-            const nodeData = this.treeNodes.get(currentPath);
-            if (nodeData && nodeData.hasChildren && !nodeData.expanded) {
-                await this.toggleNode(nodeData.element, currentPath);
-            }
-        }
-    }
-
-    /**
-     * Restore selection to a previously selected topic
-     */
-    async restoreSelectedTopic(topicPath) {
-        // First expand to the topic's parent path
-        const parts = topicPath.split('/');
-        if (parts.length > 1) {
-            const parentPath = parts.slice(0, -1).join('/');
-            await this.expandToPath(parentPath);
-        }
-
-        // Wait a bit for the tree to render
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        // Find and select the topic
-        const nodeData = this.treeNodes.get(topicPath);
-        if (nodeData && nodeData.item) {
-            this.selectTopic(topicPath, nodeData.item);
-        }
-    }
-
-    // ========== Topic Subscription & Live Data Methods ==========
-
-    initSubscriptionsUI() {
-        if (!this.subAddBtn || !this.subToggleBtn || !this.subFilterInput) return;
-
-        // Restore saved subscriptions
-        try {
-            const savedSubs = localStorage.getItem(STATE_KEYS.SUBSCRIPTIONS);
-            if (savedSubs) {
-                const parsed = JSON.parse(savedSubs);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    this.subscriptions = parsed;
-                }
-            }
-        } catch(e) {}
-
+    openSubscriptionsModal() {
+        if (!this.subModalDialog || !this.subModalBackdrop) return;
+        this.subModalDialog.style.display = 'flex';
+        this.subModalBackdrop.style.display = 'block';
         this.renderSubscriptionTags();
-
-        // Add filter button
-        this.subAddBtn.addEventListener('click', () => this.addSubscriptionFilter());
-        this.subFilterInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.addSubscriptionFilter();
-            }
-        });
-
-        // Toggle Live button
-        this.subToggleBtn.addEventListener('click', () => {
-            if (this.isSubscribed) {
-                this.stopSubscriptions();
-            } else {
-                this.startSubscriptions();
-            }
-        });
-
-        // Auto-start if previously enabled
-        const autoStart = localStorage.getItem(STATE_KEYS.SUB_ENABLED) === 'true';
-        if (autoStart) {
-            this.startSubscriptions();
-        }
+        this.updateSubscriptionActiveButton();
+        if (this.subModalInput) this.subModalInput.focus();
     }
 
-    addSubscriptionFilter() {
-        if (!this.subFilterInput) return;
-        const filter = this.subFilterInput.value.trim();
+    closeSubscriptionsModal() {
+        if (!this.subModalDialog || !this.subModalBackdrop) return;
+        this.subModalDialog.style.display = 'none';
+        this.subModalBackdrop.style.display = 'none';
+    }
+
+    updateSubscriptionActiveButton() {
+        if (!this.subModalToggleActive) return;
+        this.subModalToggleActive.textContent = this.subEnabled ? 'Pause Subscriptions' : 'Resume Subscriptions';
+        this.subModalToggleActive.style.background = this.subEnabled ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)';
+        this.subModalToggleActive.style.color = this.subEnabled ? '#ef4444' : '#10b981';
+    }
+
+    handleAddSubscriptionFilter() {
+        if (!this.subModalInput) return;
+        const filter = this.subModalInput.value.trim();
         if (!filter) return;
 
         if (!this.subscriptions.includes(filter)) {
             this.subscriptions.push(filter);
-            this.saveSubscriptionsState();
+            safeStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
             this.renderSubscriptionTags();
+            this.subModalInput.value = '';
 
-            // If already subscribed, refresh subscription over WS
-            if (this.isSubscribed && this.ws && this.ws.readyState === WebSocket.OPEN) {
-                this.sendSubscribe();
-            }
-        }
-        this.subFilterInput.value = '';
-    }
-
-    removeSubscriptionFilter(filter) {
-        this.subscriptions = this.subscriptions.filter(f => f !== filter);
-        this.saveSubscriptionsState();
-        this.renderSubscriptionTags();
-
-        if (this.isSubscribed && this.ws && this.ws.readyState === WebSocket.OPEN) {
-            if (this.subscriptions.length > 0) {
-                this.sendSubscribe();
-            } else {
-                this.stopSubscriptions();
-            }
+            // Auto-enable when adding filter
+            this.subEnabled = true;
+            safeStorage.setItem(STORAGE_KEYS.SUB_ENABLED, 'true');
+            this.updateSubscriptionActiveButton();
+            this.connectWebSocket();
         }
     }
 
     renderSubscriptionTags() {
-        if (!this.subTagsList) return;
-        this.subTagsList.innerHTML = '';
+        if (this.subCountBadge) {
+            this.subCountBadge.textContent = String(this.subscriptions.length);
+        }
+        if (!this.subModalTags) return;
+        this.subModalTags.innerHTML = '';
 
-        this.subscriptions.forEach(filter => {
-            const chip = document.createElement('span');
-            chip.className = 'sub-tag-chip';
-            chip.innerHTML = `
-                <span>${this.escapeHtml(filter)}</span>
-                <button type="button" class="remove-chip-btn" title="Remove filter">&times;</button>
-            `;
-            chip.querySelector('.remove-chip-btn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.removeSubscriptionFilter(filter);
+        if (this.subscriptions.length === 0) {
+            this.subModalTags.innerHTML = '<span style="color: var(--text-muted); font-size: 0.75rem;">No active topic filters</span>';
+            return;
+        }
+
+        this.subscriptions.forEach((filter, idx) => {
+            const chip = document.createElement('div');
+            chip.style.cssText = 'display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.15rem 0.5rem; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; color: #38bdf8; font-family: monospace; font-size: 0.75rem;';
+            chip.textContent = filter;
+
+            const removeBtn = document.createElement('span');
+            removeBtn.style.cssText = 'cursor: pointer; opacity: 0.7; font-weight: bold; margin-left: 2px;';
+            removeBtn.textContent = '✕';
+            removeBtn.addEventListener('click', () => {
+                this.subscriptions.splice(idx, 1);
+                safeStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
+                this.renderSubscriptionTags();
+                if (this.subscriptions.length === 0) {
+                    this.disconnectWebSocket();
+                    this.updateConnectionStatus(false, 'Live Off');
+                } else if (this.subEnabled) {
+                    this.sendSubscribe();
+                }
             });
-            this.subTagsList.appendChild(chip);
+            chip.appendChild(removeBtn);
+
+            this.subModalTags.appendChild(chip);
         });
     }
 
-    saveSubscriptionsState() {
-        try {
-            localStorage.setItem(STATE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
-            localStorage.setItem(STATE_KEYS.SUB_ENABLED, String(this.isSubscribed));
-        } catch(e) {}
-    }
-
-    startSubscriptions() {
-        if (!this.subscriptions || this.subscriptions.length === 0) {
-            ui.showToast('Please add at least one topic filter before starting live subscription.', 'warning');
-            if (this.subFilterInput) this.subFilterInput.focus();
+    connectWebSocket() {
+        this.disconnectWebSocket();
+        if (this.subscriptions.length === 0) {
+            this.updateConnectionStatus(false, 'No Filters');
             return;
         }
-        this.isSubscribed = true;
-        this.saveSubscriptionsState();
-        this.updateSubscriptionStatusUI('connecting');
-        this.connectWebSocket();
-    }
 
-    stopSubscriptions() {
-        this.isSubscribed = false;
-        this.saveSubscriptionsState();
-        this.disconnectWebSocket();
-        this.updateSubscriptionStatusUI('off');
-    }
-
-    updateSubscriptionStatusUI(status) {
-        if (!this.subToggleBtn || !this.subStatusIndicator) return;
-
-        if (status === 'connected') {
-            this.subToggleBtn.className = 'btn btn-danger btn-sm';
-            this.subToggleBtn.textContent = 'Stop Live';
-            this.subStatusIndicator.className = 'sub-status-indicator active';
-            this.subStatusDot.className = 'status-dot active';
-            this.subStatusText.textContent = `Live: Active (${this.subscriptions.length} filter${this.subscriptions.length === 1 ? '' : 's'})`;
-        } else if (status === 'connecting') {
-            this.subToggleBtn.className = 'btn btn-secondary btn-sm';
-            this.subToggleBtn.textContent = 'Connecting...';
-            this.subStatusIndicator.className = 'sub-status-indicator active';
-            this.subStatusDot.className = 'status-dot';
-            this.subStatusDot.style.backgroundColor = 'var(--monster-orange, #f59e0b)';
-            this.subStatusText.textContent = 'Live: Connecting...';
+        let wsUrl = 'ws://localhost:4000/graphql';
+        if (window.brokerManager) {
+            wsUrl = window.brokerManager.getWsEndpoint();
         } else {
-            this.subToggleBtn.className = 'btn btn-primary btn-sm';
-            this.subToggleBtn.textContent = 'Start Live';
-            this.subStatusIndicator.className = 'sub-status-indicator inactive';
-            this.subStatusDot.className = 'status-dot inactive';
-            this.subStatusDot.style.backgroundColor = '';
-            this.subStatusText.textContent = 'Live: Off';
-        }
-    }
-
-    getWebSocketUrl() {
-        if (window.brokerManager) return window.brokerManager.getWsEndpoint();
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.hostname;
-        const port = window.location.port;
-        return `${protocol}//${host}${port ? ':' + port : ''}/graphql`;
-    }
-
-    connectWebSocket() {
-        if (this.ws) {
-            try { this.ws.close(); } catch(e) {}
-            this.ws = null;
+            const loc = window.location;
+            const wsProto = loc.protocol === 'https:' ? 'wss:' : 'ws:';
+            wsUrl = `${wsProto}//${loc.host}/graphql`;
         }
 
-        if (this.reconnectTimer) {
-            clearTimeout(this.reconnectTimer);
-            this.reconnectTimer = null;
-        }
+        this.updateConnectionStatus(false, 'Connecting&hellip;');
 
         try {
-            const url = this.getWebSocketUrl();
-            this.ws = new WebSocket(url, 'graphql-transport-ws');
+            this.ws = new WebSocket(wsUrl, 'graphql-transport-ws');
 
             this.ws.onopen = () => {
                 const payload = {};
-                const token = localStorage.getItem('monstermq_token');
+                const token = safeStorage.getItem('monstermq_token');
                 if (token && token !== 'null') {
                     payload.authorization = `Bearer ${token}`;
                 }
@@ -1337,41 +1490,38 @@ class TopicBrowser {
                 try {
                     const msg = JSON.parse(event.data);
                     this.handleWsMessage(msg);
-                } catch(e) {
-                    console.error('Failed to parse WebSocket message:', e);
+                } catch (e) {
+                    console.error('WS parse error:', e);
                 }
             };
 
-            this.ws.onerror = (e) => {
-                console.warn('TopicBrowser WebSocket error:', e);
+            this.ws.onerror = (err) => {
+                console.warn('WS error:', err);
+                this.updateConnectionStatus(false, 'Error');
             };
 
             this.ws.onclose = () => {
-                this.ws = null;
-                if (this.isSubscribed) {
-                    this.updateSubscriptionStatusUI('connecting');
-                    this.reconnectTimer = setTimeout(() => {
-                        if (this.isSubscribed) this.connectWebSocket();
-                    }, 4000);
-                } else {
-                    this.updateSubscriptionStatusUI('off');
+                this.updateConnectionStatus(false, 'Disconnected');
+                if (this.subEnabled && this.subscriptions.length > 0) {
+                    this.wsReconnectTimer = setTimeout(() => this.connectWebSocket(), 3000);
                 }
             };
-        } catch(e) {
-            console.error('Error connecting TopicBrowser WebSocket:', e);
-            this.updateSubscriptionStatusUI('off');
+        } catch (e) {
+            console.error('Failed to create WebSocket:', e);
+            this.updateConnectionStatus(false, 'Failed');
         }
     }
 
     disconnectWebSocket() {
-        if (this.reconnectTimer) {
-            clearTimeout(this.reconnectTimer);
-            this.reconnectTimer = null;
+        if (this.wsReconnectTimer) {
+            clearTimeout(this.wsReconnectTimer);
+            this.wsReconnectTimer = null;
         }
         if (this.ws) {
             try {
+                this.ws.onclose = null;
                 this.ws.close();
-            } catch(e) {}
+            } catch {}
             this.ws = null;
         }
     }
@@ -1379,16 +1529,16 @@ class TopicBrowser {
     handleWsMessage(msg) {
         switch (msg.type) {
             case 'connection_ack':
-                this.updateSubscriptionStatusUI('connected');
+                this.updateConnectionStatus(true, 'Live Connected');
                 this.sendSubscribe();
                 break;
             case 'next':
                 if (msg.payload?.data?.topicUpdates) {
-                    this.handleLiveTopicUpdate(msg.payload.data.topicUpdates);
+                    this.handleIncomingMessage(msg.payload.data.topicUpdates);
                 }
                 break;
             case 'error':
-                console.error('WebSocket subscription error payload:', msg.payload);
+                console.error('WS subscription error:', msg.payload);
                 break;
         }
     }
@@ -1398,7 +1548,7 @@ class TopicBrowser {
         const filters = this.subscriptions.filter(f => typeof f === 'string' && f.trim());
         if (filters.length === 0) return;
 
-        this.subscriptionId++;
+        this.wsSubscriptionId++;
         const query = `
             subscription($filters: [String!]!) {
                 topicUpdates(topicFilters: $filters) {
@@ -1413,7 +1563,7 @@ class TopicBrowser {
         `;
 
         this.ws.send(JSON.stringify({
-            id: String(this.subscriptionId),
+            id: String(this.wsSubscriptionId),
             type: 'subscribe',
             payload: {
                 query,
@@ -1422,755 +1572,129 @@ class TopicBrowser {
         }));
     }
 
-    handleLiveTopicUpdate(update) {
-        if (!update || !update.topic) return;
-        const topic = update.topic;
-
-        // Insert or update topic in tree structure
-        this.insertTopicNode(topic, update);
-
-        // If this topic is currently selected in data viewer, update viewer live!
-        if (this.selectedTopic === topic) {
-            this.displayMessageData(update, 'live');
+    updateConnectionStatus(connected, text) {
+        if (this.statusBadge) {
+            this.statusBadge.classList.toggle('offline', !connected);
+        }
+        if (this.statusText) {
+            this.statusText.innerHTML = text;
         }
     }
 
-    /**
-     * Insert a live topic into the tree hierarchy if not present,
-     * or update existing node with live styling & flash effect.
-     */
-    insertTopicNode(fullTopicPath, messageData) {
-        const parts = fullTopicPath.split('/');
-        let currentParentContainer = this.tree;
-        let currentPath = '';
+    // =========================================================================
+    // Formatters & Utility Functions
+    // =========================================================================
 
-        for (let i = 0; i < parts.length; i++) {
-            const part = parts[i];
-            currentPath = i === 0 ? part : `${currentPath}/${part}`;
-            const isLeaf = (i === parts.length - 1);
+    formatTimestamp(ts) {
+        const d = new Date(ts);
+        const pad = (n) => String(n).padStart(2, '0');
+        const ms = String(d.getMilliseconds()).padStart(3, '0');
+        return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${ms}`;
+    }
 
-            let nodeData = this.treeNodes.get(currentPath);
+    formatBytes(bytes) {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
 
-            if (!nodeData) {
-                // Node does not exist yet in DOM tree — create it!
-                // If it's not the leaf, it's a folder (hasChildren = true)
-                const hasChildren = !isLeaf;
-                const hasValue = isLeaf;
-                const dataSource = isLeaf ? 'live' : 'archive';
+    truncatePayload(payload) {
+        if (typeof payload !== 'string') return '';
+        const clean = payload.replace(/\r?\n|\r/g, ' ');
+        return clean.length > 120 ? clean.substring(0, 117) + '...' : clean;
+    }
 
-                const treeItem = this.createTreeItem(part, currentPath, hasValue, hasChildren, dataSource);
-                currentParentContainer.appendChild(treeItem);
-                nodeData = this.treeNodes.get(currentPath);
-            } else {
-                // Node already exists
-                if (isLeaf) {
-                    // Update to mark that it has a value, mark dataSource = 'live'
-                    nodeData.hasValue = true;
-                    nodeData.dataSource = 'live';
+    tryParseJson(str) {
+        if (!str || typeof str !== 'string') return null;
+        const trimmed = str.trim();
+        if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null;
+        try {
+            return JSON.parse(trimmed);
+        } catch {
+            return null;
+        }
+    }
 
-                    // Update DOM classes and badge
-                    nodeData.item.classList.add('has-data');
-                    nodeData.item.classList.remove('from-archive');
-                    nodeData.item.classList.add('from-live');
+    formatJsonColored(obj) {
+        const jsonStr = JSON.stringify(obj, null, 2);
+        return this.escapeHtml(jsonStr)
+            .replace(/&quot;(.*?)&quot;(?=\s*:)/g, '<span class="json-key">"$1"</span>')
+            .replace(/: &quot;(.*?)&quot;/g, ': <span class="json-string">"$1"</span>')
+            .replace(/: (-?\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
+            .replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>')
+            .replace(/: (null)/g, ': <span class="json-null">$1</span>');
+    }
 
-                    if (nodeData.badge) {
-                        nodeData.badge.className = 'tree-badge badge-live';
-                        nodeData.badge.textContent = 'Live';
-                    }
+    payloadToHex(str) {
+        const encoder = new TextEncoder();
+        const bytes = encoder.encode(str);
+        const hex = [];
+        const ascii = [];
+        let output = '';
 
-                    if (!nodeData.hasChildren && nodeData.icon) {
-                        nodeData.icon.className = 'tree-icon topic-live';
-                    }
+        for (let i = 0; i < bytes.length; i++) {
+            hex.push(bytes[i].toString(16).padStart(2, '0'));
+            ascii.push(bytes[i] >= 32 && bytes[i] <= 126 ? String.fromCharCode(bytes[i]) : '.');
 
-                    // Trigger flash animation
-                    nodeData.item.classList.remove('flash-update');
-                    void nodeData.item.offsetWidth; // Trigger reflow to restart animation
-                    nodeData.item.classList.add('flash-update');
-                }
-            }
-
-            if (isLeaf && nodeData) {
-                nodeData.lastMessage = messageData;
-            }
-
-            // If we have children to append under this node
-            if (!isLeaf) {
-                // Ensure it has folder icon and toggle if needed
-                if (!nodeData.hasChildren) {
-                    nodeData.hasChildren = true;
-                    nodeData.toggle.innerHTML = '▶';
-                    nodeData.toggle.style.visibility = 'visible';
-                    nodeData.toggle.onclick = (e) => {
-                        e.stopPropagation();
-                        this.toggleNode(nodeData.element, currentPath);
-                    };
-                    if (nodeData.icon) {
-                        nodeData.icon.className = 'tree-icon folder';
-                        nodeData.icon.innerHTML = '📁';
-                    }
-                }
-
-                let childContainer = nodeData.element.querySelector('.tree-children');
-                if (!childContainer) {
-                    childContainer = document.createElement('ul');
-                    childContainer.className = 'tree-children collapsed';
-                    nodeData.element.appendChild(childContainer);
-                }
-
-                currentParentContainer = childContainer;
+            if ((i + 1) % 16 === 0 || i === bytes.length - 1) {
+                const offset = (Math.floor(i / 16) * 16).toString(16).padStart(4, '0');
+                const hexPart = hex.join(' ').padEnd(48, ' ');
+                const asciiPart = ascii.join('');
+                output += `${offset}  ${hexPart}  |${asciiPart}|\n`;
+                hex.length = 0;
+                ascii.length = 0;
             }
         }
+        return output || '(empty)';
+    }
+
+    detectImage(str) {
+        if (!str || typeof str !== 'string') return null;
+        const trimmed = str.trim();
+
+        // Data URI
+        if (trimmed.startsWith('data:image/')) {
+            const mime = trimmed.substring(5, trimmed.indexOf(';'));
+            return { url: trimmed, mime };
+        }
+
+        // Base64 detection
+        if (trimmed.length > 50 && /^[A-Za-z0-9+/=\r\n]+$/.test(trimmed)) {
+            if (trimmed.startsWith('/9j/')) return { url: `data:image/jpeg;base64,${trimmed}`, mime: 'image/jpeg' };
+            if (trimmed.startsWith('iVBORw0KGgo')) return { url: `data:image/png;base64,${trimmed}`, mime: 'image/png' };
+            if (trimmed.startsWith('R0lGOD')) return { url: `data:image/gif;base64,${trimmed}`, mime: 'image/gif' };
+            if (trimmed.startsWith('UklGR')) return { url: `data:image/webp;base64,${trimmed}`, mime: 'image/webp' };
+        }
+
+        return null;
+    }
+
+    escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     dispose() {
         this.disconnectWebSocket();
+        if (this.rateInterval) {
+            clearInterval(this.rateInterval);
+            this.rateInterval = null;
+        }
     }
 }
 
-/**
- * AI Analysis functionality for Topic Browser
- */
-class TopicBrowserAI {
-    constructor(topicBrowser) {
-        this.topicBrowser = topicBrowser;
-        this.chatHistory = [];  // Stores {role: 'user'|'assistant', content: string}
-        this.contextLoaded = false;  // Track if topic data has been sent
-        this.contextTopic = null;  // Topic pattern used when context was loaded
-        this.contextArchiveGroup = null;  // Archive group used when context was loaded
-        this.quickActions = [];  // Loaded from config file
-        this.defaultSystemPrompt = null;  // Will be loaded from config file
-        this.isPanelOpen = false;  // Track panel state
+// Instantiate and register disposal with page lifecycle
+const explorer = new TopicExplorer();
+page.addCleanup(() => explorer.dispose());
 
-        this.init();
-    }
-
-    async init() {
-        // Load config from file (includes system prompt and quick actions)
-        await this.loadConfig();
-
-        // Load saved system prompt or use default from config
-        this.systemPrompt = localStorage.getItem('monstermq_ai_system_prompt') || this.defaultSystemPrompt;
-
-        const systemPromptEl = document.getElementById('ai-system-prompt');
-        if (systemPromptEl) {
-            systemPromptEl.value = this.systemPrompt;
-        }
-
-        // Event listeners
-        this.setupEventListeners();
-    }
-
-    /**
-     * Load config from prompts.json (system prompt and quick actions)
-     */
-    async loadConfig() {
-        try {
-            const response = await fetch('/config/prompts.json');
-            if (response.ok) {
-                const config = await response.json();
-                // Load system prompt from config
-                if (config.systemPrompt) {
-                    this.defaultSystemPrompt = config.systemPrompt;
-                } else {
-                    this.useDefaultSystemPrompt();
-                }
-                // Load quick actions
-                this.quickActions = config.quickActions || [];
-                this.renderQuickActionButtons();
-            } else {
-                console.warn('Could not load prompts.json, using defaults');
-                this.useDefaultSystemPrompt();
-                this.useDefaultQuickActions();
-            }
-        } catch (e) {
-            console.warn('Error loading prompts.json:', e.message);
-            this.useDefaultSystemPrompt();
-            this.useDefaultQuickActions();
-        }
-    }
-
-    /**
-     * Fallback default system prompt if config file is not available
-     */
-    useDefaultSystemPrompt() {
-        this.defaultSystemPrompt = `You are an MQTT topic tree analyst helping users understand their IoT data.
-The data below shows MQTT topics and their current values in a hierarchical tree format using ASCII art (├── └── │).
-
-**Output format:** Use Markdown formatting in your responses:
-- Use ## headings for sections
-- Use **bold** for emphasis
-- Use \`code\` for topic names and values
-- Use bullet lists for findings
-- Use tables when comparing data
-
-**Important rules:**
-- NEVER reproduce the raw input data table in your response
-- Do NOT echo back the topic tree structure you received
-- Avoid long sequences of dashes (---) or other separator characters
-- Focus on analysis and insights, not data reproduction
-
-When analyzing:
-- Identify naming patterns and hierarchy structure
-- Spot anomalies or unusual values
-- Recognize IoT patterns (Sparkplug, Homie, etc.)
-- Provide concise, actionable insights
-
-Topic data:`;
-    }
-
-    /**
-     * Fallback default prompts if config file is not available
-     */
-    useDefaultQuickActions() {
-        this.quickActions = [
-            {
-                id: 'summarize',
-                label: 'Summarize',
-                title: 'Summarize the topic tree',
-                prompt: 'Provide a high-level summary of this topic tree. What kind of data is being collected? What systems or devices are represented?'
-            },
-            {
-                id: 'find-structure',
-                label: 'Find Structure',
-                title: 'Analyze naming patterns and hierarchy',
-                prompt: 'Analyze the MQTT topic tree to identify naming patterns, hierarchy structure, and potential data models.'
-            },
-            {
-                id: 'detect-anomalies',
-                label: 'Detect Anomalies',
-                title: 'Find unusual values or outliers',
-                prompt: 'Look for anomalies in this data: unusual values, potential errors, outliers, or values that seem inconsistent with their neighbors.'
-            }
-        ];
-        this.renderQuickActionButtons();
-    }
-
-    /**
-     * Dynamically render quick action buttons from config
-     */
-    renderQuickActionButtons() {
-        const container = document.getElementById('ai-quick-actions');
-        if (!container) return;
-
-        // Clear existing buttons
-        container.innerHTML = '';
-
-        // Create buttons from config
-        for (const action of this.quickActions) {
-            const button = document.createElement('button');
-            button.id = `ai-${action.id}`;
-            button.className = 'ai-action-btn';
-            button.title = action.title || action.label;
-            button.textContent = action.label;
-            button.addEventListener('click', () => this.quickAction(action.prompt));
-            container.appendChild(button);
-        }
-    }
-
-    setupEventListeners() {
-        // Toggle panel
-        const toggleBtn = document.getElementById('toggle-ai-panel');
-        const closeBtn = document.getElementById('close-ai-panel');
-
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => this.togglePanel());
-        }
-
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => this.togglePanel(false));
-        }
-
-        // Send button and enter key
-        const sendBtn = document.getElementById('ai-send');
-        const questionInput = document.getElementById('ai-question');
-
-        if (sendBtn) {
-            sendBtn.addEventListener('click', () => this.analyze());
-        }
-
-        if (questionInput) {
-            questionInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.analyze();
-                }
-            });
-        }
-
-        // Quick action buttons are now dynamically created in renderQuickActionButtons()
-
-        // System prompt
-        const resetPromptBtn = document.getElementById('ai-reset-prompt');
-        const systemPromptEl = document.getElementById('ai-system-prompt');
-
-        if (resetPromptBtn) {
-            resetPromptBtn.addEventListener('click', () => this.resetPrompt());
-        }
-
-        if (systemPromptEl) {
-            systemPromptEl.addEventListener('change', (e) => {
-                this.systemPrompt = e.target.value;
-                localStorage.setItem('monstermq_ai_system_prompt', this.systemPrompt);
-            });
-        }
-
-        // Clear context button
-        const clearContextBtn = document.getElementById('ai-clear-context');
-        if (clearContextBtn) {
-            clearContextBtn.addEventListener('click', () => this.clearContext());
-        }
-    }
-
-    /**
-     * Clear chat history and context - starts fresh conversation
-     */
-    clearContext() {
-        this.chatHistory = [];
-        this.contextLoaded = false;
-        this.contextTopic = null;
-        this.contextArchiveGroup = null;
-
-        // Clear chat history UI
-        const chatHistory = document.getElementById('ai-chat-history');
-        if (chatHistory) {
-            chatHistory.innerHTML = '';
-        }
-
-        // Reset topic count
-        const topicCountEl = document.getElementById('ai-topic-count');
-        if (topicCountEl) {
-            topicCountEl.textContent = '-';
-            topicCountEl.style.color = 'var(--monster-teal)';
-        }
-
-        // Update context indicator
-        this.updateContextIndicator();
-
-        // Clear persisted state
-        this.saveState();
-
-        console.log('AI context cleared - next question will reload topic data');
-    }
-
-    /**
-     * Update the visual indicator showing if context is loaded
-     */
-    updateContextIndicator() {
-        const indicator = document.getElementById('ai-context-status');
-        if (indicator) {
-            if (this.contextLoaded) {
-                indicator.textContent = '● Context loaded';
-                indicator.style.color = 'var(--monster-green)';
-                indicator.title = 'Topic data is cached. Follow-up questions will be faster.';
-            } else {
-                indicator.textContent = '○ No context';
-                indicator.style.color = 'var(--text-muted)';
-                indicator.title = 'Next question will load topic data.';
-            }
-        }
-    }
-
-    togglePanel(forceState = null) {
-        const panel = document.getElementById('ai-panel');
-        const toggleBtn = document.getElementById('toggle-ai-panel');
-        const layout = document.querySelector('.topic-browser-layout');
-
-        if (!panel || !layout) return;
-
-        const shouldShow = forceState !== null ? forceState : panel.style.display === 'none';
-
-        if (shouldShow) {
-            panel.style.display = 'flex';
-            layout.classList.add('ai-open');
-            if (toggleBtn) toggleBtn.classList.add('active');
-            this.isPanelOpen = true;
-            this.updateContextInfo();
-        } else {
-            panel.style.display = 'none';
-            layout.classList.remove('ai-open');
-            if (toggleBtn) toggleBtn.classList.remove('active');
-            this.isPanelOpen = false;
-        }
-        this.saveState(); // Persist panel state
-    }
-
-    updateContextInfo() {
-        const topicPatternEl = document.getElementById('ai-topic-pattern');
-        const archiveGroupEl = document.getElementById('ai-archive-group');
-
-        if (topicPatternEl) {
-            // Use saved context topic if context is loaded, otherwise show current selection
-            if (this.contextLoaded && this.contextTopic) {
-                topicPatternEl.textContent = this.contextTopic;
-            } else {
-                topicPatternEl.textContent = this.getTopicPattern();
-            }
-        }
-
-        if (archiveGroupEl) {
-            // Use saved context archive group if context is loaded, otherwise show current selection
-            if (this.contextLoaded && this.contextArchiveGroup) {
-                archiveGroupEl.textContent = this.contextArchiveGroup;
-            } else {
-                archiveGroupEl.textContent = this.topicBrowser.selectedArchiveGroup || 'Default';
-            }
-        }
-    }
-
-    updateTopicCount(count, maxTopics) {
-        const topicCountEl = document.getElementById('ai-topic-count');
-        if (topicCountEl) {
-            if (count >= maxTopics) {
-                // Show warning color when limit reached
-                topicCountEl.textContent = `${count}+`;
-                topicCountEl.style.color = 'var(--monster-orange, #f59e0b)';
-            } else {
-                topicCountEl.textContent = count;
-                topicCountEl.style.color = 'var(--monster-teal)';
-            }
-        }
-    }
-
-    getTopicPattern() {
-        // Use selected topic + subtopics, or all topics
-        if (this.topicBrowser.selectedTopic && this.topicBrowser.selectedTopic !== 'root') {
-            return this.topicBrowser.selectedTopic + '/#';
-        }
-        return '#'; // All topics
-    }
-
-    async analyze(question = null) {
-        const questionInput = document.getElementById('ai-question');
-        const q = question || (questionInput ? questionInput.value.trim() : '');
-
-        if (!q) return;
-
-        // Add user message to chat UI
-        this.addMessage('user', q);
-
-        if (questionInput) {
-            questionInput.value = '';
-        }
-
-        // Update context info
-        this.updateContextInfo();
-
-        // Show loading
-        const loadingId = this.addMessage('assistant', 'Analyzing topics...', true);
-
-        try {
-            const maxTopics = this.getMaxTopics();
-            const result = await this.callAnalyzeAPI(q);
-            this.removeMessage(loadingId);
-
-            // Update topic count display
-            this.updateTopicCount(result.topicsAnalyzed, maxTopics);
-
-            if (result.error) {
-                this.addMessage('assistant', `Error: ${result.error}`, false, true);
-            } else {
-                // Mark context as loaded after successful first request
-                if (!this.contextLoaded) {
-                    this.contextLoaded = true;
-                    // Save the topic pattern and archive group used for this context
-                    this.contextTopic = this.getTopicPattern();
-                    this.contextArchiveGroup = this.topicBrowser.selectedArchiveGroup || 'Default';
-                    this.updateContextIndicator();
-                    this.updateContextInfo();
-                }
-
-                // Save messages to chat history for follow-up questions
-                // Note: Topic data is always sent to the backend, chat history provides conversation context
-                this.chatHistory.push({ role: 'user', content: q });
-                this.chatHistory.push({ role: 'assistant', content: result.response });
-                this.saveState(); // Persist chat history
-
-                let statsText = '';
-                if (result.topicsAnalyzed > 0) {
-                    if (result.topicsAnalyzed >= maxTopics) {
-                        statsText = `\n\n_(Analyzed ${result.topicsAnalyzed} topics - limit reached, increase "Max" for more)_`;
-                    } else {
-                        statsText = `\n\n_(Analyzed ${result.topicsAnalyzed} topics)_`;
-                    }
-                }
-                const responseText = result.response + statsText;
-                this.addMessage('assistant', responseText);
-            }
-        } catch (err) {
-            this.removeMessage(loadingId);
-            this.addMessage('assistant', `Error: ${err.message}`, false, true);
-        }
-    }
-
-    quickAction(question) {
-        const questionInput = document.getElementById('ai-question');
-        if (questionInput) {
-            questionInput.value = question;
-        }
-        this.analyze(question);
-    }
-
-    getMaxTopics() {
-        const maxTopicsEl = document.getElementById('ai-max-topics');
-        return maxTopicsEl ? parseInt(maxTopicsEl.value, 10) : 100;
-    }
-
-    async callAnalyzeAPI(question) {
-        const query = `
-            query AnalyzeTopics($archiveGroup: String!, $topicPattern: String!, $question: String!, $systemPrompt: String, $maxTopics: Int, $chatHistory: [ChatMessage!]) {
-                genai {
-                    analyzeTopics(
-                        archiveGroup: $archiveGroup
-                        topicPattern: $topicPattern
-                        question: $question
-                        systemPrompt: $systemPrompt
-                        maxTopics: $maxTopics
-                        chatHistory: $chatHistory
-                    ) {
-                        response
-                        topicsAnalyzed
-                        model
-                        error
-                    }
-                }
-            }
-        `;
-
-        const maxTopics = this.getMaxTopics();
-        const isFollowUp = this.contextLoaded && this.chatHistory.length > 0;
-
-        const variables = {
-            archiveGroup: this.topicBrowser.selectedArchiveGroup || 'Default',
-            topicPattern: this.getTopicPattern(),
-            question: question,
-            systemPrompt: this.systemPrompt,
-            maxTopics: maxTopics,
-            // Only send chat history for follow-up questions (after context is loaded)
-            chatHistory: isFollowUp ? this.chatHistory : null
-        };
-
-        console.log('=== AI Analysis Request ===');
-        console.log('Is follow-up:', isFollowUp);
-        console.log('Chat history length:', this.chatHistory.length);
-
-        const result = await graphqlClient.query(query, variables);
-
-        if (!result || !result.genai || !result.genai.analyzeTopics) {
-            return { error: 'GenAI is not available. Check your configuration.' };
-        }
-
-        // Log the full LLM response for debugging
-        console.log('=== AI Analysis Response ===');
-        console.log('Topics analyzed:', result.genai.analyzeTopics.topicsAnalyzed);
-        console.log('Model:', result.genai.analyzeTopics.model);
-        console.log('Error:', result.genai.analyzeTopics.error);
-        console.log('Response length:', result.genai.analyzeTopics.response?.length || 0);
-        // Log FULL response - copy from console to see complete text
-        console.log('FULL RESPONSE START >>>');
-        console.log(result.genai.analyzeTopics.response);
-        console.log('<<< FULL RESPONSE END');
-        console.log('============================');
-
-        return result.genai.analyzeTopics;
-    }
-
-    addMessage(role, content, isLoading = false, isError = false) {
-        const id = 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-        const chatHistory = document.getElementById('ai-chat-history');
-
-        if (!chatHistory) return id;
-
-        // Log content being added to help debug truncation issues
-        console.log(`=== Adding ${role} message ===`);
-        console.log('Content length:', content?.length || 0);
-        console.log('Content preview (first 500 chars):', content?.substring(0, 500));
-        console.log('Content preview (last 500 chars):', content?.substring(content.length - 500));
-
-        const msgDiv = document.createElement('div');
-        msgDiv.id = id;
-        msgDiv.className = `chat-message chat-${role}`;
-
-        if (isLoading) msgDiv.classList.add('loading');
-        if (isError) msgDiv.classList.add('error');
-
-        // Use textContent for plain text to avoid any HTML parsing issues
-        // Then apply formatting
-        const formattedContent = this.formatMessage(content);
-        console.log('Formatted content length:', formattedContent?.length || 0);
-        msgDiv.innerHTML = formattedContent;
-
-        chatHistory.appendChild(msgDiv);
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-
-        return id;
-    }
-
-    removeMessage(id) {
-        const msg = document.getElementById(id);
-        if (msg) {
-            msg.remove();
-        }
-    }
-
-    formatMessage(content) {
-        // Use marked.js for full markdown rendering if available
-        if (typeof marked !== 'undefined') {
-            try {
-                // Configure marked for safe rendering
-                marked.setOptions({
-                    breaks: true,      // Convert \n to <br>
-                    gfm: true,         // GitHub Flavored Markdown
-                    headerIds: false,  // Don't add IDs to headers
-                    mangle: false      // Don't mangle email addresses
-                });
-                return marked.parse(content);
-            } catch (e) {
-                console.warn('Markdown parsing failed, falling back to simple formatting:', e);
-            }
-        }
-
-        // Fallback: simple formatting if marked is not available
-        let result = content
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-
-        result = result.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
-        result = result.replace(/`([^`\n]+)`/g, '<code>$1</code>');
-        result = result.replace(/\n/g, '<br>');
-
-        return result;
-    }
-
-    resetPrompt() {
-        this.systemPrompt = this.defaultSystemPrompt;
-        const systemPromptEl = document.getElementById('ai-system-prompt');
-        if (systemPromptEl) {
-            systemPromptEl.value = this.systemPrompt;
-        }
-        localStorage.removeItem(STATE_KEYS.AI_SYSTEM_PROMPT);
-    }
-
-    // ========== State Persistence Methods ==========
-
-    /**
-     * Save AI panel state to localStorage
-     */
-    saveState() {
-        try {
-            // Save panel open state
-            localStorage.setItem(STATE_KEYS.AI_PANEL_OPEN, this.isPanelOpen ? 'true' : 'false');
-
-            // Save chat history
-            if (this.chatHistory.length > 0) {
-                localStorage.setItem(STATE_KEYS.AI_CHAT_HISTORY, JSON.stringify(this.chatHistory));
-            } else {
-                localStorage.removeItem(STATE_KEYS.AI_CHAT_HISTORY);
-            }
-
-            // Save context loaded state
-            localStorage.setItem(STATE_KEYS.AI_CONTEXT_LOADED, this.contextLoaded ? 'true' : 'false');
-
-            // Save context topic and archive group
-            if (this.contextTopic) {
-                localStorage.setItem(STATE_KEYS.AI_CONTEXT_TOPIC, this.contextTopic);
-            } else {
-                localStorage.removeItem(STATE_KEYS.AI_CONTEXT_TOPIC);
-            }
-            if (this.contextArchiveGroup) {
-                localStorage.setItem(STATE_KEYS.AI_CONTEXT_ARCHIVE_GROUP, this.contextArchiveGroup);
-            } else {
-                localStorage.removeItem(STATE_KEYS.AI_CONTEXT_ARCHIVE_GROUP);
-            }
-        } catch (e) {
-            console.warn('Failed to save AI state:', e);
-        }
-    }
-
-    /**
-     * Restore AI panel state from localStorage
-     */
-    restoreState() {
-        try {
-            // Restore chat history
-            const savedHistory = localStorage.getItem(STATE_KEYS.AI_CHAT_HISTORY);
-            if (savedHistory) {
-                this.chatHistory = JSON.parse(savedHistory);
-                // Rebuild chat UI from history
-                this.rebuildChatUI();
-            }
-
-            // Restore context topic and archive group
-            const savedContextTopic = localStorage.getItem(STATE_KEYS.AI_CONTEXT_TOPIC);
-            if (savedContextTopic) {
-                this.contextTopic = savedContextTopic;
-            }
-            const savedContextArchiveGroup = localStorage.getItem(STATE_KEYS.AI_CONTEXT_ARCHIVE_GROUP);
-            if (savedContextArchiveGroup) {
-                this.contextArchiveGroup = savedContextArchiveGroup;
-            }
-
-            // Restore context loaded state
-            const savedContextLoaded = localStorage.getItem(STATE_KEYS.AI_CONTEXT_LOADED);
-            if (savedContextLoaded === 'true') {
-                this.contextLoaded = true;
-                this.updateContextIndicator();
-                this.updateContextInfo(); // Update UI with saved context info
-            }
-
-            // Restore panel open state (do this last so UI updates properly)
-            const savedPanelOpen = localStorage.getItem(STATE_KEYS.AI_PANEL_OPEN);
-            if (savedPanelOpen === 'true') {
-                this.togglePanel(true);
-            }
-        } catch (e) {
-            console.warn('Failed to restore AI state:', e);
-        }
-    }
-
-    /**
-     * Rebuild chat UI from saved history
-     */
-    rebuildChatUI() {
-        const chatHistoryEl = document.getElementById('ai-chat-history');
-        if (!chatHistoryEl) return;
-
-        // Clear existing messages
-        chatHistoryEl.innerHTML = '';
-
-        // Rebuild from history
-        for (const msg of this.chatHistory) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `chat-message chat-${msg.role}`;
-            msgDiv.innerHTML = this.formatMessage(msg.content);
-            chatHistoryEl.appendChild(msgDiv);
-        }
-
-        // Scroll to bottom
-        chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
-    }
-}
-
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize topic browser (auth check is handled internally)
-    const topicBrowser = new TopicBrowser();
-    page.addCleanup(() => topicBrowser.dispose());
-
-    // Initialize AI functionality
-    window.topicBrowserAI = new TopicBrowserAI(topicBrowser);
-
-    // Restore AI state after a short delay to ensure everything is initialized
-    setTimeout(() => {
-        if (window.topicBrowserAI) {
-            window.topicBrowserAI.restoreState();
-        }
-    }, 500);
-});
 page.expose({
-    get STATE_KEYS() { return STATE_KEYS; },
-    get TopicBrowser() { return TopicBrowser; },
-    get TopicBrowserAI() { return TopicBrowserAI; }
+    get TopicExplorer() { return TopicExplorer; },
+    get topicExplorer() { return explorer; }
 });
 page.ready();
 return () => page.dispose();
