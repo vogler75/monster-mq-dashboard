@@ -196,9 +196,6 @@ class SidebarManager {
                     { href: '/pages/dashboard.html', icon: 'capacity-filled', text: 'Dashboard' },
                     { href: '/pages/sessions.html', icon: 'user-management', text: 'Sessions' },
                     { href: '/pages/peerlink.html', icon: 'network-wired', text: 'PeerLink' },
-                    { href: '/pages/topic-browser.html', icon: 'search', text: 'Browser' },
-                    { href: '/pages/topic-chart.html', icon: 'barchart', text: 'Visualizer' },
-                    { href: '/pages/archive-explorer.html', icon: 'list', text: 'Archive Explorer' },
                     { href: '/pages/kafka-topics.html', icon: 'list', text: 'Kafka Topics', feature: 'KafkaServer' },
                     { href: '/pages/kafka-groups.html', icon: 'user-management', text: 'Kafka Consumers', feature: 'KafkaServer' }
                 ]
@@ -216,7 +213,10 @@ class SidebarManager {
                 section: 'Storage', sectionIcon: 'database',
                 items: [
                     { href: '/pages/archive-groups.html', icon: 'health', text: 'Archives' },
-                    { href: '/pages/database-connections.html', icon: 'database', text: 'Connections' }
+                    { href: '/pages/database-connections.html', icon: 'database', text: 'Databases' },
+                    { href: '/pages/topic-browser.html', icon: 'search', text: 'Browser' },
+                    { href: '/pages/topic-chart.html', icon: 'barchart', text: 'Trends' },
+                    { href: '/pages/archive-explorer.html', icon: 'clock', text: 'History' }
                 ]
             },
             {
