@@ -670,16 +670,35 @@
                         <div class="tree-pane-header">
                             <input id="tree-filter" type="text" class="tree-filter-input" placeholder="Filter topics..." />
                             <button id="tree-sort-btn" class="explorer-btn explorer-btn-icon" title="Toggle Sort A-Z">
-                                ⇅
+                                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3.5 10.5V2.5m0 0L1.5 4.5m2-2l2 2M10.5 3.5v8m0 0l-2-2m2 2l2-2" />
+                                </svg>
                             </button>
                             <button id="tree-expand-all-btn" class="explorer-btn explorer-btn-icon" title="Expand All">
-                                ⊞
+                                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 3.5h10M2 7h7M2 10.5h4" />
+                                    <path d="M11 8l2 2-2 2" />
+                                </svg>
                             </button>
                             <button id="tree-collapse-all-btn" class="explorer-btn explorer-btn-icon" title="Collapse All">
-                                ⊟
+                                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 3.5h10M2 7h7M2 10.5h4" />
+                                    <path d="M12 10.5l-2-2 2-2" />
+                                </svg>
+                            </button>
+                            <button id="tree-fetch-subnodes-btn" class="explorer-btn explorer-btn-icon" title="Toggle automatic fetching of all subnodes when selecting a node">
+                                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="3.5" cy="4" r="1.5" />
+                                    <circle cx="10.5" cy="4" r="1.5" />
+                                    <circle cx="10.5" cy="10" r="1.5" />
+                                    <path d="M3.5 5.5v3a1.5 1.5 0 001.5 1.5H9" />
+                                </svg>
                             </button>
                             <button id="tree-clear-btn" class="explorer-btn explorer-btn-icon" title="Reload & clear tree view">
-                                ⟳
+                                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 2.5v3.5H8.5" />
+                                    <path d="M11.5 6A5 5 0 1012 8" />
+                                </svg>
                             </button>
                         </div>
                         <div id="tree-content" class="tree-content">
@@ -701,6 +720,10 @@
                                 <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; user-select: none;">
                                     <input id="table-active-checkbox" type="checkbox" checked style="accent-color: #38bdf8;">
                                     <span>Active</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.35rem; cursor: pointer; user-select: none;" title="Fetch all subnodes recursively when clicking a node (disabled by default)">
+                                    <input id="fetch-subnodes-checkbox" type="checkbox" style="accent-color: #38bdf8;">
+                                    <span>All Subnodes</span>
                                 </label>
                                 <div style="display: flex; align-items: center; gap: 0.25rem;">
                                     <button id="mode-live-btn" class="explorer-btn active" style="height: 22px; padding: 0 0.4rem; font-size: 0.7rem;">Live</button>

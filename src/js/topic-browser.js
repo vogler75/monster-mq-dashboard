@@ -13,6 +13,7 @@ const STORAGE_KEYS = {
     FLASH_ENABLED: 'monstermq_explorer_flash_enabled',
     SUBSCRIPTIONS: 'monstermq_explorer_subscriptions',
     SUB_ENABLED: 'monstermq_explorer_sub_enabled',
+    FETCH_SUBNODES: 'monstermq_explorer_fetch_subnodes',
     ARCHIVE_GROUP: 'monstermq_selected_archive_group',
     VIEW_MODE: 'monstermq_explorer_view_mode',
     AUTOSCROLL: 'monstermq_explorer_autoscroll'
@@ -48,12 +49,14 @@ class TopicExplorer {
         this.treeSortBtn = document.getElementById('tree-sort-btn');
         this.treeExpandAllBtn = document.getElementById('tree-expand-all-btn');
         this.treeCollapseAllBtn = document.getElementById('tree-collapse-all-btn');
+        this.treeFetchSubnodesBtn = document.getElementById('tree-fetch-subnodes-btn');
         this.treeClearBtn = document.getElementById('tree-clear-btn');
         this.treeContent = document.getElementById('tree-content');
 
         // UI Elements - Table
         this.tableClearBtn = document.getElementById('table-clear-btn');
         this.tableActiveCheckbox = document.getElementById('table-active-checkbox');
+        this.fetchSubnodesCheckbox = document.getElementById('fetch-subnodes-checkbox');
         this.modeLiveBtn = document.getElementById('mode-live-btn');
         this.modeHistoryBtn = document.getElementById('mode-history-btn');
         this.tableAutoScrollBtn = document.getElementById('table-autoscroll-btn');
@@ -98,11 +101,14 @@ class TopicExplorer {
 
         // State variables
         this.treeNodes = new Map(); // path -> { element, label, isLeaf, children: Set, expanded, messageCount, lastMessage }
+        this.treeRowElements = new Map(); // path -> DOM row element
+        this._renderTreeTimer = null;
         this.expandedPaths = new Set();
         this.selectedTopic = null;
         this.selectedMessage = null;
         this.isSortedAZ = false;
         this.flashEnabled = safeStorage.getItem(STORAGE_KEYS.FLASH_ENABLED) !== 'false';
+        this.fetchSubnodes = safeStorage.getItem(STORAGE_KEYS.FETCH_SUBNODES) === 'true';
         this.viewMode = safeStorage.getItem(STORAGE_KEYS.VIEW_MODE) || 'live';
         this.autoScroll = safeStorage.getItem(STORAGE_KEYS.AUTOSCROLL) !== 'false';
         this.activeTab = 'formatted';
@@ -140,6 +146,7 @@ class TopicExplorer {
         this.setupResizers();
         this.setupEventListeners();
         this.setupFlashBtn();
+        this.setupFetchSubnodesToggle();
         this.setupViewModeButtons();
         this.setupTableAutoScroll();
         this.setupRateMeter();
@@ -440,6 +447,37 @@ class TopicExplorer {
         this.toggleFlashBtn.classList.toggle('active', this.flashEnabled);
     }
 
+    setupFetchSubnodesToggle() {
+        this.updateFetchSubnodesUi();
+
+        this.fetchSubnodesCheckbox?.addEventListener('change', () => {
+            this.fetchSubnodes = !!this.fetchSubnodesCheckbox.checked;
+            safeStorage.setItem(STORAGE_KEYS.FETCH_SUBNODES, String(this.fetchSubnodes));
+            this.updateFetchSubnodesUi();
+            if (this.selectedTopic) {
+                this.handleTopicSelected(this.selectedTopic);
+            }
+        });
+
+        this.treeFetchSubnodesBtn?.addEventListener('click', () => {
+            this.fetchSubnodes = !this.fetchSubnodes;
+            safeStorage.setItem(STORAGE_KEYS.FETCH_SUBNODES, String(this.fetchSubnodes));
+            this.updateFetchSubnodesUi();
+            if (this.selectedTopic) {
+                this.handleTopicSelected(this.selectedTopic);
+            }
+        });
+    }
+
+    updateFetchSubnodesUi() {
+        if (this.fetchSubnodesCheckbox) {
+            this.fetchSubnodesCheckbox.checked = this.fetchSubnodes;
+        }
+        if (this.treeFetchSubnodesBtn) {
+            this.treeFetchSubnodesBtn.classList.toggle('active', this.fetchSubnodes);
+        }
+    }
+
     setupViewModeButtons() {
         if (!this.modeLiveBtn || !this.modeHistoryBtn) return;
         this.modeLiveBtn.classList.toggle('active', this.viewMode === 'live');
@@ -564,9 +602,6 @@ class TopicExplorer {
                         parentNode.isLeaf = true;
                     }
                 }
-                // Clear table first before populating the opened node's subnodes
-                this.liveTopics.clear();
-                this.historyMessages = [];
             }
 
             topics.forEach(t => {
@@ -586,7 +621,7 @@ class TopicExplorer {
                     }
                 }
 
-                // If this topic has a value, store it in liveTopics & historyMessages
+                // If this topic has a value, store it as messageData on the node
                 let messageData = null;
                 if (t.value) {
                     messageData = {
@@ -599,8 +634,6 @@ class TopicExplorer {
                         timestamp: Number(t.value.timestamp) || Date.now(),
                         isNew: false
                     };
-                    this.liveTopics.set(messageData.topic, messageData);
-                    this.historyMessages.push(messageData);
                 }
 
                 this.ensureTreeNode(childFullPath, false, messageData);
@@ -620,12 +653,7 @@ class TopicExplorer {
                 }
             });
 
-            if (this.historyMessages.length > this.maxHistory) {
-                this.historyMessages.splice(0, this.historyMessages.length - this.maxHistory);
-            }
-
             this.renderTree();
-            this.renderTableRows();
         } catch (err) {
             console.error('Failed to load topic level:', err);
             if (parentPath) {
@@ -641,6 +669,7 @@ class TopicExplorer {
     ensureTreeNode(fullPath, isLeaf = false, messageData = null) {
         const parts = fullPath.split('/');
         let currentPath = '';
+        let treeChanged = false;
 
         for (let i = 0; i < parts.length; i++) {
             const part = parts[i];
@@ -650,6 +679,7 @@ class TopicExplorer {
 
             let node = this.treeNodes.get(currentPath);
             if (!node) {
+                treeChanged = true;
                 node = {
                     path: currentPath,
                     name: part,
@@ -678,6 +708,9 @@ class TopicExplorer {
                 if (prevPath) {
                     const parentNode = this.treeNodes.get(prevPath);
                     if (parentNode) {
+                        if (!parentNode.children.has(currentPath)) {
+                            treeChanged = true;
+                        }
                         parentNode.children.add(currentPath);
                         parentNode.isLeaf = false;
                         parentNode.canHaveChildren = true;
@@ -691,6 +724,8 @@ class TopicExplorer {
                 node.updatedAt = messageData.timestamp || Date.now();
             }
         }
+
+        return treeChanged;
     }
 
     // =========================================================================
@@ -747,6 +782,7 @@ class TopicExplorer {
 
     renderTree() {
         if (!this.treeContent) return;
+        this.treeRowElements.clear();
         this.treeContent.innerHTML = '';
 
         const filter = (this.treeFilter?.value || '').trim().toLowerCase();
@@ -791,11 +827,13 @@ class TopicExplorer {
         const row = document.createElement('div');
         row.className = `tree-item-row ${isSelected ? 'selected' : ''}`;
         row.style.paddingLeft = `${node.depth * 14 + 6}px`;
+        row.dataset.topic = path;
+        this.treeRowElements.set(path, row);
 
         // Chevron
         const chevron = document.createElement('span');
         chevron.className = `tree-chevron ${canExpand ? '' : 'hidden'} ${isExpanded ? 'expanded' : ''}`;
-        chevron.textContent = '▶';
+        chevron.innerHTML = '<svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor" style="display: block;"><path d="M3 1.5l4 3.5-4 3.5z"/></svg>';
         chevron.addEventListener('click', (e) => {
             e.stopPropagation();
             this.toggleNode(path);
@@ -862,6 +900,67 @@ class TopicExplorer {
         return false;
     }
 
+    isDirectChild(parentTopic, childTopic) {
+        if (!parentTopic || !childTopic) return false;
+        const prefix = parentTopic + '/';
+        if (!childTopic.startsWith(prefix)) return false;
+        const remainder = childTopic.slice(prefix.length);
+        return remainder.length > 0 && !remainder.includes('/');
+    }
+
+    getTreeRowByTopic(topic) {
+        if (!this.treeContent || !topic) return null;
+        if (typeof CSS !== 'undefined' && CSS.escape) {
+            try {
+                return this.treeContent.querySelector(`.tree-item-row[data-topic="${CSS.escape(topic)}"]`);
+            } catch (e) {
+                // Ignore selector error and fall back to manual scan
+            }
+        }
+        const rows = this.treeContent.querySelectorAll('.tree-item-row');
+        for (const r of rows) {
+            if (r.dataset.topic === topic) return r;
+        }
+        return null;
+    }
+
+    updateTreeBadgeAndFlash(topic, node) {
+        let row = this.treeRowElements?.get(topic);
+        if (!row || !row.isConnected) {
+            row = this.getTreeRowByTopic(topic);
+            if (row && this.treeRowElements) {
+                this.treeRowElements.set(topic, row);
+            }
+        }
+        if (!row) return;
+
+        let countBadge = row.querySelector('.tree-badge-count');
+        if (node.messageCount > 0) {
+            if (!countBadge) {
+                countBadge = document.createElement('span');
+                countBadge.className = 'tree-badge-count';
+                row.appendChild(countBadge);
+            }
+            countBadge.textContent = String(node.messageCount);
+        } else if (countBadge) {
+            countBadge.remove();
+        }
+
+        if (this.flashEnabled) {
+            row.classList.remove('row-updated');
+            void row.offsetWidth;
+            row.classList.add('row-updated');
+        }
+    }
+
+    scheduleRenderTree() {
+        if (this._renderTreeTimer) return;
+        this._renderTreeTimer = setTimeout(() => {
+            this._renderTreeTimer = null;
+            this.renderTree();
+        }, 150);
+    }
+
     async handleTopicSelected(topic) {
         this.selectedTopic = topic;
         this.renderTree();
@@ -879,51 +978,128 @@ class TopicExplorer {
 
         const node = this.treeNodes.get(topic);
 
-        // If this node can have children and they haven't been loaded yet, load them first
-        if (node && node.canHaveChildren && !node.childrenLoaded) {
-            await this.loadTopicLevel(`${topic}/+`, topic);
-        }
-
-        // Clear table first
-        this.liveTopics.clear();
-        this.historyMessages = [];
-
-        // Collect all subnodes under this topic (paths starting with `${topic}/`)
-        const prefix = topic + '/';
-        const subMessages = [];
-
-        for (const [path, n] of this.treeNodes.entries()) {
-            if (path.startsWith(prefix) && n.lastMessage) {
-                subMessages.push(n.lastMessage);
-            }
-        }
-
-        if (subMessages.length > 0) {
-            subMessages.sort((a, b) => a.topic.localeCompare(b.topic));
-            for (const msg of subMessages) {
-                this.liveTopics.set(msg.topic, msg);
-                this.historyMessages.push(msg);
-            }
-            this.selectedMessage = node?.lastMessage || subMessages[0];
-            this.renderDetailContent();
-            this.renderTableRows();
+        if (this.fetchSubnodes) {
+            await this.fetchDeepSubnodes(topic);
         } else {
-            // No subnodes found — this is a leaf node or has no subtopic messages
-            const existingMsg = node?.lastMessage;
-            if (existingMsg) {
-                this.liveTopics.set(topic, existingMsg);
-                this.historyMessages.push(existingMsg);
-                this.selectedMessage = existingMsg;
+            // If this node can have children and they haven't been loaded yet, load them first
+            if (node && node.canHaveChildren && !node.childrenLoaded) {
+                await this.loadTopicLevel(`${topic}/+`, topic);
+            }
+
+            // Clear table first
+            this.liveTopics.clear();
+            this.historyMessages = [];
+
+            // Check if node has direct children (one level deep)
+            if (node && node.children && node.children.size > 0) {
+                const childPaths = Array.from(node.children);
+                childPaths.sort();
+                for (const childPath of childPaths) {
+                    const childNode = this.treeNodes.get(childPath);
+                    const msg = childNode?.lastMessage || {
+                        id: ++this.messageIdCounter,
+                        topic: childPath,
+                        payload: '',
+                        format: 'TEXT',
+                        qos: 0,
+                        retain: false,
+                        timestamp: childNode?.updatedAt || null
+                    };
+                    this.liveTopics.set(childPath, msg);
+                    this.historyMessages.push(msg);
+                }
+                this.selectedMessage = this.liveTopics.get(childPaths[0]) || null;
                 this.renderDetailContent();
                 this.renderTableRows();
             } else {
-                // Fetch currentValue from GraphQL
-                await this.fetchTopicCurrentValue(topic);
+                // Leaf node: show this topic itself
+                const existingMsg = node?.lastMessage;
+                if (existingMsg) {
+                    this.liveTopics.set(topic, existingMsg);
+                    this.historyMessages.push(existingMsg);
+                    this.selectedMessage = existingMsg;
+                    this.renderDetailContent();
+                    this.renderTableRows();
+                } else {
+                    // Fetch currentValue from GraphQL
+                    await this.fetchTopicCurrentValue(topic);
+                }
             }
         }
 
         // Highlight matching table row
         this.highlightSelectedTableRow();
+    }
+
+    async fetchDeepSubnodes(topic) {
+        this.liveTopics.clear();
+        this.historyMessages = [];
+
+        const node = this.treeNodes.get(topic);
+        const query = `
+            query GetDeepSubnodes($topicFilter: String!, $archiveGroup: String!) {
+                currentValues(topicFilter: $topicFilter, archiveGroup: $archiveGroup, limit: 500) {
+                    topic
+                    payload
+                    format
+                    timestamp
+                    qos
+                }
+            }
+        `;
+        try {
+            const res = await window.graphqlClient.query(query, {
+                topicFilter: `${topic}/#`,
+                archiveGroup: this.selectedArchiveGroup
+            });
+
+            const items = res?.currentValues || [];
+
+            // If the selected topic itself has a message, add it as well
+            if (node?.lastMessage) {
+                this.liveTopics.set(topic, node.lastMessage);
+                this.historyMessages.push(node.lastMessage);
+            }
+
+            for (const cv of items) {
+                const msg = {
+                    id: ++this.messageIdCounter,
+                    topic: cv.topic,
+                    payload: cv.payload || '',
+                    format: cv.format || 'TEXT',
+                    qos: cv.qos || 0,
+                    retain: true,
+                    timestamp: Number(cv.timestamp) || Date.now(),
+                    isNew: false
+                };
+                this.ensureTreeNode(cv.topic, true, msg);
+                this.liveTopics.set(cv.topic, msg);
+                this.historyMessages.push(msg);
+            }
+
+            if (node) {
+                node.childrenLoaded = true;
+                node.expanded = true;
+                this.expandedPaths.add(topic);
+            }
+
+            if (this.historyMessages.length > 0) {
+                this.selectedMessage = this.historyMessages[0];
+            } else {
+                // If no subtopics returned, attempt to fetch current value for the topic itself
+                await this.fetchTopicCurrentValue(topic);
+            }
+
+            this.renderTree();
+            this.renderDetailContent();
+            this.renderTableRows();
+        } catch (err) {
+            console.error('Failed to fetch deep subnodes:', err);
+            if (node && node.canHaveChildren && !node.childrenLoaded) {
+                await this.loadTopicLevel(`${topic}/+`, topic);
+            }
+            this.renderTableRows();
+        }
     }
 
     async fetchTopicCurrentValue(topic) {
@@ -994,21 +1170,32 @@ class TopicExplorer {
         };
 
         // Update Tree node
-        this.ensureTreeNode(msg.topic, true, msg);
+        const treeChanged = this.ensureTreeNode(msg.topic, true, msg);
+        const targetNode = this.treeNodes.get(msg.topic);
+        if (targetNode) {
+            this.updateTreeBadgeAndFlash(msg.topic, targetNode);
+        }
 
-        // Flash tree row
-        if (this.flashEnabled) {
-            const treeRow = document.querySelector(`.tree-item-row.selected`);
-            if (treeRow && this.selectedTopic === msg.topic) {
-                treeRow.classList.remove('row-updated');
-                void treeRow.offsetWidth;
-                treeRow.classList.add('row-updated');
-            }
+        if (treeChanged) {
+            this.scheduleRenderTree();
         }
 
         // Active table check
         if (this.tableActiveCheckbox && !this.tableActiveCheckbox.checked) {
             return;
+        }
+
+        // If a topic is selected, filter incoming messages:
+        // When fetchSubnodes is enabled: accept self and any descendant topic
+        // When fetchSubnodes is disabled: accept self and direct children (one level deep)
+        if (this.selectedTopic) {
+            const isSelf = msg.topic === this.selectedTopic;
+            const matches = this.fetchSubnodes
+                ? (isSelf || msg.topic.startsWith(this.selectedTopic + '/'))
+                : (isSelf || this.isDirectChild(this.selectedTopic, msg.topic));
+            if (!matches) {
+                return;
+            }
         }
 
         // Update Live store
@@ -1041,6 +1228,16 @@ class TopicExplorer {
             messages.sort((a, b) => a.topic.localeCompare(b.topic));
         } else {
             messages = this.historyMessages;
+        }
+
+        // Filter by selected topic namespace if one is selected
+        if (this.selectedTopic) {
+            messages = messages.filter(m => {
+                const isSelf = m.topic === this.selectedTopic;
+                return this.fetchSubnodes
+                    ? (isSelf || m.topic.startsWith(this.selectedTopic + '/'))
+                    : (isSelf || this.isDirectChild(this.selectedTopic, m.topic));
+            });
         }
 
         if (filter) {
@@ -1094,7 +1291,7 @@ class TopicExplorer {
             tdPayload.textContent = this.truncatePayload(msg.payload);
             tr.appendChild(tdPayload);
 
-            // Click row
+            // Click row: select and inspect in detail pane
             tr.addEventListener('click', () => {
                 this.selectedTopic = msg.topic;
                 this.selectedMessage = msg;
@@ -1107,6 +1304,11 @@ class TopicExplorer {
                 this.renderTree();
                 this.renderDetailContent();
                 this.highlightSelectedTableRow();
+            });
+
+            // Double click: navigate into topic
+            tr.addEventListener('dblclick', () => {
+                this.handleTopicSelected(msg.topic);
             });
 
             fragment.appendChild(tr);
@@ -1684,6 +1886,10 @@ class TopicExplorer {
         if (this.rateInterval) {
             clearInterval(this.rateInterval);
             this.rateInterval = null;
+        }
+        if (this._renderTreeTimer) {
+            clearTimeout(this._renderTreeTimer);
+            this._renderTreeTimer = null;
         }
     }
 }
