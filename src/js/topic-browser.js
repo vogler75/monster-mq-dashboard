@@ -68,6 +68,7 @@ class TopicExplorer {
         this.detailTabs = document.querySelectorAll('.detail-tab');
         this.detailTopicText = document.getElementById('detail-topic-text');
         this.detailCopyTopicBtn = document.getElementById('detail-copy-topic-btn');
+        this.detailSourceBadge = document.getElementById('detail-source-badge');
         this.detailPayloadSize = document.getElementById('detail-payload-size');
         this.detailQosBadge = document.getElementById('detail-qos-badge');
         this.detailRetainBadge = document.getElementById('detail-retain-badge');
@@ -94,10 +95,13 @@ class TopicExplorer {
 
         // UI Elements - AI
         this.closeAiBtn = document.getElementById('close-ai-btn');
+        this.clearAiBtn = document.getElementById('clear-ai-chat-btn');
         this.aiQuickActions = document.getElementById('ai-quick-actions');
         this.aiChatHistory = document.getElementById('ai-chat-history');
         this.aiQuestion = document.getElementById('ai-question');
         this.aiSend = document.getElementById('ai-send');
+        this.aiContextDesc = document.getElementById('ai-context-desc');
+        this.aiChatMessages = [];
 
         // State variables
         this.treeNodes = new Map(); // path -> { element, label, isLeaf, children: Set, expanded, messageCount, lastMessage }
@@ -223,7 +227,7 @@ class TopicExplorer {
     }
 
     setupTableColumnResizers() {
-        const resizableCols = ['col-time', 'col-topic', 'col-qos', 'col-retain'];
+        const resizableCols = ['col-time', 'col-topic', 'col-source', 'col-qos', 'col-retain'];
         resizableCols.forEach(id => {
             const th = document.getElementById(id);
             if (!th) return;
@@ -316,6 +320,11 @@ class TopicExplorer {
     // =========================================================================
 
     setupEventListeners() {
+        // Live subscriptions toggle button (top left)
+        this.statusBadge?.addEventListener('click', () => {
+            this.toggleLiveSubscriptions();
+        });
+
         // Flash toggle
         this.toggleFlashBtn?.addEventListener('click', () => {
             this.flashEnabled = !this.flashEnabled;
@@ -345,15 +354,7 @@ class TopicExplorer {
         });
 
         this.subModalToggleActive?.addEventListener('click', () => {
-            this.subEnabled = !this.subEnabled;
-            safeStorage.setItem(STORAGE_KEYS.SUB_ENABLED, String(this.subEnabled));
-            this.updateSubscriptionActiveButton();
-            if (this.subEnabled) {
-                this.connectWebSocket();
-            } else {
-                this.disconnectWebSocket();
-                this.updateConnectionStatus(false, 'Live Paused');
-            }
+            this.toggleLiveSubscriptions();
         });
 
         // Publish panel toggle
@@ -379,6 +380,7 @@ class TopicExplorer {
         // AI panel toggle
         this.toggleAiBtn?.addEventListener('click', () => this.toggleAiPanel());
         this.closeAiBtn?.addEventListener('click', () => this.toggleAiPanel(false));
+        this.clearAiBtn?.addEventListener('click', () => this.clearAiChat());
         this.aiSend?.addEventListener('click', () => this.sendAiQuestion());
         this.aiQuestion?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -632,11 +634,12 @@ class TopicExplorer {
                         qos: t.value.qos || 0,
                         retain: true,
                         timestamp: Number(t.value.timestamp) || Date.now(),
-                        isNew: false
+                        isNew: false,
+                        source: 'archive'
                     };
                 }
 
-                this.ensureTreeNode(childFullPath, false, messageData);
+                this.ensureTreeNode(childFullPath, false, messageData, 'archive');
                 const node = this.treeNodes.get(childFullPath);
                 if (node && !node.childrenLoaded) {
                     node.canHaveChildren = true;
@@ -666,7 +669,7 @@ class TopicExplorer {
         }
     }
 
-    ensureTreeNode(fullPath, isLeaf = false, messageData = null) {
+    ensureTreeNode(fullPath, isLeaf = false, messageData = null, source = 'archive') {
         const parts = fullPath.split('/');
         let currentPath = '';
         let treeChanged = false;
@@ -691,7 +694,8 @@ class TopicExplorer {
                     childrenLoaded: false,
                     messageCount: 0,
                     lastMessage: null,
-                    updatedAt: 0
+                    updatedAt: 0,
+                    source: (i === parts.length - 1) ? source : (source === 'subscription' ? 'subscription' : 'archive')
                 };
                 this.treeNodes.set(currentPath, node);
 
@@ -718,10 +722,21 @@ class TopicExplorer {
                 }
             }
 
+            if (source === 'subscription') {
+                if (i === parts.length - 1) {
+                    node.source = 'subscription';
+                }
+            } else if (!node.source) {
+                node.source = 'archive';
+            }
+
             if (i === parts.length - 1 && messageData) {
                 node.messageCount = Math.max(1, node.messageCount + 1);
                 node.lastMessage = messageData;
                 node.updatedAt = messageData.timestamp || Date.now();
+                if (messageData.source) {
+                    node.source = messageData.source;
+                }
             }
         }
 
@@ -859,6 +874,16 @@ class TopicExplorer {
         label.textContent = node.name;
         row.appendChild(label);
 
+        // Source badge (ARC vs SUB)
+        if (node.source) {
+            const srcBadge = document.createElement('span');
+            const isSub = node.source === 'subscription';
+            srcBadge.className = `tree-badge-source ${isSub ? 'source-sub' : 'source-arc'}`;
+            srcBadge.textContent = isSub ? 'SUB' : 'ARC';
+            srcBadge.title = isSub ? 'Received via live subscription' : 'Loaded from Archive last value store';
+            row.appendChild(srcBadge);
+        }
+
         // Count badge
         if (node.messageCount > 0) {
             const count = document.createElement('span');
@@ -934,6 +959,24 @@ class TopicExplorer {
         }
         if (!row) return;
 
+        // Update or insert source badge
+        let srcBadge = row.querySelector('.tree-badge-source');
+        if (node.source) {
+            if (!srcBadge) {
+                srcBadge = document.createElement('span');
+                const countBadge = row.querySelector('.tree-badge-count');
+                if (countBadge) {
+                    row.insertBefore(srcBadge, countBadge);
+                } else {
+                    row.appendChild(srcBadge);
+                }
+            }
+            const isSub = node.source === 'subscription';
+            srcBadge.className = `tree-badge-source ${isSub ? 'source-sub' : 'source-arc'}`;
+            srcBadge.textContent = isSub ? 'SUB' : 'ARC';
+            srcBadge.title = isSub ? 'Received via live subscription' : 'Loaded from Archive last value store';
+        }
+
         let countBadge = row.querySelector('.tree-badge-count');
         if (node.messageCount > 0) {
             if (!countBadge) {
@@ -1003,8 +1046,12 @@ class TopicExplorer {
                         format: 'TEXT',
                         qos: 0,
                         retain: false,
-                        timestamp: childNode?.updatedAt || null
+                        timestamp: childNode?.updatedAt || null,
+                        source: childNode?.source || 'archive'
                     };
+                    if (!msg.source) {
+                        msg.source = childNode?.source || 'archive';
+                    }
                     this.liveTopics.set(childPath, msg);
                     this.historyMessages.push(msg);
                 }
@@ -1015,6 +1062,9 @@ class TopicExplorer {
                 // Leaf node: show this topic itself
                 const existingMsg = node?.lastMessage;
                 if (existingMsg) {
+                    if (!existingMsg.source) {
+                        existingMsg.source = node?.source || 'archive';
+                    }
                     this.liveTopics.set(topic, existingMsg);
                     this.historyMessages.push(existingMsg);
                     this.selectedMessage = existingMsg;
@@ -1029,6 +1079,10 @@ class TopicExplorer {
 
         // Highlight matching table row
         this.highlightSelectedTableRow();
+
+        if (this.aiPanel && this.aiPanel.style.display !== 'none') {
+            this.updateAiContextDesc();
+        }
     }
 
     async fetchDeepSubnodes(topic) {
@@ -1057,6 +1111,9 @@ class TopicExplorer {
 
             // If the selected topic itself has a message, add it as well
             if (node?.lastMessage) {
+                if (!node.lastMessage.source) {
+                    node.lastMessage.source = node.source || 'archive';
+                }
                 this.liveTopics.set(topic, node.lastMessage);
                 this.historyMessages.push(node.lastMessage);
             }
@@ -1070,9 +1127,10 @@ class TopicExplorer {
                     qos: cv.qos || 0,
                     retain: true,
                     timestamp: Number(cv.timestamp) || Date.now(),
-                    isNew: false
+                    isNew: false,
+                    source: 'archive'
                 };
-                this.ensureTreeNode(cv.topic, true, msg);
+                this.ensureTreeNode(cv.topic, true, msg, 'archive');
                 this.liveTopics.set(cv.topic, msg);
                 this.historyMessages.push(msg);
             }
@@ -1128,8 +1186,10 @@ class TopicExplorer {
                     format: cv.format,
                     qos: cv.qos || 0,
                     retain: true,
-                    timestamp: Number(cv.timestamp) || Date.now()
+                    timestamp: Number(cv.timestamp) || Date.now(),
+                    source: 'archive'
                 };
+                this.ensureTreeNode(topic, true, msg, 'archive');
                 this.liveTopics.set(topic, msg);
                 this.selectedMessage = msg;
                 this.renderDetailContent();
@@ -1141,7 +1201,8 @@ class TopicExplorer {
                     format: 'TEXT',
                     qos: 0,
                     retain: false,
-                    timestamp: null
+                    timestamp: null,
+                    source: 'archive'
                 };
                 this.renderDetailContent();
             }
@@ -1166,11 +1227,12 @@ class TopicExplorer {
             qos: update.qos || 0,
             retain: !!update.retained,
             timestamp: Number(update.timestamp) || Date.now(),
-            isNew: true
+            isNew: true,
+            source: 'subscription'
         };
 
         // Update Tree node
-        const treeChanged = this.ensureTreeNode(msg.topic, true, msg);
+        const treeChanged = this.ensureTreeNode(msg.topic, true, msg, 'subscription');
         const targetNode = this.treeNodes.get(msg.topic);
         if (targetNode) {
             this.updateTreeBadgeAndFlash(msg.topic, targetNode);
@@ -1274,6 +1336,17 @@ class TopicExplorer {
             tdTopic.textContent = msg.topic;
             tr.appendChild(tdTopic);
 
+            // Source
+            const tdSource = document.createElement('td');
+            tdSource.style.textAlign = 'center';
+            const isSub = msg.source === 'subscription';
+            const srcBadge = document.createElement('span');
+            srcBadge.className = `badge-source ${isSub ? 'badge-source-sub' : 'badge-source-arc'}`;
+            srcBadge.textContent = isSub ? 'SUB' : 'ARC';
+            srcBadge.title = isSub ? 'Received via live subscription' : 'Loaded from Archive last value store';
+            tdSource.appendChild(srcBadge);
+            tr.appendChild(tdSource);
+
             // QoS
             const tdQos = document.createElement('td');
             tdQos.style.textAlign = 'center';
@@ -1357,10 +1430,20 @@ class TopicExplorer {
 
         if (!msg) {
             this.detailBody.innerHTML = '<div style="color: var(--text-muted); padding: 1rem 0;">Click a topic in the tree or message table to inspect its payload</div>';
+            if (this.detailSourceBadge) {
+                this.detailSourceBadge.style.display = 'none';
+            }
             return;
         }
 
         // Info strip badges
+        if (this.detailSourceBadge) {
+            const isSub = msg.source === 'subscription';
+            this.detailSourceBadge.style.display = 'inline-block';
+            this.detailSourceBadge.className = `badge-source ${isSub ? 'badge-source-sub' : 'badge-source-arc'}`;
+            this.detailSourceBadge.textContent = isSub ? 'Subscription' : 'Archive LastVal';
+            this.detailSourceBadge.title = isSub ? 'Received via live WebSocket subscription' : 'Loaded from Archive last value store';
+        }
         if (this.detailPayloadSize) {
             const byteLength = typeof msg.payload === 'string' ? msg.payload.length : (msg.payload?.byteLength || 0);
             this.detailPayloadSize.textContent = this.formatBytes(byteLength);
@@ -1494,8 +1577,90 @@ class TopicExplorer {
     }
 
     // =========================================================================
-    // AI Analysis Panel
+    // AI Analysis Panel (GenAiQuery.analyzeTopics)
     // =========================================================================
+
+    getAiTopicPattern() {
+        if (this.selectedTopic && this.selectedTopic !== 'root') {
+            return this.selectedTopic.endsWith('/#') ? this.selectedTopic : `${this.selectedTopic}/#`;
+        }
+        return '#';
+    }
+
+    getAiTopicData() {
+        const topicDataMap = new Map();
+
+        // 1. Gather messages from treeNodes for the selected hierarchy
+        if (this.selectedTopic && this.selectedTopic !== 'root') {
+            const prefix = `${this.selectedTopic}/`;
+            for (const [path, node] of this.treeNodes.entries()) {
+                if (path === this.selectedTopic || path.startsWith(prefix)) {
+                    if (node.lastMessage && node.lastMessage.payload !== undefined && node.lastMessage.payload !== null) {
+                        topicDataMap.set(path, typeof node.lastMessage.payload === 'string'
+                            ? node.lastMessage.payload
+                            : JSON.stringify(node.lastMessage.payload));
+                    }
+                }
+            }
+        } else {
+            // Root: collect all nodes with messages
+            for (const [path, node] of this.treeNodes.entries()) {
+                if (node.lastMessage && node.lastMessage.payload !== undefined && node.lastMessage.payload !== null) {
+                    topicDataMap.set(path, typeof node.lastMessage.payload === 'string'
+                        ? node.lastMessage.payload
+                        : JSON.stringify(node.lastMessage.payload));
+                }
+            }
+        }
+
+        // 2. Also incorporate current liveTopics (which includes subscription updates and table messages)
+        for (const [topic, msg] of this.liveTopics.entries()) {
+            if (!this.selectedTopic || this.selectedTopic === 'root' || topic === this.selectedTopic || topic.startsWith(`${this.selectedTopic}/`)) {
+                if (msg && msg.payload !== undefined && msg.payload !== null) {
+                    topicDataMap.set(topic, typeof msg.payload === 'string'
+                        ? msg.payload
+                        : JSON.stringify(msg.payload));
+                }
+            }
+        }
+
+        // 3. If a message is currently selected in detail view, ensure it's included
+        if (this.selectedMessage && this.selectedMessage.topic) {
+            const topic = this.selectedMessage.topic;
+            if (!this.selectedTopic || this.selectedTopic === 'root' || topic === this.selectedTopic || topic.startsWith(`${this.selectedTopic}/`)) {
+                if (this.selectedMessage.payload !== undefined && this.selectedMessage.payload !== null) {
+                    topicDataMap.set(topic, typeof this.selectedMessage.payload === 'string'
+                        ? this.selectedMessage.payload
+                        : JSON.stringify(this.selectedMessage.payload));
+                }
+            }
+        }
+
+        return Array.from(topicDataMap.entries()).map(([topic, value]) => ({
+            topic,
+            value
+        }));
+    }
+
+    updateAiContextDesc() {
+        if (!this.aiContextDesc) return;
+        const topicData = this.getAiTopicData();
+        const pattern = this.getAiTopicPattern();
+        if (topicData.length > 0) {
+            this.aiContextDesc.textContent = `Topics: ${topicData.length} from UI | Selected: ${this.selectedTopic || 'all'}`;
+        } else {
+            const grp = this.selectedArchiveGroup || 'Default';
+            this.aiContextDesc.textContent = `Archive: ${grp} | Topic Pattern: ${pattern}`;
+        }
+    }
+
+    clearAiChat() {
+        if (this.aiChatHistory) {
+            this.aiChatHistory.innerHTML = '';
+        }
+        this.aiChatMessages = [];
+        ui.showToast('Conversation cleared', 'info');
+    }
 
     toggleAiPanel(forceState = null) {
         if (!this.aiPanel) return;
@@ -1513,7 +1678,9 @@ class TopicExplorer {
         }
 
         if (show) {
+            this.updateAiContextDesc();
             this.initAiQuickActions();
+            if (this.aiQuestion) this.aiQuestion.focus();
         }
     }
 
@@ -1555,20 +1722,65 @@ class TopicExplorer {
         this.aiChatHistory.appendChild(botMsg);
         this.aiChatHistory.scrollTop = this.aiChatHistory.scrollHeight;
 
-        try {
-            const query = `
-                query AnalyzeTopics($archiveGroup: String!, $question: String!) {
-                    analyzeTopics(archiveGroup: $archiveGroup, question: $question)
+        const topicData = this.getAiTopicData();
+        const isFollowUp = this.aiChatMessages && this.aiChatMessages.length > 0;
+
+        const query = `
+            query AnalyzeTopics(
+                $archiveGroup: String
+                $topicPattern: String
+                $topicData: [TopicDataInput!]
+                $question: String!
+                $maxTopics: Int
+                $maxValueLength: Int
+                $chatHistory: [ChatMessage!]
+            ) {
+                genai {
+                    analyzeTopics(
+                        archiveGroup: $archiveGroup
+                        topicPattern: $topicPattern
+                        topicData: $topicData
+                        question: $question
+                        maxTopics: $maxTopics
+                        maxValueLength: $maxValueLength
+                        chatHistory: $chatHistory
+                    ) {
+                        response
+                        topicsAnalyzed
+                        model
+                        error
+                    }
                 }
-            `;
+            }
+        `;
+
+        try {
             const res = await window.graphqlClient.query(query, {
-                archiveGroup: this.selectedArchiveGroup,
-                question
+                archiveGroup: this.selectedArchiveGroup || 'Default',
+                topicPattern: topicData.length === 0 ? this.getAiTopicPattern() : null,
+                topicData: topicData.length > 0 ? topicData : null,
+                question,
+                maxTopics: 0,
+                maxValueLength: 0,
+                chatHistory: isFollowUp ? this.aiChatMessages : null
             });
-            if (res?.analyzeTopics) {
-                botMsg.innerHTML = window.marked ? window.marked.parse(res.analyzeTopics) : this.escapeHtml(res.analyzeTopics);
+
+            const analysis = res?.genai?.analyzeTopics;
+            if (!analysis) {
+                botMsg.textContent = 'GenAI is not available or returned no data. Check your broker GenAI configuration.';
+            } else if (analysis.error) {
+                botMsg.textContent = `Error: ${analysis.error}`;
             } else {
-                botMsg.textContent = 'No response received from AI model.';
+                const responseHtml = window.marked 
+                    ? window.marked.parse(analysis.response) 
+                    : `<pre style="margin: 0; white-space: pre-wrap; font-family: inherit;">${this.escapeHtml(analysis.response)}</pre>`;
+                
+                const statsInfo = `<div style="font-size: 0.68rem; color: var(--text-muted); margin-top: 0.45rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.3rem;">Analyzed ${analysis.topicsAnalyzed} topics (${analysis.model || 'AI'})</div>`;
+                botMsg.innerHTML = responseHtml + statsInfo;
+
+                if (!this.aiChatMessages) this.aiChatMessages = [];
+                this.aiChatMessages.push({ role: 'user', content: question });
+                this.aiChatMessages.push({ role: 'assistant', content: analysis.response });
             }
         } catch (e) {
             botMsg.textContent = `Analysis error: ${e.message}`;
@@ -1600,6 +1812,26 @@ class TopicExplorer {
         this.subModalToggleActive.textContent = this.subEnabled ? 'Pause Subscriptions' : 'Resume Subscriptions';
         this.subModalToggleActive.style.background = this.subEnabled ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)';
         this.subModalToggleActive.style.color = this.subEnabled ? '#ef4444' : '#10b981';
+    }
+
+    toggleLiveSubscriptions() {
+        this.subEnabled = !this.subEnabled;
+        safeStorage.setItem(STORAGE_KEYS.SUB_ENABLED, String(this.subEnabled));
+        this.updateSubscriptionActiveButton();
+        if (this.subEnabled) {
+            if (this.subscriptions.length === 0) {
+                this.updateConnectionStatus(false, 'Live Off (No Filters)');
+                this.openSubscriptionsModal();
+                ui.showToast('Please add at least one subscription filter (e.g. #)', 'info');
+            } else {
+                this.connectWebSocket();
+                ui.showToast('Live subscriptions enabled', 'success');
+            }
+        } else {
+            this.disconnectWebSocket();
+            this.updateConnectionStatus(false, 'Live Off');
+            ui.showToast('Live subscriptions paused', 'info');
+        }
     }
 
     handleAddSubscriptionFilter() {
@@ -1699,18 +1931,18 @@ class TopicExplorer {
 
             this.ws.onerror = (err) => {
                 console.warn('WS error:', err);
-                this.updateConnectionStatus(false, 'Error');
+                this.updateConnectionStatus(false, 'Live Error');
             };
 
             this.ws.onclose = () => {
-                this.updateConnectionStatus(false, 'Disconnected');
+                this.updateConnectionStatus(false, this.subEnabled ? 'Reconnecting&hellip;' : 'Live Off');
                 if (this.subEnabled && this.subscriptions.length > 0) {
                     this.wsReconnectTimer = setTimeout(() => this.connectWebSocket(), 3000);
                 }
             };
         } catch (e) {
             console.error('Failed to create WebSocket:', e);
-            this.updateConnectionStatus(false, 'Failed');
+            this.updateConnectionStatus(false, 'Live Failed');
         }
     }
 
@@ -1731,7 +1963,7 @@ class TopicExplorer {
     handleWsMessage(msg) {
         switch (msg.type) {
             case 'connection_ack':
-                this.updateConnectionStatus(true, 'Live Connected');
+                this.updateConnectionStatus(true, 'Live On');
                 this.sendSubscribe();
                 break;
             case 'next':
@@ -1777,6 +2009,9 @@ class TopicExplorer {
     updateConnectionStatus(connected, text) {
         if (this.statusBadge) {
             this.statusBadge.classList.toggle('offline', !connected);
+            this.statusBadge.title = this.subEnabled
+                ? 'Live subscriptions active. Click to turn off.'
+                : 'Live subscriptions paused. Click to turn on.';
         }
         if (this.statusText) {
             this.statusText.innerHTML = text;

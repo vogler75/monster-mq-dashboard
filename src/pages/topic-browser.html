@@ -51,13 +51,24 @@
             display: inline-flex;
             align-items: center;
             gap: 0.4rem;
-            padding: 0.2rem 0.6rem;
+            padding: 0.25rem 0.65rem;
             border-radius: 9999px;
             font-size: 0.75rem;
             font-weight: 600;
             background: rgba(16, 185, 129, 0.12);
             color: var(--monster-green, #10b981);
             border: 1px solid rgba(16, 185, 129, 0.25);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .explorer-status-badge:hover {
+            background: rgba(16, 185, 129, 0.22);
+            border-color: rgba(16, 185, 129, 0.45);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
         }
 
         .explorer-status-badge.offline {
@@ -66,11 +77,28 @@
             border-color: rgba(239, 68, 68, 0.25);
         }
 
+        .explorer-status-badge.offline:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.15);
+        }
+
         .explorer-status-dot {
             width: 7px;
             height: 7px;
             border-radius: 50%;
             background: currentColor;
+            display: inline-block;
+        }
+
+        .explorer-status-badge:not(.offline) .explorer-status-dot {
+            animation: status-pulse 2s infinite;
+        }
+
+        @keyframes status-pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
         }
 
         .explorer-stat-rate {
@@ -314,6 +342,35 @@
             flex-shrink: 0;
         }
 
+        .tree-badge-source {
+            margin-left: auto;
+            margin-right: 0.3rem;
+            padding: 0.05rem 0.35rem;
+            border-radius: 3px;
+            font-size: 0.58rem;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: 0.03em;
+            flex-shrink: 0;
+            text-transform: uppercase;
+        }
+
+        .tree-badge-source.source-sub {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .tree-badge-source.source-arc {
+            background: rgba(56, 189, 248, 0.12);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+        }
+
+        .tree-item-row .tree-badge-source + .tree-badge-count {
+            margin-left: 0;
+        }
+
         /* Center Pane (Table on top, Detail on bottom) */
         .center-pane {
             display: flex;
@@ -417,6 +474,29 @@
         .badge-qos {
             color: var(--text-muted, #94a3b8);
             font-size: 0.7rem;
+        }
+
+        .badge-source {
+            display: inline-block;
+            padding: 0.05rem 0.35rem;
+            border-radius: 3px;
+            font-size: 0.62rem;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        .badge-source.badge-source-sub {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-source.badge-source-arc {
+            background: rgba(56, 189, 248, 0.12);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.25);
         }
 
         /* Bottom: Detail Pane */
@@ -626,10 +706,10 @@
                 <!-- Top Toolbar -->
                 <div class="explorer-toolbar">
                     <div class="explorer-toolbar-left">
-                        <div id="connection-status-badge" class="explorer-status-badge" title="Status of GraphQL and WebSocket subscriptions">
+                        <button id="connection-status-badge" class="explorer-status-badge" title="Click to toggle live subscriptions on/off">
                             <span class="explorer-status-dot"></span>
-                            <span id="connection-status-text">Connected</span>
-                        </div>
+                            <span id="connection-status-text">Live Off</span>
+                        </button>
                         <div id="stat-rate" class="explorer-stat-rate">0 msg/s</div>
                         <button id="toggle-flash-btn" class="explorer-btn explorer-btn-icon active" title="Flash highlight on incoming message">
                             ⚡ Flash
@@ -741,7 +821,8 @@
                                     <thead>
                                         <tr>
                                             <th id="col-time" style="width: 100px;">Time</th>
-                                            <th id="col-topic" style="width: 260px;">Topic</th>
+                                            <th id="col-topic" style="width: 250px;">Topic</th>
+                                            <th id="col-source" style="width: 52px; text-align: center;">Src</th>
                                             <th id="col-qos" style="width: 38px; text-align: center;">Q</th>
                                             <th id="col-retain" style="width: 32px; text-align: center;">R</th>
                                             <th id="col-payload">Payload</th>
@@ -770,6 +851,7 @@
                                     <button id="detail-copy-topic-btn" class="explorer-btn explorer-btn-icon" style="height: 20px; font-size: 0.65rem;" title="Copy topic">
                                         Copy
                                     </button>
+                                    <span id="detail-source-badge" class="badge-source badge-source-arc" style="display: none;">ARC</span>
                                     <span id="detail-payload-size">0 B</span>
                                     <span id="detail-qos-badge" class="badge-qos">QoS 0</span>
                                     <span id="detail-retain-badge" class="badge-retain" style="display: none;">R</span>
@@ -842,7 +924,10 @@
                     <div id="ai-panel" class="ai-drawer" style="display: none;">
                         <div class="publish-pane-header">
                             <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-primary);">✨ AI Topic Analysis</span>
-                            <button id="close-ai-btn" class="explorer-btn explorer-btn-icon" style="height: 22px; width: 22px; justify-content: center;">✕</button>
+                            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                <button id="clear-ai-chat-btn" class="explorer-btn explorer-btn-icon" style="height: 22px; width: 22px; justify-content: center;" title="Clear conversation">🗑</button>
+                                <button id="close-ai-btn" class="explorer-btn explorer-btn-icon" style="height: 22px; width: 22px; justify-content: center;">✕</button>
+                            </div>
                         </div>
                         <div style="display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 0.75rem; gap: 0.5rem;">
                             <div style="font-size: 0.75rem; color: var(--text-muted);" id="ai-context-desc">
