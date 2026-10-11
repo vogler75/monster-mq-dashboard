@@ -6,7 +6,7 @@ This plan outlines the design and implementation for the MonsterMQ Dashboard (`m
 
 ## 1. Scope & Architecture
 
-* **Unified Script Backend**: MonsterMQ main broker (`monster-mq`) uses **GraalVM Polyglot Python (`GraalPy`)** and **GraalJS**, while MonsterMQ Edge (`monster-mq-edge`) uses **Starlark** (pure-Go Python dialect). Both brokers expose an identical GraphQL API and `DeviceConfig` schema:
+* **Unified Script Backend**: MonsterMQ Core (`monster-mq`) uses **GraalVM Polyglot Python (`GraalPy`)** and **GraalJS**, while MonsterMQ Edge (`monster-mq-edge`) uses **Starlark** (pure-Go Python dialect). Both brokers expose an identical GraphQL API and `DeviceConfig` schema:
   - Query: `scripts(name, nodeId)`, `script(name)`
   - Mutation: `script { create, update, delete, toggle, start, stop, test }`
   - Feature Flag: `Scripts`
