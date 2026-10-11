@@ -1,0 +1,31 @@
+Release v1.8.33
+Built from commit: d54664b
+Date: 2026-10-11 21:50:14
+
+Changes since v1.8.33-dev:
+---
+d54664b fix(mqtt-clients): prevent rapid repeat toggle clicks with loading indicator
+97a687d docs: rename main broker to MonsterMQ Core
+4213097 Enhance AI topic analysis with direct topic data and configurable source
+de8bd89 feat(topic-browser): pass UI topic and subscription data directly to AI analysis
+c55a1bc feat(topic-browser): improve node selection, live updates, subnode filtering and icons
+29bff5f feat(topic-browser): redesign explorer view with resizable panes and subnode browsing
+ed942ca feat(dashboard): enhance topic browser with live subscriptions and expanded tree layout
+60eb8a2 feat(navigation): reorder and streamline Storage menu with single-word titles
+eb57668 chore(release): support -dev pre-release versioning and advance to 1.8.33-dev
+16cb0f9 feat(login): hide credentials input fields when authentication is disabled
+9742037 fix(login): use currentUser query to detect broker reachability
+b066f22 fix(deps): resolve all 15 audit vulnerabilities
+dc4770b PeerLink: shorten direction labels to Receives and Sends
+1cd553f Fix PeerLink topology collapse for 1 or 2 peers
+6eb5b53 feat(peerlink): show broker type, version and protocol on the PeerLink page
+2cf4805 feat(peerlink): add PeerLink overview page with topology graph
+eb9c37a feat(winccua): add 'Ignore Certificate Errors' option to client detail
+ee8a635 fix(log-viewer): authenticate the systemLogs websocket
+f689070 feat(opcua-server): configure server security in dashboard (#64)
+f4c8e23 feat(mqtt): configure bridge mTLS in dashboard (#111)
+14d2970 feat(agents): streaming, approvals, new agent settings and flow agent node
+a4cfecd feat(broker-scripts): add timer preset chips and trigger_time snippet
+8247a84 fix(broker-scripts): add line numbers and sync editor frame; fix outputTopics in agents
+ef239d0 feat(genai): add OpenRouter and provider type dropdown for decision models
+d5320a2 Update release.sh
