@@ -12,6 +12,8 @@
             this.guestAccess = document.getElementById('guest-access');
             this.guestLink = document.getElementById('guest-link');
             this.brokerConfigAccess = document.getElementById('broker-config-access');
+            this.usernameGroup = document.getElementById('username-group');
+            this.passwordGroup = document.getElementById('password-group');
             this.rememberCredentialsWrap = document.getElementById('remember-credentials-wrap');
             this.rememberCredentialsInput = document.getElementById('remember-credentials');
             this.credentialStorageNote = document.getElementById('credential-storage-note');
@@ -112,6 +114,7 @@
             window.brokerManager.switchBroker(this.brokerSelect.value);
             this.hideGuestAccess();
             this.clearAlert();
+            this.setAuthFieldsVisible(true);
             await this.loadRememberedCredentials();
             await this.checkUserManagementEnabled();
         }
@@ -272,9 +275,13 @@
                 }
 
                 if (!userManagementEnabled) {
-                    this.showAlert('Authentication is disabled on this broker. Sign in with empty credentials to continue.', 'success', false);
-                } else if (anonymousEnabled) {
-                    this.showGuestAccess();
+                    this.setAuthFieldsVisible(false);
+                    this.showAlert('Authentication is disabled on this broker. Click below to continue.', 'success', false);
+                } else {
+                    this.setAuthFieldsVisible(true);
+                    if (anonymousEnabled) {
+                        this.showGuestAccess();
+                    }
                 }
 
                 return {
@@ -287,6 +294,23 @@
                 this.showBrokerStatus('error', 'Cannot reach broker');
                 this.showAlert('Cannot reach broker: ' + error.message);
                 return null;
+            }
+        }
+
+        setAuthFieldsVisible(visible) {
+            if (this.usernameGroup) this.usernameGroup.style.display = visible ? '' : 'none';
+            if (this.passwordGroup) this.passwordGroup.style.display = visible ? '' : 'none';
+            if (!visible) {
+                if (this.rememberCredentialsWrap) this.rememberCredentialsWrap.style.display = 'none';
+                if (this.credentialStorageNote) this.credentialStorageNote.style.display = 'none';
+                this.usernameInput.value = '';
+                this.passwordInput.value = '';
+                this.loginBtn.textContent = 'Continue to Dashboard';
+            } else {
+                if (this.credentialStorageAvailable && this.rememberCredentialsWrap) {
+                    this.rememberCredentialsWrap.style.display = 'flex';
+                }
+                this.loginBtn.textContent = 'Sign In';
             }
         }
 
@@ -436,7 +460,10 @@
         setLoading(loading) {
             this.pendingLogin = loading;
             this.loginBtn.disabled = loading;
-            this.loginBtn.textContent = loading ? 'Signing in...' : 'Sign In';
+            var isAuthDisabled = this.usernameGroup && this.usernameGroup.style.display === 'none';
+            var defaultText = isAuthDisabled ? 'Continue to Dashboard' : 'Sign In';
+            var loadingText = isAuthDisabled ? 'Connecting...' : 'Signing in...';
+            this.loginBtn.textContent = loading ? loadingText : defaultText;
         }
 
         async handleLogin() {
@@ -445,7 +472,8 @@
             var username = this.usernameInput.value.trim();
             var password = this.passwordInput.value;
 
-            if ((!username && password) || (username && !password)) {
+            var isAuthDisabled = this.usernameGroup && this.usernameGroup.style.display === 'none';
+            if (!isAuthDisabled && ((!username && password) || (username && !password))) {
                 this.showAlert('Enter both username and password, or leave both empty if authentication is disabled.');
                 return;
             }
