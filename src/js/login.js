@@ -203,17 +203,73 @@
             this.showBrokerStatus('checking');
 
             try {
-                var result = await this.graphqlRequest(
-                    '{ broker { userManagementEnabled anonymousEnabled } }',
-                    {}
-                );
+                await window.brokerManager.ready();
+                var endpoint = this.getGraphqlEndpoint();
+                var token = safeStorage.getItem('monstermq_token');
+                var headers = { 'Content-Type': 'application/json' };
+                if (token && token !== 'null') {
+                    headers.Authorization = 'Bearer ' + token;
+                }
 
-                var broker = result.data?.broker || {};
-                var userManagementEnabled = broker.userManagementEnabled ?? false;
-                var anonymousEnabled = broker.anonymousEnabled ?? false;
+                // 1. Detect if the broker is available using the "currentUser" query.
+                // If the request cannot be sent, then the broker is not available.
+                var response;
+                try {
+                    response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({
+                            query: '{ currentUser { username isAdmin } }'
+                        })
+                    });
+                } catch (networkError) {
+                    console.error('Cannot reach broker:', networkError);
+                    this.showBrokerStatus('error', 'Cannot reach broker');
+                    this.showAlert('Cannot reach broker: ' + networkError.message);
+                    return null;
+                }
 
+                if (!response.ok && response.status !== 401 && response.status !== 403) {
+                    var responseText = '';
+                    try { responseText = await response.text(); } catch (_) {}
+                    this.showBrokerStatus('error', 'Cannot reach broker');
+                    this.showAlert('Cannot reach broker: HTTP ' + response.status + ' ' + response.statusText + this.formatResponseDetail(responseText));
+                    return null;
+                }
+
+                // Request was answered -> broker is available!
                 this.showBrokerStatus('connected');
+                this.clearAlert();
                 this.clearCachedAuthDisabled();
+
+                var currentUser = null;
+                try {
+                    var json = JSON.parse(await response.text());
+                    currentUser = json.data?.currentUser || null;
+                } catch (_) {}
+
+                // 2. Query user management & anonymous access settings
+                var userManagementEnabled = true;
+                var anonymousEnabled = false;
+
+                try {
+                    var brokerResponse = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify({
+                            query: '{ broker { userManagementEnabled anonymousEnabled } }'
+                        })
+                    });
+                    if (brokerResponse.ok) {
+                        var brokerResult = await brokerResponse.json();
+                        if (brokerResult.data?.broker) {
+                            userManagementEnabled = brokerResult.data.broker.userManagementEnabled === true;
+                            anonymousEnabled = brokerResult.data.broker.anonymousEnabled === true;
+                        }
+                    }
+                } catch (_) {
+                    // Default to enabled if unauthenticated query for broker is disallowed
+                }
 
                 if (!userManagementEnabled) {
                     this.showAlert('Authentication is disabled on this broker. Sign in with empty credentials to continue.', 'success', false);
@@ -222,11 +278,12 @@
                 }
 
                 return {
+                    currentUser: currentUser,
                     userManagementEnabled: userManagementEnabled,
                     anonymousEnabled: anonymousEnabled
                 };
             } catch (error) {
-                console.error('Error checking broker authentication status:', error);
+                console.error('Error during broker availability check:', error);
                 this.showBrokerStatus('error', 'Cannot reach broker');
                 this.showAlert('Cannot reach broker: ' + error.message);
                 return null;
