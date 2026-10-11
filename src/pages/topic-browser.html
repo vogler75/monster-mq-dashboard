@@ -13,9 +13,9 @@
     <style>
         .topic-browser-layout {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            height: calc(100vh - 200px);
+            grid-template-columns: minmax(0, 1.65fr) minmax(360px, 1fr);
+            gap: 1.25rem;
+            height: calc(100vh - 165px);
         }
 
         .topic-browser-panel {
@@ -25,25 +25,148 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            min-height: 0;
         }
 
         .panel-header {
-            padding: 1.5rem;
+            padding: 1rem 1.25rem;
             border-bottom: 1px solid var(--dark-border);
             background: var(--dark-surface-2);
+            flex-shrink: 0;
         }
 
         .panel-title {
-            font-size: 1.25rem;
+            font-size: 1.15rem;
             font-weight: 600;
             color: var(--text-primary);
             margin: 0;
         }
 
+        .panel-header-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            margin-top: 0.75rem;
+        }
+
+        .panel-control-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .panel-control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-label {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .sub-bar-container {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--dark-border);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .sub-input-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sub-tags-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            align-items: center;
+            min-height: 24px;
+        }
+
+        .sub-tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.15rem 0.5rem;
+            background: rgba(6, 182, 212, 0.15);
+            border: 1px solid rgba(6, 182, 212, 0.4);
+            border-radius: 12px;
+            color: #38bdf8;
+            font-size: 0.75rem;
+            font-family: 'Fira Code', 'JetBrains Mono', monospace;
+            line-height: 1.2;
+        }
+
+        .sub-tag-chip .remove-chip-btn {
+            background: none;
+            border: none;
+            color: #38bdf8;
+            cursor: pointer;
+            padding: 0 0.1rem;
+            font-size: 0.85rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            opacity: 0.7;
+            transition: opacity 0.15s;
+        }
+
+        .sub-tag-chip .remove-chip-btn:hover {
+            opacity: 1;
+            color: var(--monster-red);
+        }
+
+        .sub-status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .sub-status-indicator.active {
+            color: #38bdf8;
+        }
+
+        .sub-status-indicator.inactive {
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.active {
+            background-color: #38bdf8;
+            box-shadow: 0 0 6px rgba(56, 189, 248, 0.8);
+            animation: pulse-dot 2s infinite ease-in-out;
+        }
+
+        .status-dot.inactive {
+            background-color: var(--text-muted);
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.25); opacity: 1; }
+        }
+
         .search-container {
             display: flex;
             gap: 0.5rem;
-            margin-top: 1rem;
         }
 
         .search-input {
@@ -113,6 +236,49 @@
             font-weight: 500;
         }
 
+        .tree-item.from-live {
+            color: #38bdf8 !important;
+            font-weight: 500;
+        }
+
+        .tree-item.from-archive {
+            color: var(--monster-green);
+            font-weight: 500;
+        }
+
+        .tree-item.flash-update {
+            animation: row-flash-live 1s ease-out;
+        }
+
+        @keyframes row-flash-live {
+            0% { background-color: rgba(56, 189, 248, 0.4); }
+            100% { background-color: transparent; }
+        }
+
+        .tree-badge {
+            margin-left: auto;
+            font-size: 0.65rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 999px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .tree-badge.badge-live {
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+        }
+
+        .tree-badge.badge-archive {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: var(--monster-green);
+        }
+
         .tree-toggle {
             width: 20px;
             height: 20px;
@@ -126,6 +292,7 @@
             cursor: pointer;
             border-radius: 3px;
             transition: all 0.2s;
+            flex-shrink: 0;
         }
 
         .tree-toggle:hover {
@@ -154,6 +321,7 @@
         .tree-icon {
             margin-right: 0.5rem;
             color: var(--text-muted);
+            flex-shrink: 0;
         }
 
         .tree-icon.folder {
@@ -162,6 +330,10 @@
 
         .tree-icon.topic {
             color: var(--monster-green);
+        }
+
+        .tree-icon.topic-live {
+            color: #38bdf8;
         }
 
         .data-viewer {
@@ -643,40 +815,64 @@
                 <!-- Left Panel: Topic Tree -->
                 <div class="topic-browser-panel">
                     <div class="panel-header">
-                        <h2 class="panel-title">Topic Tree</h2>
-
-                        <!-- Archive Group selector -->
-                        <div style="margin: 1rem 0; display: flex; gap: 0.5rem; align-items: center;">
-                            <label for="archive-group-select" style="color: var(--text-primary); font-weight: 500; min-width: 120px;">
-                                Archive Group:
-                            </label>
-                            <select id="archive-group-select"
-                                    class="search-input"
-                                    style="flex: 1; max-width: 300px; cursor: pointer;">
-                                <option value="">Loading&hellip;</option>
-                            </select>
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <h2 class="panel-title">Topic Tree</h2>
+                            <div class="panel-control-group">
+                                <label for="archive-group-select" class="control-label">Archive:</label>
+                                <select id="archive-group-select"
+                                        class="search-input"
+                                        style="padding: 0.35rem 0.5rem; font-size: 0.8rem; cursor: pointer; min-width: 140px; max-width: 200px;">
+                                    <option value="">Loading&hellip;</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <!-- Mode selector -->
-                        <div style="margin: 1rem 0; display: flex; gap: 1rem; align-items: center;">
-                            <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); cursor: pointer;">
-                                <input type="radio" name="browse-mode" value="browse" checked style="margin: 0;">
-                                Browse Tree
-                            </label>
-                            <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); cursor: pointer;">
-                                <input type="radio" name="browse-mode" value="search" style="margin: 0;">
-                                Search Topics
-                            </label>
-                        </div>
+                        <div class="panel-header-controls">
+                            <!-- Browse / Search row -->
+                            <div class="panel-control-row" style="justify-content: space-between;">
+                                <div class="panel-control-group">
+                                    <label style="display: flex; align-items: center; gap: 0.35rem; color: var(--text-primary); cursor: pointer; font-size: 0.8rem;">
+                                        <input type="radio" name="browse-mode" value="browse" checked style="margin: 0;">
+                                        Browse
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.35rem; color: var(--text-primary); cursor: pointer; font-size: 0.8rem; margin-left: 0.5rem;">
+                                        <input type="radio" name="browse-mode" value="search" style="margin: 0;">
+                                        Search
+                                    </label>
+                                </div>
+                                <div id="sub-status-indicator" class="sub-status-indicator inactive">
+                                    <span id="sub-status-dot" class="status-dot inactive"></span>
+                                    <span id="sub-status-text">Live: Off</span>
+                                </div>
+                            </div>
 
-                        <div class="search-container">
-                            <input type="text"
-                                   id="search-input"
-                                   class="search-input"
-                                   placeholder="Search topics (e.g., sensor/+/temperature)..."
-                                   disabled data-ignore-dirty>
-                            <button id="browse-button" class="search-button">Browse Root</button>
-                            <button id="search-button" class="search-button" style="display: none;">Search</button>
+                            <!-- Search & Browse Input -->
+                            <div class="search-container">
+                                <input type="text"
+                                       id="search-input"
+                                       class="search-input"
+                                       style="padding: 0.45rem 0.65rem;"
+                                       placeholder="Search topics (e.g., sensor/+/temperature)..."
+                                       disabled data-ignore-dirty>
+                                <button id="browse-button" class="search-button" style="padding: 0.45rem 1rem; font-size: 0.82rem;">Browse Root</button>
+                                <button id="search-button" class="search-button" style="display: none; padding: 0.45rem 1rem; font-size: 0.82rem;">Search</button>
+                            </div>
+
+                            <!-- Live Topic Subscriptions Box -->
+                            <div class="sub-bar-container">
+                                <div class="sub-input-row">
+                                    <input type="text"
+                                           id="sub-filter-input"
+                                           class="search-input"
+                                           style="padding: 0.4rem 0.6rem; font-size: 0.8rem; font-family: 'Fira Code', 'JetBrains Mono', monospace;"
+                                           placeholder="Subscribe filter with wildcards (e.g., sensors/# or device/+/status)" data-ignore-dirty>
+                                    <button id="sub-add-btn" class="btn btn-secondary btn-sm" title="Add topic filter" style="font-size: 0.75rem;">+ Add</button>
+                                    <button id="sub-toggle-btn" class="btn btn-primary btn-sm" style="font-size: 0.75rem; min-width: 80px;">Start Live</button>
+                                </div>
+                                <div id="sub-tags-list" class="sub-tags-list">
+                                    <!-- Subscription chips will be rendered here -->
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="tree-container">

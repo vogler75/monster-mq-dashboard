@@ -15,7 +15,9 @@ const STATE_KEYS = {
     AI_CONTEXT_TOPIC: 'monstermq_topic_browser_ai_context_topic',
     AI_CONTEXT_ARCHIVE_GROUP: 'monstermq_topic_browser_ai_context_archive_group',
     ARCHIVE_GROUP: 'monstermq_selected_archive_group',
-    AI_SYSTEM_PROMPT: 'monstermq_ai_system_prompt'
+    AI_SYSTEM_PROMPT: 'monstermq_ai_system_prompt',
+    SUBSCRIPTIONS: 'monstermq_topic_browser_subscriptions',
+    SUB_ENABLED: 'monstermq_topic_browser_sub_enabled'
 };
 
 class TopicBrowser {
@@ -25,6 +27,20 @@ class TopicBrowser {
         this.searchInput = document.getElementById('search-input');
         this.searchButton = document.getElementById('search-button');
         this.archiveGroupSelect = document.getElementById('archive-group-select');
+
+        // Subscription controls
+        this.subFilterInput = document.getElementById('sub-filter-input');
+        this.subAddBtn = document.getElementById('sub-add-btn');
+        this.subToggleBtn = document.getElementById('sub-toggle-btn');
+        this.subTagsList = document.getElementById('sub-tags-list');
+        this.subStatusIndicator = document.getElementById('sub-status-indicator');
+        this.subStatusDot = document.getElementById('sub-status-dot');
+        this.subStatusText = document.getElementById('sub-status-text');
+        this.subscriptions = [];
+        this.isSubscribed = false;
+        this.ws = null;
+        this.subscriptionId = 0;
+        this.reconnectTimer = null;
 
         this.treeNodes = new Map(); // topic path -> TreeNode
         this.selectedTopic = null;
@@ -69,6 +85,9 @@ class TopicBrowser {
             localStorage.setItem('monstermq_selected_archive_group', this.selectedArchiveGroup);
             this.browseRoot();
         });
+
+        // Subscription event listeners
+        this.initSubscriptionsUI();
 
         // Load archive groups first, then load initial tree
         await this.loadArchiveGroups();
@@ -321,7 +340,7 @@ class TopicBrowser {
         return grouped;
     }
 
-    createTreeItem(name, fullPath, hasValue, hasChildren) {
+    createTreeItem(name, fullPath, hasValue, hasChildren, dataSource = 'archive') {
         const li = document.createElement('li');
         li.className = 'tree-node';
 
@@ -329,6 +348,7 @@ class TopicBrowser {
         item.className = 'tree-item';
         if (hasValue) {
             item.classList.add('has-data');
+            item.classList.add(dataSource === 'live' ? 'from-live' : 'from-archive');
         }
 
         // Toggle button for expandable nodes
@@ -344,16 +364,27 @@ class TopicBrowser {
 
         // Icon
         const icon = document.createElement('span');
-        icon.className = `tree-icon ${hasChildren ? 'folder' : 'topic'}`;
+        const iconType = hasChildren ? 'folder' : (dataSource === 'live' ? 'topic-live' : 'topic');
+        icon.className = `tree-icon ${iconType}`;
         icon.innerHTML = hasChildren ? '📁' : '📄';
 
         // Label
         const label = document.createElement('span');
+        label.className = 'tree-label';
         label.textContent = name;
+
+        // Source badge (Live vs Archive)
+        const badge = document.createElement('span');
+        badge.className = 'tree-badge';
+        if (hasValue) {
+            badge.className = `tree-badge ${dataSource === 'live' ? 'badge-live' : 'badge-archive'}`;
+            badge.textContent = dataSource === 'live' ? 'Live' : 'Archive';
+        }
 
         item.appendChild(toggle);
         item.appendChild(icon);
         item.appendChild(label);
+        item.appendChild(badge);
 
         // Click handler for topic selection
         item.addEventListener('click', () => {
@@ -367,9 +398,13 @@ class TopicBrowser {
             element: li,
             item: item,
             toggle: toggle,
+            icon: icon,
+            badge: badge,
             expanded: false,
             hasChildren: hasChildren,
-            hasValue: hasValue
+            hasValue: hasValue,
+            dataSource: dataSource,
+            lastMessage: null
         });
 
         return li;
@@ -426,10 +461,15 @@ class TopicBrowser {
             return;
         }
 
-        // Load message data if this topic has a value
+        // Check if node exists and has value
         const nodeData = this.treeNodes.get(topicPath);
         if (nodeData && nodeData.hasValue) {
-            await this.loadMessageData(topicPath);
+            if (nodeData.dataSource === 'live' && nodeData.lastMessage) {
+                // If this is a live topic and we already have the latest live payload in memory, display it directly!
+                this.displayMessageData(nodeData.lastMessage, 'live');
+            } else {
+                await this.loadMessageData(topicPath);
+            }
         } else {
             this.showEmptyDataViewer();
         }
@@ -462,7 +502,12 @@ class TopicBrowser {
             });
 
             if (response && response.currentValue) {
-                this.displayMessageData(response.currentValue);
+                const nodeData = this.treeNodes.get(topicPath);
+                if (nodeData) {
+                    nodeData.lastMessage = response.currentValue;
+                }
+                const source = (nodeData && nodeData.dataSource === 'live') ? 'live' : 'archive';
+                this.displayMessageData(response.currentValue, source);
             } else {
                 this.showEmptyDataViewer('No message data found for this topic');
             }
@@ -472,7 +517,7 @@ class TopicBrowser {
         }
     }
 
-    displayMessageData(message) {
+    displayMessageData(message, source = 'archive') {
         const { topic, payload, qos, format, timestamp, messageExpiryInterval, contentType, responseTopic, payloadFormatIndicator, userProperties } = message;
 
         this.dataViewer.className = 'data-viewer';
@@ -480,19 +525,31 @@ class TopicBrowser {
         const header = document.createElement('div');
         header.className = 'data-header';
 
+        const topicRow = document.createElement('div');
+        topicRow.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap;';
+
         const topicDiv = document.createElement('div');
         topicDiv.className = 'data-topic';
+        topicDiv.style.marginBottom = '0';
         topicDiv.textContent = topic;
+
+        const sourceBadge = document.createElement('span');
+        sourceBadge.className = `status-badge ${source === 'live' ? 'status-info' : 'status-ok'}`;
+        sourceBadge.style.fontSize = '0.7rem';
+        sourceBadge.innerHTML = source === 'live' ? '● Live Subscription' : '● Archive Query';
+
+        topicRow.appendChild(topicDiv);
+        topicRow.appendChild(sourceBadge);
 
         const infoDiv = document.createElement('div');
         infoDiv.className = 'data-info';
         infoDiv.innerHTML = `
-            <span>QoS: ${qos || 'Unknown'}</span>
+            <span>QoS: ${qos != null ? qos : 'Unknown'}</span>
             <span>Format: ${format || 'Unknown'}</span>
-            <span>Time: ${timestamp ? new Date(timestamp).toLocaleString() : 'Unknown'}</span>
+            <span>Time: ${timestamp ? new Date(Number(timestamp) || timestamp).toLocaleString() : 'Unknown'}</span>
         `;
 
-        header.appendChild(topicDiv);
+        header.appendChild(topicRow);
         header.appendChild(infoDiv);
 
         const content = document.createElement('div');
@@ -1099,29 +1156,374 @@ class TopicBrowser {
         }
     }
 
-    /**
-     * Track expanded state when a node is toggled
-     */
-    trackExpandedState(topicPath, isExpanded) {
-        if (isExpanded) {
-            this.expandedPaths.add(topicPath);
-            console.log('Node expanded:', topicPath, '| Total expanded:', this.expandedPaths.size);
-        } else {
-            // When collapsing, also remove all children from expanded paths
-            // This ensures that when the user collapses a parent, the entire subtree
-            // is considered collapsed
-            const pathsToRemove = [];
-            for (const path of this.expandedPaths) {
-                if (path === topicPath || path.startsWith(topicPath + '/')) {
-                    pathsToRemove.push(path);
+    // ========== Topic Subscription & Live Data Methods ==========
+
+    initSubscriptionsUI() {
+        if (!this.subAddBtn || !this.subToggleBtn || !this.subFilterInput) return;
+
+        // Restore saved subscriptions
+        try {
+            const savedSubs = localStorage.getItem(STATE_KEYS.SUBSCRIPTIONS);
+            if (savedSubs) {
+                const parsed = JSON.parse(savedSubs);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    this.subscriptions = parsed;
                 }
             }
-            for (const path of pathsToRemove) {
-                this.expandedPaths.delete(path);
+        } catch(e) {}
+
+        this.renderSubscriptionTags();
+
+        // Add filter button
+        this.subAddBtn.addEventListener('click', () => this.addSubscriptionFilter());
+        this.subFilterInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.addSubscriptionFilter();
             }
-            console.log('Node collapsed:', topicPath, '| Removed paths:', pathsToRemove, '| Total expanded:', this.expandedPaths.size);
+        });
+
+        // Toggle Live button
+        this.subToggleBtn.addEventListener('click', () => {
+            if (this.isSubscribed) {
+                this.stopSubscriptions();
+            } else {
+                this.startSubscriptions();
+            }
+        });
+
+        // Auto-start if previously enabled
+        const autoStart = localStorage.getItem(STATE_KEYS.SUB_ENABLED) === 'true';
+        if (autoStart) {
+            this.startSubscriptions();
         }
-        this.saveState();
+    }
+
+    addSubscriptionFilter() {
+        if (!this.subFilterInput) return;
+        const filter = this.subFilterInput.value.trim();
+        if (!filter) return;
+
+        if (!this.subscriptions.includes(filter)) {
+            this.subscriptions.push(filter);
+            this.saveSubscriptionsState();
+            this.renderSubscriptionTags();
+
+            // If already subscribed, refresh subscription over WS
+            if (this.isSubscribed && this.ws && this.ws.readyState === WebSocket.OPEN) {
+                this.sendSubscribe();
+            }
+        }
+        this.subFilterInput.value = '';
+    }
+
+    removeSubscriptionFilter(filter) {
+        this.subscriptions = this.subscriptions.filter(f => f !== filter);
+        this.saveSubscriptionsState();
+        this.renderSubscriptionTags();
+
+        if (this.isSubscribed && this.ws && this.ws.readyState === WebSocket.OPEN) {
+            if (this.subscriptions.length > 0) {
+                this.sendSubscribe();
+            } else {
+                this.stopSubscriptions();
+            }
+        }
+    }
+
+    renderSubscriptionTags() {
+        if (!this.subTagsList) return;
+        this.subTagsList.innerHTML = '';
+
+        this.subscriptions.forEach(filter => {
+            const chip = document.createElement('span');
+            chip.className = 'sub-tag-chip';
+            chip.innerHTML = `
+                <span>${this.escapeHtml(filter)}</span>
+                <button type="button" class="remove-chip-btn" title="Remove filter">&times;</button>
+            `;
+            chip.querySelector('.remove-chip-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeSubscriptionFilter(filter);
+            });
+            this.subTagsList.appendChild(chip);
+        });
+    }
+
+    saveSubscriptionsState() {
+        try {
+            localStorage.setItem(STATE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
+            localStorage.setItem(STATE_KEYS.SUB_ENABLED, String(this.isSubscribed));
+        } catch(e) {}
+    }
+
+    startSubscriptions() {
+        if (!this.subscriptions || this.subscriptions.length === 0) {
+            ui.showToast('Please add at least one topic filter before starting live subscription.', 'warning');
+            if (this.subFilterInput) this.subFilterInput.focus();
+            return;
+        }
+        this.isSubscribed = true;
+        this.saveSubscriptionsState();
+        this.updateSubscriptionStatusUI('connecting');
+        this.connectWebSocket();
+    }
+
+    stopSubscriptions() {
+        this.isSubscribed = false;
+        this.saveSubscriptionsState();
+        this.disconnectWebSocket();
+        this.updateSubscriptionStatusUI('off');
+    }
+
+    updateSubscriptionStatusUI(status) {
+        if (!this.subToggleBtn || !this.subStatusIndicator) return;
+
+        if (status === 'connected') {
+            this.subToggleBtn.className = 'btn btn-danger btn-sm';
+            this.subToggleBtn.textContent = 'Stop Live';
+            this.subStatusIndicator.className = 'sub-status-indicator active';
+            this.subStatusDot.className = 'status-dot active';
+            this.subStatusText.textContent = `Live: Active (${this.subscriptions.length} filter${this.subscriptions.length === 1 ? '' : 's'})`;
+        } else if (status === 'connecting') {
+            this.subToggleBtn.className = 'btn btn-secondary btn-sm';
+            this.subToggleBtn.textContent = 'Connecting...';
+            this.subStatusIndicator.className = 'sub-status-indicator active';
+            this.subStatusDot.className = 'status-dot';
+            this.subStatusDot.style.backgroundColor = 'var(--monster-orange, #f59e0b)';
+            this.subStatusText.textContent = 'Live: Connecting...';
+        } else {
+            this.subToggleBtn.className = 'btn btn-primary btn-sm';
+            this.subToggleBtn.textContent = 'Start Live';
+            this.subStatusIndicator.className = 'sub-status-indicator inactive';
+            this.subStatusDot.className = 'status-dot inactive';
+            this.subStatusDot.style.backgroundColor = '';
+            this.subStatusText.textContent = 'Live: Off';
+        }
+    }
+
+    getWebSocketUrl() {
+        if (window.brokerManager) return window.brokerManager.getWsEndpoint();
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.hostname;
+        const port = window.location.port;
+        return `${protocol}//${host}${port ? ':' + port : ''}/graphql`;
+    }
+
+    connectWebSocket() {
+        if (this.ws) {
+            try { this.ws.close(); } catch(e) {}
+            this.ws = null;
+        }
+
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+
+        try {
+            const url = this.getWebSocketUrl();
+            this.ws = new WebSocket(url, 'graphql-transport-ws');
+
+            this.ws.onopen = () => {
+                const payload = {};
+                const token = localStorage.getItem('monstermq_token');
+                if (token && token !== 'null') {
+                    payload.authorization = `Bearer ${token}`;
+                }
+                this.ws.send(JSON.stringify({ type: 'connection_init', payload }));
+            };
+
+            this.ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    this.handleWsMessage(msg);
+                } catch(e) {
+                    console.error('Failed to parse WebSocket message:', e);
+                }
+            };
+
+            this.ws.onerror = (e) => {
+                console.warn('TopicBrowser WebSocket error:', e);
+            };
+
+            this.ws.onclose = () => {
+                this.ws = null;
+                if (this.isSubscribed) {
+                    this.updateSubscriptionStatusUI('connecting');
+                    this.reconnectTimer = setTimeout(() => {
+                        if (this.isSubscribed) this.connectWebSocket();
+                    }, 4000);
+                } else {
+                    this.updateSubscriptionStatusUI('off');
+                }
+            };
+        } catch(e) {
+            console.error('Error connecting TopicBrowser WebSocket:', e);
+            this.updateSubscriptionStatusUI('off');
+        }
+    }
+
+    disconnectWebSocket() {
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+        if (this.ws) {
+            try {
+                this.ws.close();
+            } catch(e) {}
+            this.ws = null;
+        }
+    }
+
+    handleWsMessage(msg) {
+        switch (msg.type) {
+            case 'connection_ack':
+                this.updateSubscriptionStatusUI('connected');
+                this.sendSubscribe();
+                break;
+            case 'next':
+                if (msg.payload?.data?.topicUpdates) {
+                    this.handleLiveTopicUpdate(msg.payload.data.topicUpdates);
+                }
+                break;
+            case 'error':
+                console.error('WebSocket subscription error payload:', msg.payload);
+                break;
+        }
+    }
+
+    sendSubscribe() {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
+        const filters = this.subscriptions.filter(f => typeof f === 'string' && f.trim());
+        if (filters.length === 0) return;
+
+        this.subscriptionId++;
+        const query = `
+            subscription($filters: [String!]!) {
+                topicUpdates(topicFilters: $filters) {
+                    topic
+                    payload
+                    format
+                    timestamp
+                    qos
+                    retained
+                }
+            }
+        `;
+
+        this.ws.send(JSON.stringify({
+            id: String(this.subscriptionId),
+            type: 'subscribe',
+            payload: {
+                query,
+                variables: { filters }
+            }
+        }));
+    }
+
+    handleLiveTopicUpdate(update) {
+        if (!update || !update.topic) return;
+        const topic = update.topic;
+
+        // Insert or update topic in tree structure
+        this.insertTopicNode(topic, update);
+
+        // If this topic is currently selected in data viewer, update viewer live!
+        if (this.selectedTopic === topic) {
+            this.displayMessageData(update, 'live');
+        }
+    }
+
+    /**
+     * Insert a live topic into the tree hierarchy if not present,
+     * or update existing node with live styling & flash effect.
+     */
+    insertTopicNode(fullTopicPath, messageData) {
+        const parts = fullTopicPath.split('/');
+        let currentParentContainer = this.tree;
+        let currentPath = '';
+
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            currentPath = i === 0 ? part : `${currentPath}/${part}`;
+            const isLeaf = (i === parts.length - 1);
+
+            let nodeData = this.treeNodes.get(currentPath);
+
+            if (!nodeData) {
+                // Node does not exist yet in DOM tree — create it!
+                // If it's not the leaf, it's a folder (hasChildren = true)
+                const hasChildren = !isLeaf;
+                const hasValue = isLeaf;
+                const dataSource = isLeaf ? 'live' : 'archive';
+
+                const treeItem = this.createTreeItem(part, currentPath, hasValue, hasChildren, dataSource);
+                currentParentContainer.appendChild(treeItem);
+                nodeData = this.treeNodes.get(currentPath);
+            } else {
+                // Node already exists
+                if (isLeaf) {
+                    // Update to mark that it has a value, mark dataSource = 'live'
+                    nodeData.hasValue = true;
+                    nodeData.dataSource = 'live';
+
+                    // Update DOM classes and badge
+                    nodeData.item.classList.add('has-data');
+                    nodeData.item.classList.remove('from-archive');
+                    nodeData.item.classList.add('from-live');
+
+                    if (nodeData.badge) {
+                        nodeData.badge.className = 'tree-badge badge-live';
+                        nodeData.badge.textContent = 'Live';
+                    }
+
+                    if (!nodeData.hasChildren && nodeData.icon) {
+                        nodeData.icon.className = 'tree-icon topic-live';
+                    }
+
+                    // Trigger flash animation
+                    nodeData.item.classList.remove('flash-update');
+                    void nodeData.item.offsetWidth; // Trigger reflow to restart animation
+                    nodeData.item.classList.add('flash-update');
+                }
+            }
+
+            if (isLeaf && nodeData) {
+                nodeData.lastMessage = messageData;
+            }
+
+            // If we have children to append under this node
+            if (!isLeaf) {
+                // Ensure it has folder icon and toggle if needed
+                if (!nodeData.hasChildren) {
+                    nodeData.hasChildren = true;
+                    nodeData.toggle.innerHTML = '▶';
+                    nodeData.toggle.style.visibility = 'visible';
+                    nodeData.toggle.onclick = (e) => {
+                        e.stopPropagation();
+                        this.toggleNode(nodeData.element, currentPath);
+                    };
+                    if (nodeData.icon) {
+                        nodeData.icon.className = 'tree-icon folder';
+                        nodeData.icon.innerHTML = '📁';
+                    }
+                }
+
+                let childContainer = nodeData.element.querySelector('.tree-children');
+                if (!childContainer) {
+                    childContainer = document.createElement('ul');
+                    childContainer.className = 'tree-children collapsed';
+                    nodeData.element.appendChild(childContainer);
+                }
+
+                currentParentContainer = childContainer;
+            }
+        }
+    }
+
+    dispose() {
+        this.disconnectWebSocket();
     }
 }
 
@@ -1753,6 +2155,7 @@ Topic data:`;
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize topic browser (auth check is handled internally)
     const topicBrowser = new TopicBrowser();
+    page.addCleanup(() => topicBrowser.dispose());
 
     // Initialize AI functionality
     window.topicBrowserAI = new TopicBrowserAI(topicBrowser);
