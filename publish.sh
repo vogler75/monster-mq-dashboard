@@ -38,11 +38,18 @@ fi
 
 TAG="v${VERSION}"
 
+if [[ "$VERSION" =~ -dev$ || "$VERSION" =~ -beta$ || "$VERSION" =~ -alpha$ ]]; then
+  echo -e "${RED}Error: Current version ($VERSION) is a development version.${NC}"
+  echo -e "${YELLOW}Please finalize the release by running ./release.sh before publishing.${NC}"
+  exit 1
+fi
+
 PUBLISH_MAC=false
 PUBLISH_WIN=false
 BUILD_BEFORE_PUBLISH=false
 AUTO_CONFIRM=false
 EXPLICIT_TARGET=false
+NO_BUMP=false
 
 usage() {
   echo "Usage: $0 [options]"
@@ -54,6 +61,7 @@ usage() {
   echo "  --mac, -m          Publish macOS DMG packages only"
   echo "  --win, -w          Publish Windows setup packages only"
   echo "  --build, -b        Build desktop apps first (via ./build.sh) before uploading"
+  echo "  --no-bump          Do not advance to next development version after publishing"
   echo "  -y, --yes          Auto-confirm prompt (non-interactive)"
   echo "  -t, --tag <tag>    Override release tag (default: ${TAG})"
   echo "  -h, --help         Show this help message"
@@ -85,6 +93,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --build|-b)
       BUILD_BEFORE_PUBLISH=true
+      shift
+      ;;
+    --no-bump|--no-next)
+      NO_BUMP=true
       shift
       ;;
     -y|--yes)
@@ -234,3 +246,38 @@ else
 fi
 
 echo -e "${GREEN}✓ Desktop apps published successfully to GitHub release ${TAG}!${NC}"
+
+# Advance to Next Development Version
+if [ "$NO_BUMP" = false ]; then
+  if [[ "$VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+    NEXT_MAJOR="${BASH_REMATCH[1]}"
+    NEXT_MINOR="${BASH_REMATCH[2]}"
+    NEXT_PATCH=$((${BASH_REMATCH[3]} + 1))
+    NEXT_DEV_VERSION="${NEXT_MAJOR}.${NEXT_MINOR}.${NEXT_PATCH}-dev"
+
+    DO_BUMP=true
+    if [ "$AUTO_CONFIRM" = false ]; then
+      echo ""
+      read -p "Publish complete! Prepare next development version (${NEXT_DEV_VERSION})? (y/n) " -n 1 -r
+      echo
+      if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        DO_BUMP=false
+        echo -e "${YELLOW}Skipped preparing next development version.${NC}"
+      fi
+    fi
+
+    if [ "$DO_BUMP" = true ]; then
+      echo -e "${YELLOW}Advancing version to ${NEXT_DEV_VERSION}...${NC}"
+      echo "$NEXT_DEV_VERSION" > version.txt
+      if [ -f "package.json" ]; then
+        npm version "$NEXT_DEV_VERSION" --no-git-tag-version --allow-same-version > /dev/null 2>&1 || true
+      fi
+      git add version.txt
+      [ -f "package.json" ] && git add package.json
+      [ -f "package-lock.json" ] && git add package-lock.json
+      git commit -m "chore(version): prepare next version ${NEXT_DEV_VERSION}" || true
+      git push origin HEAD
+      echo -e "${GREEN}✓ Advanced version to ${NEXT_DEV_VERSION} on origin/main${NC}"
+    fi
+  fi
+fi
