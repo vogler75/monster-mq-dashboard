@@ -177,6 +177,7 @@ class MqttClientManager {
     }
 
     async toggleClient(clientName, enabled) {
+        this.showLoading(true);
         try {
             const mutation = `
                 mutation ToggleMqttClient($name: String!, $enabled: Boolean!) {
@@ -206,6 +207,8 @@ class MqttClientManager {
         } catch (error) {
             console.error('Error toggling client:', error);
             this.showError('Failed to toggle bridge: ' + error.message);
+        } finally {
+            this.showLoading(false);
         }
     }
 
