@@ -49,8 +49,8 @@ function peerTone(peer) {
 
 function direction(peer) {
     if (peer.pull && peer.serve) return { label: 'Both ways', icon: 'refresh' };
-    if (peer.pull) return { label: 'Receives from', icon: 'import' };
-    if (peer.serve) return { label: 'Sends to', icon: 'export' };
+    if (peer.pull) return { label: 'Receives', icon: 'import' };
+    if (peer.serve) return { label: 'Sends', icon: 'export' };
     return { label: 'None', icon: 'link-break' };
 }
 
