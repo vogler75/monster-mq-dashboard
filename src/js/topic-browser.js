@@ -16,7 +16,9 @@ const STORAGE_KEYS = {
     FETCH_SUBNODES: 'monstermq_explorer_fetch_subnodes',
     ARCHIVE_GROUP: 'monstermq_selected_archive_group',
     VIEW_MODE: 'monstermq_explorer_view_mode',
-    AUTOSCROLL: 'monstermq_explorer_autoscroll'
+    AUTOSCROLL: 'monstermq_explorer_autoscroll',
+    AI_SOURCE_MODE: 'monstermq_explorer_ai_source_mode',
+    AI_SCOPE_MODE: 'monstermq_explorer_ai_scope_mode'
 };
 
 class TopicExplorer {
@@ -96,12 +98,22 @@ class TopicExplorer {
         // UI Elements - AI
         this.closeAiBtn = document.getElementById('close-ai-btn');
         this.clearAiBtn = document.getElementById('clear-ai-chat-btn');
+        this.aiSourceMode = document.getElementById('ai-source-mode');
+        this.aiScopeMode = document.getElementById('ai-scope-mode');
         this.aiQuickActions = document.getElementById('ai-quick-actions');
         this.aiChatHistory = document.getElementById('ai-chat-history');
         this.aiQuestion = document.getElementById('ai-question');
         this.aiSend = document.getElementById('ai-send');
         this.aiContextDesc = document.getElementById('ai-context-desc');
         this.aiChatMessages = [];
+
+        if (this.aiSourceMode) {
+            const savedSource = safeStorage.getItem(STORAGE_KEYS.AI_SOURCE_MODE);
+            this.aiSourceMode.value = (savedSource === 'archive') ? 'archive' : 'live';
+        }
+        if (this.aiScopeMode) {
+            this.aiScopeMode.value = safeStorage.getItem(STORAGE_KEYS.AI_SCOPE_MODE) || 'selected';
+        }
 
         // State variables
         this.treeNodes = new Map(); // path -> { element, label, isLeaf, children: Set, expanded, messageCount, lastMessage }
@@ -377,10 +389,18 @@ class TopicExplorer {
             }
         });
 
-        // AI panel toggle
+        // AI panel toggle & options
         this.toggleAiBtn?.addEventListener('click', () => this.toggleAiPanel());
         this.closeAiBtn?.addEventListener('click', () => this.toggleAiPanel(false));
         this.clearAiBtn?.addEventListener('click', () => this.clearAiChat());
+        this.aiSourceMode?.addEventListener('change', () => {
+            safeStorage.setItem(STORAGE_KEYS.AI_SOURCE_MODE, this.aiSourceMode.value);
+            this.updateAiContextDesc();
+        });
+        this.aiScopeMode?.addEventListener('change', () => {
+            safeStorage.setItem(STORAGE_KEYS.AI_SCOPE_MODE, this.aiScopeMode.value);
+            this.updateAiContextDesc();
+        });
         this.aiSend?.addEventListener('click', () => this.sendAiQuestion());
         this.aiQuestion?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -548,27 +568,27 @@ class TopicExplorer {
     async browseRoot() {
         this.treeNodes.clear();
         this.expandedPaths.clear();
+        this.selectedTopic = null;
+        this.selectedMessage = null;
+        this.liveTopics.clear();
+        this.historyMessages = [];
+        this.renderTableRows();
+        this.renderDetailContent();
+        this.updateAiContextDesc();
+
         if (this.treeContent) {
             this.treeContent.innerHTML = '<div style="padding: 1rem; color: var(--text-muted); font-size: 0.75rem;">Loading topics&hellip;</div>';
         }
 
         try {
             await this.loadTopicLevel('+', '');
-            // Restore any previously expanded nodes
-            if (this.expandedPaths.size > 0) {
-                const pathsToRestore = Array.from(this.expandedPaths);
-                for (const path of pathsToRestore) {
-                    const node = this.treeNodes.get(path);
-                    if (node && node.canHaveChildren && !node.childrenLoaded) {
-                        await this.loadTopicLevel(`${path}/+`, path);
-                    }
-                }
-            }
         } catch (err) {
             console.error('Failed to browse root topics:', err);
             if (this.treeContent) {
                 this.treeContent.innerHTML = '<div style="padding: 1rem; color: var(--monster-red); font-size: 0.75rem;">Failed to load topics</div>';
             }
+        } finally {
+            this.updateAiContextDesc();
         }
     }
 
@@ -824,6 +844,10 @@ class TopicExplorer {
         }
 
         this.treeContent.appendChild(fragment);
+
+        if (this.aiPanel && this.aiPanel.style.display !== 'none') {
+            this.updateAiContextDesc();
+        }
     }
 
     renderTreeNode(path, parentEl, filter) {
@@ -1018,6 +1042,9 @@ class TopicExplorer {
         if (this.pubAutofillCheckbox?.checked && this.pubTopicInput) {
             this.pubTopicInput.value = topic;
         }
+
+        // Refresh AI context indicator if open
+        this.updateAiContextDesc();
 
         const node = this.treeNodes.get(topic);
 
@@ -1278,9 +1305,7 @@ class TopicExplorer {
         this.renderTableRows();
     }
 
-    renderTableRows() {
-        if (!this.tableBody) return;
-
+    getTableMessages() {
         const filter = (this.tableFilter?.value || '').trim().toLowerCase();
         let messages = [];
 
@@ -1289,7 +1314,7 @@ class TopicExplorer {
             // Sort by topic
             messages.sort((a, b) => a.topic.localeCompare(b.topic));
         } else {
-            messages = this.historyMessages;
+            messages = this.historyMessages || [];
         }
 
         // Filter by selected topic namespace if one is selected
@@ -1308,6 +1333,14 @@ class TopicExplorer {
                 (typeof m.payload === 'string' && m.payload.toLowerCase().includes(filter))
             );
         }
+
+        return messages;
+    }
+
+    renderTableRows() {
+        if (!this.tableBody) return;
+
+        const messages = this.getTableMessages();
 
         if (this.tableRowCount) {
             this.tableRowCount.textContent = `${messages.length} rows`;
@@ -1395,6 +1428,10 @@ class TopicExplorer {
             if (scrollContainer) {
                 scrollContainer.scrollTop = scrollContainer.scrollHeight;
             }
+        }
+
+        if (this.aiPanel && this.aiPanel.style.display !== 'none') {
+            this.updateAiContextDesc();
         }
     }
 
@@ -1580,30 +1617,53 @@ class TopicExplorer {
     // AI Analysis Panel (GenAiQuery.analyzeTopics)
     // =========================================================================
 
-    getAiTopicPattern() {
+    getAiTopicPattern(scope = null) {
+        const sc = scope || this.aiScopeMode?.value || 'selected';
+        if (sc === 'all') {
+            return '#';
+        }
         if (this.selectedTopic && this.selectedTopic !== 'root') {
-            return this.selectedTopic.endsWith('/#') ? this.selectedTopic : `${this.selectedTopic}/#`;
+            const node = this.treeNodes.get(this.selectedTopic);
+            const hasChildren = node && node.children && node.children.size > 0;
+            if (hasChildren) {
+                return this.selectedTopic.endsWith('/#') ? this.selectedTopic : `${this.selectedTopic}/#`;
+            }
+            return this.selectedTopic;
         }
         return '#';
     }
 
-    getAiTopicData() {
+    getAiTopicData(scope = null) {
+        const sc = scope || this.aiScopeMode?.value || 'selected';
         const topicDataMap = new Map();
 
-        // 1. Gather messages from treeNodes for the selected hierarchy
-        if (this.selectedTopic && this.selectedTopic !== 'root') {
-            const prefix = `${this.selectedTopic}/`;
-            for (const [path, node] of this.treeNodes.entries()) {
-                if (path === this.selectedTopic || path.startsWith(prefix)) {
-                    if (node.lastMessage && node.lastMessage.payload !== undefined && node.lastMessage.payload !== null) {
-                        topicDataMap.set(path, typeof node.lastMessage.payload === 'string'
-                            ? node.lastMessage.payload
-                            : JSON.stringify(node.lastMessage.payload));
+        if (sc === 'selected') {
+            // 1. Gather all messages visible in the table
+            const tableMsgs = this.getTableMessages();
+            for (const msg of tableMsgs) {
+                if (msg && msg.topic) {
+                    const val = (msg.payload !== undefined && msg.payload !== null)
+                        ? (typeof msg.payload === 'string' ? msg.payload : JSON.stringify(msg.payload))
+                        : '';
+                    topicDataMap.set(msg.topic, val);
+                }
+            }
+
+            // 2. Also check treeNodes matching this selected hierarchy
+            if (this.selectedTopic && this.selectedTopic !== 'root') {
+                const prefix = `${this.selectedTopic}/`;
+                for (const [path, node] of this.treeNodes.entries()) {
+                    if (path === this.selectedTopic || path.startsWith(prefix)) {
+                        if (!topicDataMap.has(path) && node.lastMessage && node.lastMessage.payload !== undefined && node.lastMessage.payload !== null) {
+                            topicDataMap.set(path, typeof node.lastMessage.payload === 'string'
+                                ? node.lastMessage.payload
+                                : JSON.stringify(node.lastMessage.payload));
+                        }
                     }
                 }
             }
         } else {
-            // Root: collect all nodes with messages
+            // All topics: collect everything known across treeNodes and liveTopics
             for (const [path, node] of this.treeNodes.entries()) {
                 if (node.lastMessage && node.lastMessage.payload !== undefined && node.lastMessage.payload !== null) {
                     topicDataMap.set(path, typeof node.lastMessage.payload === 'string'
@@ -1611,11 +1671,7 @@ class TopicExplorer {
                         : JSON.stringify(node.lastMessage.payload));
                 }
             }
-        }
-
-        // 2. Also incorporate current liveTopics (which includes subscription updates and table messages)
-        for (const [topic, msg] of this.liveTopics.entries()) {
-            if (!this.selectedTopic || this.selectedTopic === 'root' || topic === this.selectedTopic || topic.startsWith(`${this.selectedTopic}/`)) {
+            for (const [topic, msg] of this.liveTopics.entries()) {
                 if (msg && msg.payload !== undefined && msg.payload !== null) {
                     topicDataMap.set(topic, typeof msg.payload === 'string'
                         ? msg.payload
@@ -1624,11 +1680,11 @@ class TopicExplorer {
             }
         }
 
-        // 3. If a message is currently selected in detail view, ensure it's included
+        // Always ensure currently selected detail message is included
         if (this.selectedMessage && this.selectedMessage.topic) {
             const topic = this.selectedMessage.topic;
-            if (!this.selectedTopic || this.selectedTopic === 'root' || topic === this.selectedTopic || topic.startsWith(`${this.selectedTopic}/`)) {
-                if (this.selectedMessage.payload !== undefined && this.selectedMessage.payload !== null) {
+            if (sc === 'all' || !this.selectedTopic || this.selectedTopic === 'root' || topic === this.selectedTopic || topic.startsWith(`${this.selectedTopic}/`)) {
+                if (!topicDataMap.has(topic) && this.selectedMessage.payload !== undefined && this.selectedMessage.payload !== null) {
                     topicDataMap.set(topic, typeof this.selectedMessage.payload === 'string'
                         ? this.selectedMessage.payload
                         : JSON.stringify(this.selectedMessage.payload));
@@ -1644,13 +1700,17 @@ class TopicExplorer {
 
     updateAiContextDesc() {
         if (!this.aiContextDesc) return;
-        const topicData = this.getAiTopicData();
-        const pattern = this.getAiTopicPattern();
-        if (topicData.length > 0) {
-            this.aiContextDesc.textContent = `Topics: ${topicData.length} from UI | Selected: ${this.selectedTopic || 'all'}`;
+        const sourceMode = this.aiSourceMode?.value || 'live';
+        const scopeMode = this.aiScopeMode?.value || 'selected';
+        const topicData = this.getAiTopicData(scopeMode);
+        const pattern = this.getAiTopicPattern(scopeMode);
+        const grp = this.selectedArchiveGroup || 'Default';
+        const selLabel = scopeMode === 'all' ? 'all (#)' : (this.selectedTopic && this.selectedTopic !== 'root' ? this.selectedTopic : 'root (#)');
+
+        if (sourceMode === 'archive') {
+            this.aiContextDesc.textContent = `Archive (${grp}): ${pattern} | LastValueStore`;
         } else {
-            const grp = this.selectedArchiveGroup || 'Default';
-            this.aiContextDesc.textContent = `Archive: ${grp} | Topic Pattern: ${pattern}`;
+            this.aiContextDesc.textContent = `Live UI: ${topicData.length} topics | Scope: ${selLabel}`;
         }
     }
 
@@ -1722,8 +1782,30 @@ class TopicExplorer {
         this.aiChatHistory.appendChild(botMsg);
         this.aiChatHistory.scrollTop = this.aiChatHistory.scrollHeight;
 
-        const topicData = this.getAiTopicData();
+        const sourceMode = this.aiSourceMode?.value || 'live';
+        const scopeMode = this.aiScopeMode?.value || 'selected';
+        const topicData = this.getAiTopicData(scopeMode);
+        const topicPattern = this.getAiTopicPattern(scopeMode);
         const isFollowUp = this.aiChatMessages && this.aiChatMessages.length > 0;
+
+        let archiveGroupParam = null;
+        let topicPatternParam = null;
+        let topicDataParam = null;
+
+        if (sourceMode === 'archive') {
+            archiveGroupParam = this.selectedArchiveGroup || 'Default';
+            topicPatternParam = topicPattern;
+            topicDataParam = null;
+        } else {
+            // live UI & subscriptions
+            archiveGroupParam = null;
+            topicPatternParam = null;
+            topicDataParam = topicData;
+            if (topicData.length === 0) {
+                botMsg.textContent = 'No topic data available in UI for the selected scope. Try "Archive Store Only" or subscribe/load topics first.';
+                return;
+            }
+        }
 
         const query = `
             query AnalyzeTopics(
@@ -1756,9 +1838,9 @@ class TopicExplorer {
 
         try {
             const res = await window.graphqlClient.query(query, {
-                archiveGroup: this.selectedArchiveGroup || 'Default',
-                topicPattern: topicData.length === 0 ? this.getAiTopicPattern() : null,
-                topicData: topicData.length > 0 ? topicData : null,
+                archiveGroup: archiveGroupParam,
+                topicPattern: topicPatternParam,
+                topicData: topicDataParam,
                 question,
                 maxTopics: 0,
                 maxValueLength: 0,
