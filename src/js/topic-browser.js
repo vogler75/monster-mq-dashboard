@@ -51,7 +51,6 @@ class TopicExplorer {
         this.treeSortBtn = document.getElementById('tree-sort-btn');
         this.treeExpandAllBtn = document.getElementById('tree-expand-all-btn');
         this.treeCollapseAllBtn = document.getElementById('tree-collapse-all-btn');
-        this.treeFetchSubnodesBtn = document.getElementById('tree-fetch-subnodes-btn');
         this.treeClearBtn = document.getElementById('tree-clear-btn');
         this.treeContent = document.getElementById('tree-content');
 
@@ -132,6 +131,7 @@ class TopicExplorer {
 
         // Message store
         this.liveTopics = new Map(); // topic -> message object
+        this.subscriptionValues = new Map(); // topic -> last message received via live subscription (kept separate from archive data)
         this.historyMessages = []; // array of message objects
         this.maxHistory = 500;
         this.messageIdCounter = 0;
@@ -444,7 +444,7 @@ class TopicExplorer {
         this.detailCopyTopicBtn?.addEventListener('click', () => {
             if (!this.selectedTopic) return;
             navigator.clipboard?.writeText(this.selectedTopic);
-            ui.showToast('Topic copied to clipboard', 'info');
+            ui.toast('Topic copied to clipboard', 'info');
         });
 
         this.detailQuickSubBtn?.addEventListener('click', () => {
@@ -457,9 +457,9 @@ class TopicExplorer {
                 this.subEnabled = true;
                 safeStorage.setItem(STORAGE_KEYS.SUB_ENABLED, 'true');
                 this.connectWebSocket();
-                ui.showToast(`Subscribed to ${filter}`, 'success');
+                ui.toast(`Subscribed to ${filter}`, 'success');
             } else {
-                ui.showToast(`Already subscribed to ${filter}`, 'info');
+                ui.toast(`Already subscribed to ${filter}`, 'info');
             }
         });
     }
@@ -480,23 +480,11 @@ class TopicExplorer {
                 this.handleTopicSelected(this.selectedTopic);
             }
         });
-
-        this.treeFetchSubnodesBtn?.addEventListener('click', () => {
-            this.fetchSubnodes = !this.fetchSubnodes;
-            safeStorage.setItem(STORAGE_KEYS.FETCH_SUBNODES, String(this.fetchSubnodes));
-            this.updateFetchSubnodesUi();
-            if (this.selectedTopic) {
-                this.handleTopicSelected(this.selectedTopic);
-            }
-        });
     }
 
     updateFetchSubnodesUi() {
         if (this.fetchSubnodesCheckbox) {
             this.fetchSubnodesCheckbox.checked = this.fetchSubnodes;
-        }
-        if (this.treeFetchSubnodesBtn) {
-            this.treeFetchSubnodesBtn.classList.toggle('active', this.fetchSubnodes);
         }
     }
 
@@ -750,7 +738,7 @@ class TopicExplorer {
                 node.source = 'archive';
             }
 
-            if (i === parts.length - 1 && messageData) {
+            if (i === parts.length - 1 && messageData && !this.isStaleArchiveMessage(currentPath, messageData)) {
                 node.messageCount = Math.max(1, node.messageCount + 1);
                 node.lastMessage = messageData;
                 node.updatedAt = messageData.timestamp || Date.now();
@@ -761,6 +749,13 @@ class TopicExplorer {
         }
 
         return treeChanged;
+    }
+
+    // Archive values must not replace a newer value already received via subscription
+    isStaleArchiveMessage(topic, messageData) {
+        if (messageData.source === 'subscription') return false;
+        const subMsg = this.subscriptionValues.get(topic);
+        return !!subMsg && (subMsg.timestamp || 0) >= (messageData.timestamp || 0);
     }
 
     // =========================================================================
@@ -1158,9 +1153,21 @@ class TopicExplorer {
                     source: 'archive'
                 };
                 this.ensureTreeNode(cv.topic, true, msg, 'archive');
+                if (this.isStaleArchiveMessage(cv.topic, msg)) continue;
                 this.liveTopics.set(cv.topic, msg);
                 this.historyMessages.push(msg);
             }
+
+            // Merge values already received via live subscription (they may not be archived at all)
+            for (const [subTopic, subMsg] of this.subscriptionValues) {
+                if (subTopic !== topic && !subTopic.startsWith(topic + '/')) continue;
+                const existing = this.liveTopics.get(subTopic);
+                if (existing === subMsg) continue;
+                if (existing && (existing.timestamp || 0) > (subMsg.timestamp || 0)) continue;
+                this.liveTopics.set(subTopic, subMsg);
+                this.historyMessages.push(subMsg);
+            }
+            this.historyMessages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 
             if (node) {
                 node.childrenLoaded = true;
@@ -1257,6 +1264,8 @@ class TopicExplorer {
             isNew: true,
             source: 'subscription'
         };
+
+        this.subscriptionValues.set(msg.topic, msg);
 
         // Update Tree node
         const treeChanged = this.ensureTreeNode(msg.topic, true, msg, 'subscription');
@@ -1562,7 +1571,7 @@ class TopicExplorer {
             const parsed = JSON.parse(this.pubPayloadInput.value);
             this.pubPayloadInput.value = JSON.stringify(parsed, null, 2);
         } catch {
-            ui.showToast('Invalid JSON payload', 'warning');
+            ui.toast('Invalid JSON payload', 'warning');
         }
     }
 
@@ -1574,12 +1583,12 @@ class TopicExplorer {
         const retain = !!document.getElementById('pub-retain-checkbox')?.checked;
 
         if (!topic) {
-            ui.showToast('Please specify a topic to publish', 'warning');
+            ui.toast('Please specify a topic to publish', 'warning');
             return;
         }
 
         if (topic.includes('+') || topic.includes('#')) {
-            ui.showToast('Topic wildcard (+ or #) not allowed when publishing', 'error');
+            ui.toast('Topic wildcard (+ or #) not allowed when publishing', 'error');
             return;
         }
 
@@ -1603,13 +1612,13 @@ class TopicExplorer {
             });
 
             if (res?.publish?.success) {
-                ui.showToast(`Published to ${topic}`, 'success');
+                ui.toast(`Published to ${topic}`, 'success');
             } else {
-                ui.showToast(`Publish failed: ${res?.publish?.error || 'Unknown error'}`, 'error');
+                ui.toast(`Publish failed: ${res?.publish?.error || 'Unknown error'}`, 'error');
             }
         } catch (err) {
             console.error('Publish error:', err);
-            ui.showToast(`Publish failed: ${err.message}`, 'error');
+            ui.toast(`Publish failed: ${err.message}`, 'error');
         }
     }
 
@@ -1719,7 +1728,7 @@ class TopicExplorer {
             this.aiChatHistory.innerHTML = '';
         }
         this.aiChatMessages = [];
-        ui.showToast('Conversation cleared', 'info');
+        ui.toast('Conversation cleared', 'info');
     }
 
     toggleAiPanel(forceState = null) {
@@ -1904,15 +1913,15 @@ class TopicExplorer {
             if (this.subscriptions.length === 0) {
                 this.updateConnectionStatus(false, 'Live Off (No Filters)');
                 this.openSubscriptionsModal();
-                ui.showToast('Please add at least one subscription filter (e.g. #)', 'info');
+                ui.toast('Please add at least one subscription filter (e.g. #)', 'info');
             } else {
                 this.connectWebSocket();
-                ui.showToast('Live subscriptions enabled', 'success');
+                ui.toast('Live subscriptions enabled', 'success');
             }
         } else {
             this.disconnectWebSocket();
             this.updateConnectionStatus(false, 'Live Off');
-            ui.showToast('Live subscriptions paused', 'info');
+            ui.toast('Live subscriptions paused', 'info');
         }
     }
 
