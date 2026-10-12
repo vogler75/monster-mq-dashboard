@@ -109,8 +109,8 @@
                             </div>
                             <div class="form-group" style="grid-column: 1 / -1;">
                                 <label for="camera-url">Stream URL *</label>
-                                <input type="text" id="camera-url" required placeholder="rtsp://camera/mjpeg, http://host/camera, or ws://host/ws">
-                                <span class="form-hint">Supports H.264 and MJPEG over RTSP, HTTP(S) multipart MJPEG, and WebSocket binary JPEG frames.</span>
+                                <input type="text" id="camera-url" required placeholder="rtsp://camera/mjpeg, http://host/camera, ws://host/ws, or v4l2:///dev/video0">
+                                <span class="form-hint">Supports H.264 and MJPEG over RTSP, HTTP(S) multipart MJPEG, WebSocket binary JPEG frames, and USB cameras via V4L2 (Linux edge broker only).</span>
                                 <div class="camera-stream-examples" aria-label="Supported stream examples">
                                     <div class="camera-stream-example">
                                         <strong>Example 1 — Camera with native MJPEG over RTSP</strong>
@@ -123,6 +123,10 @@
                                     <div class="camera-stream-example">
                                         <strong>Example 3 — JPEG frames over WebSocket</strong>
                                         <code>ws://192.168.1.20:8888/ws</code>
+                                    </div>
+                                    <div class="camera-stream-example">
+                                        <strong>Example 4 — USB camera on the edge broker host (Linux)</strong>
+                                        <code>v4l2:///dev/video0?width=1280&amp;height=720&amp;format=MJPEG</code>
                                     </div>
                                 </div>
                             </div>

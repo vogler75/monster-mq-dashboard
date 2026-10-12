@@ -358,8 +358,8 @@ class RtspCameraDetailManager {
         if (!name) { ui.showError('Camera Name is required'); return; }
         if (!nodeId) { ui.showError('Cluster Node is required'); return; }
         if (!url) { ui.showError('Stream URL is required'); return; }
-        if (!/^(?:rtsps?|https?|wss?):\/\//i.test(url)) {
-            ui.showError('Stream URL must begin with rtsp://, rtsps://, http://, https://, ws://, or wss://');
+        if (!/^(?:(?:rtsps?|https?|wss?):\/\/|v4l2:(?:\/\/)?\/dev\/)/i.test(url)) {
+            ui.showError('Stream URL must begin with rtsp://, rtsps://, http://, https://, ws://, wss://, or v4l2:///dev/ (USB camera, Linux edge broker only)');
             return;
         }
         if (!topicPrefix) { ui.showError('Topic Prefix is required'); return; }
