@@ -1,7 +1,7 @@
 {
   "name": "monstermq-dashboard",
   "private": true,
-  "version": "1.8.34",
+  "version": "1.8.35-dev",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
