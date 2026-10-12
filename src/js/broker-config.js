@@ -91,6 +91,16 @@ class BrokerConfigManager {
                     this.removeBrokerRow(removeBtn.closest('.broker-row'));
                 }
 
+                var moveUpBtn = event.target.closest('.broker-move-up');
+                if (moveUpBtn) {
+                    this.moveBrokerRow(moveUpBtn.closest('.broker-row'), -1);
+                }
+
+                var moveDownBtn = event.target.closest('.broker-move-down');
+                if (moveDownBtn) {
+                    this.moveBrokerRow(moveDownBtn.closest('.broker-row'), 1);
+                }
+
                 var setDefaultBtn = event.target.closest('.broker-set-default');
                 if (setDefaultBtn) {
                     this.setDefaultBroker(setDefaultBtn.closest('.broker-row'));
@@ -467,6 +477,8 @@ class BrokerConfigManager {
                 </div>
 
                 <div class="broker-actions">
+                    <button type="button" class="btn btn-secondary btn-icon broker-move-up" title="Move up" aria-label="Move up">&#8593;</button>
+                    <button type="button" class="btn btn-secondary btn-icon broker-move-down" title="Move down" aria-label="Move down">&#8595;</button>
                     <button type="button" class="btn btn-secondary broker-set-default" title="Set as default">Set as default</button>
                     <button type="button" class="btn btn-secondary broker-remove" title="Remove">Remove</button>
                 </div>
@@ -495,6 +507,21 @@ class BrokerConfigManager {
         if (!row) return;
         row.remove();
         this._syncDefaultState();
+    }
+
+    moveBrokerRow(row, direction) {
+        if (!row) return;
+        var sibling = direction < 0 ? row.previousElementSibling : row.nextElementSibling;
+        if (!sibling) return;
+        ui.markPageDirty();
+        if (direction < 0) {
+            row.parentNode.insertBefore(row, sibling);
+        } else {
+            row.parentNode.insertBefore(sibling, row);
+        }
+        this._syncDefaultState();
+        var focusBtn = row.querySelector(direction < 0 ? '.broker-move-up' : '.broker-move-down');
+        if (focusBtn && !focusBtn.disabled) focusBtn.focus();
     }
 
     setDefaultBroker(row) {
@@ -526,6 +553,13 @@ class BrokerConfigManager {
         var onlyOne = rows.length === 1;
         removeButtons.forEach(function(button) {
             if (button) button.disabled = onlyOne;
+        });
+
+        rows.forEach(function(row, index) {
+            var upBtn = row.querySelector('.broker-move-up');
+            var downBtn = row.querySelector('.broker-move-down');
+            if (upBtn) upBtn.disabled = index === 0;
+            if (downBtn) downBtn.disabled = index === rows.length - 1;
         });
 
         var setDefaultButtons = rows.map(function(row) { return row.querySelector('.broker-set-default'); });
