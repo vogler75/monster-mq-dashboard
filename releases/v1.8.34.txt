@@ -1,0 +1,7 @@
+Release v1.8.34
+Built from commit: 3a72a32
+Date: 2026-10-12 09:25:17
+
+Changes since v1.8.33:
+---
+3a72a32 feat(release): decouple dev version bump from publish.sh into bump-dev.sh
