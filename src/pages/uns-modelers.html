@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonsterMQ - UNS Modelers</title>
+    <script type="module" src="/js/ix-init.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/graphql-client.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/log-viewer.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
+</head>
+<body>
+    <ix-application force-breakpoint="lg">
+    <ix-menu application-name="MonsterMQ" pinned start-expanded>
+    </ix-menu>
+    <div class="main-content" id="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div class="page-header-content">
+                    <div>
+                        <h1 class="page-title">UNS Modelers</h1>
+                        <p class="page-subtitle">Model a Unified Namespace from WinCC OA datapoints, or onboard MQTT topic trees into WinCC OA</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-message" class="error-message" style="display:none;">
+                <div class="error-content">
+                    <span class="error-icon">&#9888;</span>
+                    <span class="error-text"></span>
+                </div>
+            </div>
+
+            <div class="section-card" id="analyse-banner" style="display:none;">
+                <div class="section-header">
+                    <div class="section-title"><h2>Analyse topics for WinCC OA</h2></div>
+                </div>
+                <div class="section-content">
+                    <p class="page-subtitle" id="analyse-text"></p>
+                    <div class="action-buttons" id="analyse-devices"></div>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Devices</span>
+                        <div class="metric-icon"><ix-icon name="hierarchy" size="12"></ix-icon></div>
+                    </div>
+                    <div class="metric-value" id="total-devices">0</div>
+                    <div class="metric-label">Configured UNS Modelers</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Running</span>
+                        <div class="metric-icon is-ok"><ix-icon name="success" size="12"></ix-icon></div>
+                    </div>
+                    <div class="metric-value" id="running-devices">0</div>
+                    <div class="metric-label">With an applied mapping</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">UNS Topics</span>
+                        <div class="metric-icon is-info"><ix-icon name="data-egress" size="12"></ix-icon></div>
+                    </div>
+                    <div class="metric-value" id="total-topics">0</div>
+                    <div class="metric-label">Published by all devices</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Errors</span>
+                        <div class="metric-icon is-err"><ix-icon name="error" size="12"></ix-icon></div>
+                    </div>
+                    <div class="metric-value" id="total-errors">0</div>
+                    <div class="metric-label">Runtime errors since start</div>
+                </div>
+            </div>
+
+            <div id="devices-table" class="data-table" data-table-tools>
+                <div class="table-header">
+                    <div class="table-title"><h2>UNS Modelers</h2></div>
+                    <div class="table-actions">
+                        <input type="search" class="form-control table-search" id="device-search" placeholder="Search devices…" aria-label="Search devices" data-ignore-dirty>
+                        <ix-icon-button icon="refresh" variant="subtle-tertiary" onclick="refreshUnsModelers()" title="Refresh"></ix-icon-button>
+                        <a href="/pages/uns-modeler-detail.html?new=true" class="btn btn-primary" data-requires-auth>
+                            <ix-icon name="add-circle" size="16"></ix-icon> Add UNS Modeler
+                        </a>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Direction</th>
+                                <th>UNS Root / Prefix</th>
+                                <th>Node</th>
+                                <th>Status</th>
+                                <th class="num">Topics</th>
+                                <th class="num">Published</th>
+                                <th class="num">Errors</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="devices-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="loading-indicator" class="loading-indicator" style="display:none;">
+                <div class="loading-spinner"></div>
+                <span>Loading UNS Modelers&hellip;</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/js/uns-modelers.js"></script>
+    </ix-application>
+</body>
+</html>

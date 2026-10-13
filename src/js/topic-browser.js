@@ -162,6 +162,7 @@ class TopicExplorer {
         this.setupResizers();
         this.setupEventListeners();
         this.setupFlashBtn();
+        this.setupAnalyseBtn();
         this.setupFetchSubnodesToggle();
         this.setupViewModeButtons();
         this.setupTableAutoScroll();
@@ -461,6 +462,24 @@ class TopicExplorer {
             } else {
                 ui.toast(`Already subscribed to ${filter}`, 'info');
             }
+        });
+    }
+
+    // setupAnalyseBtn opens the UNS Modeler (Direction B) with the selected
+    // subtree, or all topics, and the current source (live or archive).
+    async setupAnalyseBtn() {
+        const btn = document.getElementById('analyse-winccoa-btn');
+        if (!btn) return;
+        try {
+            const features = await window.graphqlClient.getEnabledFeatures();
+            if (Array.isArray(features) && !features.includes('UnsModeler')) return;
+        } catch (e) { return; }
+        btn.style.display = '';
+        btn.addEventListener('click', () => {
+            const filter = this.selectedTopic ? `${this.selectedTopic}/#` : '#';
+            const mode = this.subEnabled ? 'live' : 'archive';
+            const params = new URLSearchParams({ analyse: filter, mode, archiveGroup: this.selectedArchiveGroup || 'Default' });
+            window.spaLocation.href = `/pages/uns-modelers.html?${params}`;
         });
     }
 

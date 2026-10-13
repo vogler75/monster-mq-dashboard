@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonsterMQ - UNS Modeler</title>
+    <script type="module" src="/js/ix-init.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/graphql-client.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/log-viewer.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
+    <style>
+        /* UNS editor layout: WinCC OA browser | UNS tree | node details */
+        .um-editor { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.4fr) minmax(300px, 1.1fr); gap: 0.75rem; min-height: 560px; }
+        .um-pane { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--dark-border, #334155); border-radius: 8px; background: var(--dark-surface, #1e293b); overflow: hidden; }
+        .um-pane-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--dark-border, #334155); font-size: 0.8rem; font-weight: 600; color: var(--text-secondary, #cbd5e1); }
+        .um-pane-body { flex: 1; overflow: auto; padding: 0.5rem; max-height: 640px; }
+        .um-browser-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin-bottom: 0.35rem; }
+        .um-browser-selection { display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--text-muted, #94a3b8); margin-bottom: 0.35rem; }
+        .um-browser-selection span { flex: 1; }
+        .um-tree { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; }
+        .um-row { display: flex; align-items: center; gap: 0.3rem; min-height: 24px; padding-right: 0.4rem; border-radius: 4px; cursor: pointer; white-space: nowrap; color: var(--text-secondary, #cbd5e1); }
+        .um-row:hover { background: rgba(255, 255, 255, 0.05); }
+        .um-row.selected { background: rgba(124, 58, 237, 0.25); color: #fff; }
+        .um-row.drop-target { outline: 2px dashed var(--monster-green, #10b981); outline-offset: -2px; }
+        .um-row.derived { color: var(--text-muted, #94a3b8); font-style: italic; cursor: default; }
+        .um-row.ai { box-shadow: inset 3px 0 0 var(--monster-purple, #7c3aed); }
+        .um-chevron { width: 14px; display: inline-flex; justify-content: center; font-size: 10px; color: var(--text-muted, #64748b); transition: transform 0.15s; }
+        .um-chevron.expanded { transform: rotate(90deg); }
+        .um-chevron.hidden { visibility: hidden; }
+        .um-check { margin: 0; }
+        .um-kind { font-size: 0.6rem; font-weight: 700; color: var(--text-muted, #94a3b8); min-width: 2.2em; }
+        .um-label { overflow: hidden; text-overflow: ellipsis; }
+        .um-meta { margin-left: auto; font-size: 0.65rem; color: var(--text-muted, #94a3b8); }
+        .um-tag { font-size: 0.6rem; padding: 0 0.35rem; border-radius: 3px; border: 1px solid var(--dark-border, #334155); color: var(--text-muted, #94a3b8); }
+        .um-tag.level { color: #38bdf8; border-color: rgba(56, 189, 248, 0.35); }
+        .um-tag.bind { color: #10b981; border-color: rgba(16, 185, 129, 0.35); }
+        .um-tag.new { color: #10b981; border-color: #10b981; }
+        .um-tag.changed { color: #f59e0b; border-color: #f59e0b; }
+        .um-tag.err { color: #ef4444; border-color: #ef4444; }
+        .um-tag.warn { color: #f59e0b; border-color: #f59e0b; }
+        .um-tag.info { color: #38bdf8; border-color: #38bdf8; }
+        .um-tag.aitag { color: #a78bfa; border-color: #a78bfa; }
+        .um-more { color: #38bdf8; }
+        .um-empty { padding: 0.75rem; color: var(--text-muted, #94a3b8); font-size: 0.8rem; }
+        .um-root-drop { margin-top: 0.4rem; padding: 0.5rem; border: 1px dashed var(--dark-border, #334155); border-radius: 6px; text-align: center; font-size: 0.75rem; color: var(--text-muted, #94a3b8); }
+        .um-root-drop.drop-target { border-color: var(--monster-green, #10b981); color: var(--monster-green, #10b981); }
+        .um-details h3 { font-size: 0.85rem; margin: 0.75rem 0 0.35rem; color: var(--text-secondary, #cbd5e1); }
+        .um-details h3:first-child { margin-top: 0; }
+        .um-kv { display: grid; grid-template-columns: max-content 1fr; gap: 0.2rem 0.6rem; font-size: 0.75rem; }
+        .um-kv dt { color: var(--text-muted, #94a3b8); }
+        .um-kv dd { margin: 0; overflow-wrap: anywhere; font-family: ui-monospace, Menlo, Consolas, monospace; }
+        .um-pre { white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.72rem; background: var(--dark-bg, #0f172a); border: 1px solid var(--dark-border, #334155); border-radius: 6px; padding: 0.5rem; margin: 0; max-height: 220px; overflow: auto; }
+        .um-elements { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+        .um-elements td, .um-elements th { padding: 0.15rem 0.3rem; border-bottom: 1px solid var(--dark-border, #334155); text-align: left; }
+        .um-elements input[type="text"] { width: 100%; }
+        .um-ovr { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+        .um-ovr label { display: flex; flex-direction: column; font-size: 0.7rem; color: var(--text-muted, #94a3b8); gap: 0.1rem; }
+        .um-ovr .wide { grid-column: 1 / -1; }
+        .um-tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--dark-border, #334155); margin-top: 0.75rem; }
+        .um-tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted, #94a3b8); padding: 0.4rem 0.75rem; cursor: pointer; font: inherit; font-size: 0.8rem; }
+        .um-tab.active { color: #fff; border-bottom-color: var(--monster-purple, #7c3aed); }
+        .um-tabpanel { padding-top: 0.5rem; }
+        .um-issue { display: flex; gap: 0.5rem; align-items: baseline; padding: 0.2rem 0; font-size: 0.75rem; cursor: pointer; }
+        .um-issue code { color: var(--text-muted, #94a3b8); }
+        .um-json { width: 100%; min-height: 320px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.75rem; }
+        .um-config-json { min-height: 70px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.75rem; }
+        .um-direction-only { display: none; }
+        .um-card { border: 1px solid var(--dark-border, #334155); border-radius: 6px; padding: 0.45rem 0.55rem; margin-bottom: 0.5rem; font-size: 0.75rem; }
+        .um-card.excluded { opacity: 0.5; }
+        .um-card.conflict { border-color: #ef4444; }
+        .um-card-head { display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.25rem; }
+        .um-card-head strong { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+        .um-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+        .um-small { font-size: 0.68rem; color: var(--text-muted, #94a3b8); }
+        .um-subhead { font-size: 0.9rem; margin: 1rem 0 0.4rem; color: var(--text-secondary, #cbd5e1); }
+        .um-log { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+        .um-log td, .um-log th { padding: 0.2rem 0.4rem; border-bottom: 1px solid var(--dark-border, #334155); text-align: left; vertical-align: top; }
+        .um-log td.detail { font-family: ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 900px; }
+        @media (max-width: 1280px) { .um-editor { grid-template-columns: 1fr 1fr; } .um-editor > .um-pane:last-child { grid-column: 1 / -1; } }
+    </style>
+</head>
+<body>
+    <ix-application force-breakpoint="lg">
+    <ix-menu application-name="MonsterMQ" pinned start-expanded>
+    </ix-menu>
+    <div class="main-content" id="main-content">
+        <div class="container">
+        <div class="page-header">
+            <div class="page-header-content">
+                <div>
+                    <nav class="breadcrumb" aria-label="Breadcrumb">
+                        <a href="/pages/uns-modelers.html">UNS Modelers</a>
+                        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+                        <span class="breadcrumb-current" aria-current="page" id="breadcrumb-name">New UNS Modeler</span>
+                    </nav>
+                    <h1 class="page-title" id="page-title">UNS Modeler</h1>
+                    <p class="page-subtitle" id="page-subtitle"></p>
+                </div>
+                <div class="page-header-actions">
+                    <button class="btn btn-danger" id="delete-btn" onclick="deleteDevice()" data-requires-auth>
+                        <ix-icon name="trashcan" size="16"></ix-icon> Delete
+                    </button>
+                    <button class="btn btn-primary" id="save-btn" onclick="saveDevice()" data-requires-auth>
+                        <ix-icon name="disk" size="16"></ix-icon> Save Device
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="error-message" class="error-message" style="display:none;">
+            <div class="error-content">
+                <span class="error-icon">&#9888;</span>
+                <span class="error-text"></span>
+            </div>
+        </div>
+
+        <!-- A1: device configuration -->
+        <div class="section-card" id="config-section">
+            <div class="section-header">
+                <div class="section-title"><h2>Device Configuration</h2></div>
+                <span class="status-badge status-unknown" id="device-status">New</span>
+            </div>
+            <div class="section-content">
+                <form id="device-form" onsubmit="return false;">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="dev-name">Name *</label>
+                            <input type="text" id="dev-name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dev-direction">Direction *</label>
+                            <select id="dev-direction" class="form-control">
+                                <option value="WINCCOA_TO_UNS">WinCC OA &#8594; UNS (Direction A)</option>
+                                <option value="MQTT_TO_WINCCOA">MQTT &#8594; WinCC OA (Direction B)</option>
+                            </select>
+                            <span class="form-hint">Fixed when the device is created.</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="dev-node">Cluster Node</label>
+                            <select id="dev-node" class="form-control"></select>
+                        </div>
+                        <div class="form-group">
+                            <div class="checkbox-group" style="margin-top:1.8rem;">
+                                <input type="checkbox" id="dev-enabled" checked>
+                                <label for="dev-enabled">Enabled</label>
+                            </div>
+                        </div>
+                        <div class="form-group um-direction-only" data-direction="WINCCOA_TO_UNS">
+                            <label for="dev-unsroot">UNS Root *</label>
+                            <input type="text" id="dev-unsroot" class="form-control" placeholder="acme/vienna/hall2">
+                            <span class="form-hint">All topics of the device lie below this subtree.</span>
+                        </div>
+                        <div class="form-group um-direction-only" data-direction="WINCCOA_TO_UNS">
+                            <div class="checkbox-group" style="margin-top:1.8rem;">
+                                <input type="checkbox" id="dev-allowwrite">
+                                <label for="dev-allowwrite">Allow write-through (&lt;topic&gt;/..set)</label>
+                            </div>
+                        </div>
+                        <div class="form-group um-direction-only" data-direction="MQTT_TO_WINCCOA">
+                            <label for="dev-oaprefix">WinCC OA Prefix *</label>
+                            <input type="text" id="dev-oaprefix" class="form-control" placeholder="UNS_">
+                            <span class="form-hint">Created types and datapoints must start with it.</span>
+                        </div>
+                        <div class="form-group um-direction-only" data-direction="MQTT_TO_WINCCOA">
+                            <div class="checkbox-group" style="margin-top:1.8rem;">
+                                <input type="checkbox" id="dev-flow" checked>
+                                <label for="dev-flow">Value flow into WinCC OA after create</label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="dev-aiprovider">AI Provider</label>
+                            <select id="dev-aiprovider" class="form-control"><option value="">None (manual modelling)</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dev-approval">Approval Mode</label>
+                            <select id="dev-approval" class="form-control">
+                                <option value="REVIEW">Review before apply</option>
+                                <option value="AUTO">Apply error-free AI proposals automatically</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="dev-redundancy">Redundancy</label>
+                            <select id="dev-redundancy" class="form-control">
+                                <option value="HOT_STANDBY">Hot standby</option>
+                                <option value="COLD_STANDBY">Cold standby</option>
+                                <option value="ALWAYS">Always</option>
+                            </select>
+                            <span class="form-hint">Takes effect with the redundancy role manager.</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="dev-maxsteps">AI Run Limits (steps / timeout s / tokens)</label>
+                            <div style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:0.35rem;">
+                                <input type="number" id="dev-maxsteps" class="form-control" min="1" aria-label="Maximum tool calls">
+                                <input type="number" id="dev-timeout" class="form-control" min="10" aria-label="Timeout in seconds">
+                                <input type="number" id="dev-tokens" class="form-control" min="1000" aria-label="Token budget">
+                            </div>
+                        </div>
+                        <div class="form-group um-direction-only" data-direction="WINCCOA_TO_UNS">
+                            <label for="dev-topicdefaults">Topic Defaults (JSON)</label>
+                            <textarea id="dev-topicdefaults" class="form-control um-config-json" placeholder='{"retain": false, "qos": 0, "publishMode": "onChange", "timestamp": "source", "encoding": "json"}'></textarea>
+                        </div>
+                        <div class="form-group um-direction-only" data-direction="WINCCOA_TO_UNS">
+                            <label for="dev-payloaddefaults">Payload Defaults (JSON)</label>
+                            <textarea id="dev-payloaddefaults" class="form-control um-config-json" placeholder='["value", "time"]'></textarea>
+                        </div>
+                        <div class="form-group um-direction-only" data-direction="WINCCOA_TO_UNS" style="grid-column:1/-1;">
+                            <label>Payload Preview</label>
+                            <pre class="um-pre" id="payload-preview"></pre>
+                        </div>
+                        <div class="form-group" style="grid-column:1/-1;">
+                            <label for="dev-prompt">System Prompt</label>
+                            <textarea id="dev-prompt" class="form-control" rows="4" placeholder="Leave empty to use the built-in prompt of the direction."></textarea>
+                        </div>
+                    </div>
+                </form>
+                <div id="settings-issues"></div>
+                <h3 class="um-subhead">Recent AI runs</h3>
+                <div id="ai-runs"><div class="um-empty">No AI runs in the log.</div></div>
+            </div>
+        </div>
+
+        <!-- A2: UNS editor -->
+        <div class="section-card" id="editor-section" style="display:none;">
+            <div class="section-header">
+                <div class="section-title-group">
+                    <div class="section-title"><h2>UNS Editor</h2></div>
+                    <span class="status-badge badge-neutral" id="draft-state">Saved</span>
+                </div>
+                <div class="section-header-actions">
+                    <button class="btn btn-secondary btn-sm" id="ai-btn" style="display:none;" data-requires-auth><ix-icon name="ai" size="16"></ix-icon> Propose UNS for Selection</button>
+                    <button class="btn btn-secondary btn-sm" id="add-root-btn" data-requires-auth><ix-icon name="add-circle" size="16"></ix-icon> Add Node</button>
+                    <button class="btn btn-secondary btn-sm" id="discard-btn" data-requires-auth>Discard Changes</button>
+                    <button class="btn btn-secondary btn-sm" id="save-draft-btn" data-requires-auth><ix-icon name="disk" size="16"></ix-icon> Save Draft</button>
+                    <button class="btn btn-primary btn-sm" id="apply-btn" data-requires-auth><ix-icon name="upload" size="16"></ix-icon> Apply</button>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="um-editor">
+                    <div class="um-pane">
+                        <div class="um-pane-header">WinCC OA</div>
+                        <div class="um-pane-body" id="oa-browser"></div>
+                    </div>
+                    <div class="um-pane">
+                        <div class="um-pane-header"><span id="tree-title">UNS</span><span id="tree-summary" class="um-meta"></span></div>
+                        <div class="um-pane-body">
+                            <div class="um-tree" id="uns-tree" role="tree"></div>
+                            <div class="um-root-drop" id="root-drop">Drop here to add top-level nodes</div>
+                        </div>
+                    </div>
+                    <div class="um-pane">
+                        <div class="um-pane-header">Details</div>
+                        <div class="um-pane-body um-details" id="node-details"><div class="um-empty">Select a node, or an element in the WinCC OA browser.</div></div>
+                    </div>
+                </div>
+                <div class="um-tabs" role="tablist">
+                    <button type="button" class="um-tab active" data-tab="validation" role="tab">Validation <span id="issue-count"></span></button>
+                    <button type="button" class="um-tab" data-tab="changes" role="tab">Changes</button>
+                    <button type="button" class="um-tab" data-tab="ai" role="tab">AI Log <span id="ai-state"></span></button>
+                    <button type="button" class="um-tab" data-tab="json" role="tab">Raw JSON</button>
+                </div>
+                <div class="um-tabpanel" data-panel="validation" id="validation-panel"></div>
+                <div class="um-tabpanel" data-panel="changes" id="changes-panel" style="display:none;"></div>
+                <div class="um-tabpanel" data-panel="ai" id="ai-panel" style="display:none;"><div class="um-empty">No AI run since the broker started.</div></div>
+                <div class="um-tabpanel" data-panel="json" style="display:none;">
+                    <textarea class="form-control um-json" id="raw-json" spellcheck="false" data-edit-section></textarea>
+                    <div style="margin-top:0.4rem;"><button type="button" class="btn btn-secondary btn-sm" id="raw-apply-btn" data-requires-auth>Load JSON into Editor</button></div>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- B1: topic-tree analysis and DPT proposal -->
+        <div class="section-card" id="onboarding-section" style="display:none;">
+            <div class="section-header">
+                <div class="section-title-group">
+                    <div class="section-title"><h2>Onboarding: MQTT &#8594; WinCC OA</h2></div>
+                    <span class="status-badge badge-neutral" id="b-draft-state">Saved</span>
+                </div>
+                <div class="section-header-actions">
+                    <button class="btn btn-secondary btn-sm" id="b-ai-btn" style="display:none;" data-requires-auth><ix-icon name="ai" size="16"></ix-icon> Analyse with AI</button>
+                    <button class="btn btn-secondary btn-sm" id="b-import-btn" data-requires-auth><ix-icon name="upload" size="16"></ix-icon> Import JSON</button>
+                    <button class="btn btn-secondary btn-sm" id="b-save-btn" data-requires-auth><ix-icon name="disk" size="16"></ix-icon> Save Draft</button>
+                    <button class="btn btn-primary btn-sm" id="b-create-btn" data-requires-auth><ix-icon name="add-circle" size="16"></ix-icon> Create in WinCC OA</button>
+                </div>
+            </div>
+            <div class="section-content">
+                <div class="um-browser-filters" style="grid-template-columns: 140px 1fr 1fr; margin-bottom: 0.5rem;">
+                    <select class="form-control" id="b-mode" aria-label="Topic source" data-ignore-dirty><option value="LIVE">Live</option><option value="ARCHIVE">Archive</option></select>
+                    <select class="form-control" id="b-archive" aria-label="Archive group" data-ignore-dirty></select>
+                    <input class="form-control" id="b-filters" placeholder="Topic filters, e.g. plant/line1/# (comma separated)" aria-label="Topic filters" data-ignore-dirty>
+                </div>
+                <div class="um-editor">
+                    <div class="um-pane">
+                        <div class="um-pane-header">Source topics<span class="um-meta" id="b-source-summary"></span></div>
+                        <div class="um-pane-body um-tree" id="b-source"></div>
+                    </div>
+                    <div class="um-pane">
+                        <div class="um-pane-header">Datapoint types<span class="um-meta" id="b-types-summary"></span></div>
+                        <div class="um-pane-body" id="b-types"></div>
+                    </div>
+                    <div class="um-pane">
+                        <div class="um-pane-header">Datapoints<span class="um-meta" id="b-dps-summary"></span></div>
+                        <div class="um-pane-body" id="b-dps"></div>
+                    </div>
+                </div>
+                <div class="um-tabs" role="tablist">
+                    <button type="button" class="um-tab active" data-btab="validation" role="tab">Validation <span id="b-issue-count"></span></button>
+                    <button type="button" class="um-tab" data-btab="results" role="tab">Create Results</button>
+                    <button type="button" class="um-tab" data-btab="ai" role="tab">AI Log <span id="b-ai-state"></span></button>
+                    <button type="button" class="um-tab" data-btab="json" role="tab">Raw JSON</button>
+                </div>
+                <div class="um-tabpanel" data-bpanel="validation" id="b-validation"></div>
+                <div class="um-tabpanel" data-bpanel="results" id="b-results" style="display:none;"><div class="um-empty">Nothing created yet.</div></div>
+                <div class="um-tabpanel" data-bpanel="ai" id="b-ai-panel" style="display:none;"><div class="um-empty">No AI run since the broker started.</div></div>
+                <div class="um-tabpanel" data-bpanel="json" style="display:none;">
+                    <textarea class="form-control um-json" id="b-raw-json" spellcheck="false" data-edit-section></textarea>
+                    <div style="margin-top:0.4rem;"><button type="button" class="btn btn-secondary btn-sm" id="b-raw-apply-btn" data-requires-auth>Load JSON into Editor</button></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- A3: live monitor -->
+        <div class="data-table" id="live-section" style="display:none;" data-table-tools>
+            <div class="table-header">
+                <div class="table-title"><h2>Live Monitor</h2></div>
+                <div class="table-actions">
+                    <span class="status-badge badge-neutral" id="write-state">Write-through off</span>
+                    <input type="search" class="form-control table-search" placeholder="Filter topics…" aria-label="Filter topics" data-ignore-dirty>
+                    <ix-icon-button icon="refresh" variant="subtle-tertiary" onclick="refreshLive()" title="Refresh"></ix-icon-button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>UNS Topic</th>
+                            <th>DPE</th>
+                            <th>Value</th>
+                            <th class="num">Status</th>
+                            <th class="num">Rate (msg/s)</th>
+                            <th class="num">Published</th>
+                            <th>Last Publish</th>
+                            <th>Last Error</th>
+                        </tr>
+                    </thead>
+                    <tbody id="live-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="loading-indicator" class="loading-indicator" style="display:none;">
+            <div class="loading-spinner"></div>
+            <span>Loading&hellip;</span>
+        </div>
+        </div>
+    </div>
+
+    <script type="module" src="/js/uns-modeler-detail.js"></script>
+    </ix-application>
+</body>
+</html>

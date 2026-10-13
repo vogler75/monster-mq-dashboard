@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonsterMQ - WinCC OA Browser</title>
+    <script type="module" src="/js/ix-init.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/graphql-client.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/log-viewer.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
+    <style>
+        .um-browse-layout { display: grid; grid-template-columns: minmax(320px, 1.3fr) minmax(280px, 1fr); gap: 0.75rem; }
+        .um-pane { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--dark-border, #334155); border-radius: 8px; background: var(--dark-surface, #1e293b); overflow: hidden; }
+        .um-pane-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--dark-border, #334155); font-size: 0.8rem; font-weight: 600; color: var(--text-secondary, #cbd5e1); }
+        .um-pane-body { flex: 1; overflow: auto; padding: 0.5rem; max-height: 640px; }
+        .um-browser-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin-bottom: 0.35rem; }
+        .um-browser-selection { display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--text-muted, #94a3b8); margin-bottom: 0.35rem; }
+        .um-browser-selection span { flex: 1; }
+        .um-tree { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.75rem; }
+        .um-row { display: flex; align-items: center; gap: 0.3rem; min-height: 24px; padding-right: 0.4rem; border-radius: 4px; cursor: pointer; white-space: nowrap; color: var(--text-secondary, #cbd5e1); }
+        .um-row:hover { background: rgba(255, 255, 255, 0.05); }
+        .um-row.selected { background: rgba(124, 58, 237, 0.25); color: #fff; }
+        .um-row.drop-target { outline: 2px dashed var(--monster-green, #10b981); outline-offset: -2px; }
+        .um-row.derived { color: var(--text-muted, #94a3b8); font-style: italic; cursor: default; }
+        .um-row.ai { box-shadow: inset 3px 0 0 var(--monster-purple, #7c3aed); }
+        .um-chevron { width: 14px; display: inline-flex; justify-content: center; font-size: 10px; color: var(--text-muted, #64748b); transition: transform 0.15s; }
+        .um-chevron.expanded { transform: rotate(90deg); }
+        .um-chevron.hidden { visibility: hidden; }
+        .um-check { margin: 0; }
+        .um-kind { font-size: 0.6rem; font-weight: 700; color: var(--text-muted, #94a3b8); min-width: 2.2em; }
+        .um-label { overflow: hidden; text-overflow: ellipsis; }
+        .um-meta { margin-left: auto; font-size: 0.65rem; color: var(--text-muted, #94a3b8); }
+        .um-more { color: #38bdf8; }
+        .um-empty { padding: 0.75rem; color: var(--text-muted, #94a3b8); font-size: 0.8rem; }
+        .um-details h3 { font-size: 0.85rem; margin: 0.75rem 0 0.35rem; color: var(--text-secondary, #cbd5e1); }
+        .um-details h3:first-child { margin-top: 0; }
+        .um-kv { display: grid; grid-template-columns: max-content 1fr; gap: 0.2rem 0.6rem; font-size: 0.75rem; }
+        .um-kv dt { color: var(--text-muted, #94a3b8); }
+        .um-kv dd { margin: 0; overflow-wrap: anywhere; font-family: ui-monospace, Menlo, Consolas, monospace; }
+        @media (max-width: 1280px) { .um-editor { grid-template-columns: 1fr 1fr; } .um-editor > .um-pane:last-child { grid-column: 1 / -1; } }
+    </style>
+</head>
+<body>
+    <ix-application force-breakpoint="lg">
+    <ix-menu application-name="MonsterMQ" pinned start-expanded>
+    </ix-menu>
+    <div class="main-content" id="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div class="page-header-content">
+                    <div>
+                        <h1 class="page-title">WinCC OA Browser</h1>
+                        <p class="page-subtitle">Systems, datapoint types, datapoints and elements of the embedded WinCC OA project</p>
+                    </div>
+                </div>
+            </div>
+            <div id="error-message" class="error-message" style="display:none;">
+                <div class="error-content">
+                    <span class="error-icon">&#9888;</span>
+                    <span class="error-text"></span>
+                </div>
+            </div>
+            <div class="um-browse-layout">
+                <div class="um-pane">
+                    <div class="um-pane-header">Browse</div>
+                    <div class="um-pane-body" id="oa-browser"></div>
+                </div>
+                <div class="um-pane">
+                    <div class="um-pane-header">Details</div>
+                    <div class="um-pane-body um-details" id="oa-details"><div class="um-empty">Select a datapoint or element.</div></div>
+                </div>
+            </div>
+            <div id="loading-indicator" class="loading-indicator" style="display:none;">
+                <div class="loading-spinner"></div>
+                <span>Loading&hellip;</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/js/winccoa-browser.js"></script>
+    </ix-application>
+</body>
+</html>
