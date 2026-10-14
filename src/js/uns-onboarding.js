@@ -75,6 +75,7 @@ export function readablePayload(payload, format) {
 const MAX_CAPTURE_TOPICS = 5000;
 const MAX_CAPTURE_PAYLOAD = 64 * 1024;
 const MAX_TOPIC_DATA = 500;
+const TIME_FORMATS = { iso8601: 'ISO 8601', epochMs: 'epoch ms', epochS: 'epoch s' };
 
 export class OnboardingView {
     // host: the detail page controller (gql, ui, document, window, name, esc, setTimeout, clearTimeout, WebSocket)
@@ -404,7 +405,9 @@ export class OnboardingView {
                 <span class="um-small">${esc(d.type)}</span>${d.excluded ? '<span class="um-tag">excluded</span>' : ''}${this.issueTags(iss)}
                 <button type="button" class="btn btn-secondary btn-sm" data-a="rename" data-requires-auth>Rename</button>
                 <button type="button" class="btn btn-secondary btn-sm" data-a="exclude" data-requires-auth>${d.excluded ? 'Include' : 'Exclude'}</button></div>
-                ${(d.bindings || []).map(b => `<div><code>${esc(b.topic)}</code>${b.jsonPath ? ` <span class="um-small">${esc(b.jsonPath)}</span>` : ''} &#8594; <code>${esc(b.element || '(root)')}</code></div>`).join('')}
+                ${(d.bindings || []).map(b => `<div><code>${esc(b.topic)}</code>${b.jsonPath ? ` <span class="um-small">${esc(b.jsonPath)}</span>` : ''} &#8594; <code>${esc(b.element || '(root)')}</code>${b.timePath
+                    ? ` <span class="um-tag info" title="Source time from the payload (dpSetTimed)">time ${esc(b.timePath)} (${esc(TIME_FORMATS[b.timeFormat] || b.timeFormat)})</span>`
+                    : ' <span class="um-small" title="No timestamp in the payload: the receive time is the source time">receive time</span>'}</div>`).join('')}
                 ${(d.elements || []).map(e => `<div class="um-small">${esc(e.path)}: ${esc(this.metaText(e))}</div>`).join('')}
                 ${iss.map(x => `<div class="um-small">${esc(x.severity.toLowerCase())}: ${esc(x.message)}</div>`).join('')}
             </div>`;

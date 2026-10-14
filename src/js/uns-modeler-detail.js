@@ -123,6 +123,7 @@ class UnsModelerDetail {
                 this.loadAiRuns();
             }
             document.getElementById('live-section').style.display = '';
+            this.liveColumns(dev.config.direction);
             this.refreshLive();
         } catch (e) {
             ui.showError(e.message);
@@ -1044,23 +1045,45 @@ class UnsModelerDetail {
         } catch (e) { /* keep the last state */ }
     }
 
+    // Direction B writes MQTT payloads into WinCC OA: the table shows the
+    // source topic, the last written value and write time, no status bits.
+    liveColumns(direction) {
+        const b = direction === 'MQTT_TO_WINCCOA';
+        document.getElementById('live-th-topic').textContent = b ? 'MQTT Topic' : 'UNS Topic';
+        document.getElementById('live-th-status').style.display = b ? 'none' : '';
+        document.getElementById('live-th-count').textContent = b ? 'Messages' : 'Published';
+        document.getElementById('live-th-last').textContent = b ? 'Last Write' : 'Last Publish';
+        document.getElementById('live-th-stime').style.display = b ? '' : 'none';
+        document.getElementById('write-state').style.display = b ? 'none' : '';
+    }
+
     async refreshLive() {
         if (!this.name) return;
         try {
-            const r = await this.gql.query('query($n: String!) { unsModelers(name: $n) { liveTopics { topic dpe value status published lastPublish lastError lastErrorAt } } }', { n: this.name });
+            const r = await this.gql.query('query($n: String!) { unsModelers(name: $n) { liveTopics { topic dpe value status published lastPublish sourceTime lastError lastErrorAt } } }', { n: this.name });
             const list = (r.unsModelers[0] && r.unsModelers[0].liveTopics) || [];
             const now = Date.now();
             const body = document.getElementById('live-body');
-            if (!list.length) { body.innerHTML = ui.emptyRow(8, 'Nothing published yet', 'Apply a mapping to start the live data flow.'); return; }
+            const b = this.device && this.device.config.direction === 'MQTT_TO_WINCCOA';
+            if (!list.length) {
+                body.innerHTML = b ? ui.emptyRow(8, 'No value flow yet', 'Create the datapoints in WinCC OA to start the value flow.')
+                    : ui.emptyRow(8, 'Nothing published yet', 'Apply a mapping to start the live data flow.');
+                return;
+            }
             body.innerHTML = list.map(t => {
                 const prev = this.liveLast.get(t.topic);
                 const rate = prev ? ((t.published - prev.n) / Math.max((now - prev.at) / 1000, 0.001)) : 0;
                 this.liveLast.set(t.topic, { n: t.published, at: now });
                 return `<tr><td><code>${esc(t.topic)}</code></td><td>${esc(t.dpe)}</td><td><code>${esc(t.value)}</code></td>
-                    <td class="num">${t.status == null ? '' : '0x' + Number(t.status).toString(16)}</td><td class="num">${rate.toFixed(2)}</td>
-                    <td class="num">${t.published}</td><td>${esc(t.lastPublish || '')}</td><td>${t.lastError ? `<span class="um-tag err" title="${esc(t.lastErrorAt)}">${esc(t.lastError)}</span>` : ''}</td></tr>`;
+                    ${b ? '' : `<td class="num">${t.status == null ? '' : '0x' + Number(t.status).toString(16)}</td>`}<td class="num">${rate.toFixed(2)}</td>
+                    <td class="num">${t.published}</td><td>${esc(b && t.lastPublish ? new Date(t.lastPublish).toLocaleString() : t.lastPublish || '')}</td>${b
+                    ? `<td>${t.sourceTime ? esc(new Date(t.sourceTime).toLocaleString()) : (t.lastPublish ? '<span class="um-small">receive time</span>' : '')}</td>` : ''}<td>${t.lastError ? `<span class="um-tag err" title="${esc(t.lastErrorAt)}">${esc(t.lastError)}</span>` : ''}</td></tr>`;
             }).join('');
-        } catch (e) { /* live monitor is best-effort */ }
+        } catch (e) {
+            // Keep the rows of the last good poll; show the error only instead of an empty table.
+            const body = document.getElementById('live-body');
+            if (body && !body.querySelector('tr td code')) body.innerHTML = ui.emptyRow(8, 'Live monitor unavailable', e.message);
+        }
     }
 }
 

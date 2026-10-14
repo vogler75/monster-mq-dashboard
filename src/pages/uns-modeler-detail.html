@@ -67,6 +67,9 @@
         .um-json { width: 100%; min-height: 320px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.75rem; }
         .um-config-json { min-height: 70px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.75rem; }
         .um-direction-only { display: none; }
+        /* Live monitor: fixed-height frame; the header stays visible while the rows scroll */
+        .um-live-scroll { max-height: 320px; overflow: auto; }
+        .um-live-scroll thead th { position: sticky; top: 0; z-index: 1; }
         .um-card { border: 1px solid var(--dark-border, #334155); border-radius: 6px; padding: 0.45rem 0.55rem; margin-bottom: 0.5rem; font-size: 0.75rem; }
         .um-card.excluded { opacity: 0.5; }
         .um-card.conflict { border-color: #ef4444; }
@@ -329,17 +332,18 @@
                     <ix-icon-button icon="refresh" variant="subtle-tertiary" onclick="refreshLive()" title="Refresh"></ix-icon-button>
                 </div>
             </div>
-            <div class="table-responsive">
+            <div class="table-responsive um-live-scroll">
                 <table>
                     <thead>
                         <tr>
-                            <th>UNS Topic</th>
+                            <th id="live-th-topic">UNS Topic</th>
                             <th>DPE</th>
                             <th>Value</th>
-                            <th class="num">Status</th>
+                            <th class="num" id="live-th-status">Status</th>
                             <th class="num">Rate (msg/s)</th>
-                            <th class="num">Published</th>
-                            <th>Last Publish</th>
+                            <th class="num" id="live-th-count">Published</th>
+                            <th id="live-th-last">Last Publish</th>
+                            <th id="live-th-stime" style="display:none;">Source Time</th>
                             <th>Last Error</th>
                         </tr>
                     </thead>
