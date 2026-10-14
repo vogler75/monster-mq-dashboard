@@ -72,8 +72,12 @@ export function readablePayload(payload, format) {
     return payload;
 }
 
+const MAX_CAPTURE_TOPICS = 5000;
+const MAX_CAPTURE_PAYLOAD = 64 * 1024;
+const MAX_TOPIC_DATA = 500;
+
 export class OnboardingView {
-    // host: the detail page controller (gql, ui, document, name, esc, setTimeout, clearTimeout)
+    // host: the detail page controller (gql, ui, document, window, name, esc, setTimeout, clearTimeout, WebSocket)
     constructor(host) {
         this.h = host;
         this.d = host.document;
@@ -83,6 +87,10 @@ export class OnboardingView {
         this.expanded = new Set(['']);
         this.children = new Map();
         this.values = new Map();
+        // Live capture: tree and last payloads of the captured topics
+        this.capture = null;
+        this.capChildren = new Map([['', []]]);
+        this.capValues = new Map();
     }
 
     $(id) { return this.d.getElementById(id); }
@@ -100,15 +108,20 @@ export class OnboardingView {
         if (params.get('mode')) this.$('b-mode').value = params.get('mode').toUpperCase();
         else if (this.doc.source && this.doc.source.mode === 'archive') this.$('b-mode').value = 'ARCHIVE';
         await this.loadArchiveGroups();
-        this.$('b-ai-btn').style.display = dev.config.aiProvider ? '' : 'none';
+        this.$('b-ai-btn').style.display = this.h.genAi ? '' : 'none';
         this.$('b-ai-btn').addEventListener('click', () => this.aiRun());
         this.$('b-import-btn').addEventListener('click', () => this.importJson());
         this.$('b-save-btn').addEventListener('click', () => this.save());
         this.$('b-create-btn').addEventListener('click', () => this.create());
         this.$('b-raw-apply-btn').addEventListener('click', () => this.loadRaw());
         this.$('b-filters').addEventListener('change', () => this.renderSource());
+        this.$('b-mode').addEventListener('change', () => this.modeChanged());
+        this.$('b-capture-btn').addEventListener('click', () => this.toggleCapture());
+        this.h.window.registerPageCleanup(() => this.stopCapture());
         this.d.querySelectorAll('[data-btab]').forEach(t => t.addEventListener('click', () => this.showTab(t.dataset.btab)));
         await this.loadChildren('');
+        this.renderCapture();
+        this.modeChanged();
         this.render();
         this.validate();
         this.pollAi(true);
@@ -119,6 +132,142 @@ export class OnboardingView {
     }
 
     archiveGroup() { return this.$('b-archive').value || 'Default'; }
+
+    live() { return this.$('b-mode').value === 'LIVE'; }
+
+    kids(topic) { return (this.live() ? this.capChildren : this.children).get(topic); }
+
+    value(topic) { return (this.live() ? this.capValues : this.values).get(topic); }
+
+    modeChanged() {
+        const live = this.live();
+        // One filter field: the capture subscription (live) or the topics read from the archive group.
+        this.$('b-archive').style.display = live ? 'none' : '';
+        this.d.querySelectorAll('.b-live-only').forEach(el => { el.style.display = live ? '' : 'none'; });
+        this.$('b-source-row').style.gridTemplateColumns = live ? '140px 1fr auto auto' : '140px 1fr 1fr';
+        this.renderSource();
+    }
+
+    // Live capture: a topicUpdates subscription on the topic filters; the
+    // dashboard keeps the last payload per topic and passes them to the
+    // live analysis and import as topicData.
+
+    wsUrl() {
+        const w = this.h.window;
+        if (w.brokerManager) return w.brokerManager.getWsEndpoint();
+        return `${w.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${w.location.host}/graphql`;
+    }
+
+    toggleCapture() {
+        if (this.capture && this.capture.running) this.stopCapture();
+        else this.startCapture();
+    }
+
+    startCapture() {
+        const filters = this.filters();
+        if (!filters.length) { this.h.ui.error('Enter the topic filters to capture'); return; }
+        this.stopCapture();
+        const c = { running: true, connected: false, filters, started: new Date(), messages: 0, dropped: 0, topics: new Map() };
+        this.capture = c;
+        const ws = new this.h.WebSocket(this.wsUrl(), 'graphql-transport-ws');
+        this.ws = ws;
+        ws.onopen = () => {
+            const payload = {};
+            const token = this.h.window.safeStorage && this.h.window.safeStorage.getItem('monstermq_token');
+            if (token && token !== 'null') payload.authorization = `Bearer ${token}`;
+            ws.send(JSON.stringify({ type: 'connection_init', payload }));
+        };
+        ws.onmessage = ev => {
+            let msg;
+            try { msg = JSON.parse(ev.data); } catch { return; }
+            if (msg.type === 'connection_ack') {
+                c.connected = true;
+                ws.send(JSON.stringify({ id: '1', type: 'subscribe', payload: {
+                    query: 'subscription($f: [String!]!) { topicUpdates(topicFilters: $f) { topic payload format } }', variables: { f: filters } } }));
+                this.renderCapture();
+            } else if (msg.type === 'next' && msg.payload && msg.payload.data && msg.payload.data.topicUpdates) {
+                this.captured(c, msg.payload.data.topicUpdates);
+            } else if (msg.type === 'error') {
+                this.h.ui.error('Capture failed: ' + ((msg.payload || [])[0] || {}).message);
+                this.stopCapture();
+            }
+        };
+        ws.onclose = () => {
+            if (this.ws !== ws) return;
+            this.ws = null;
+            if (c.running) {
+                c.running = false;
+                this.h.ui.error('Capture stopped: connection to the broker closed');
+            }
+            this.renderCapture();
+        };
+        this.renderCapture();
+    }
+
+    stopCapture() {
+        const ws = this.ws;
+        this.ws = null;
+        if (this.capture) this.capture.running = false;
+        if (ws) {
+            try { if (ws.readyState === 1) ws.send(JSON.stringify({ id: '1', type: 'complete' })); ws.close(); } catch { /* closed */ }
+        }
+        this.renderCapture();
+    }
+
+    captured(c, m) {
+        if (m.topic.startsWith('$')) return;
+        c.messages++;
+        let t = c.topics.get(m.topic);
+        if (!t) {
+            if (c.topics.size >= MAX_CAPTURE_TOPICS) { c.dropped++; return; }
+            t = { messages: 0, payload: null };
+            c.topics.set(m.topic, t);
+            this.addCapturedTopic(m.topic);
+        }
+        t.messages++;
+        const p = readablePayload(m.payload, m.format);
+        t.payload = p != null && p.length <= MAX_CAPTURE_PAYLOAD ? p : null;
+        if (t.payload != null) this.capValues.set(m.topic, t.payload);
+        // Re-render at most once a second
+        if (!this.crt) this.crt = this.h.setTimeout(() => { this.crt = null; this.renderCapture(); if (this.live()) this.renderSource(); }, 1000);
+    }
+
+    addCapturedTopic(topic) {
+        const parts = topic.split('/');
+        for (let i = 1; i <= parts.length; i++) {
+            const node = parts.slice(0, i).join('/');
+            const parent = parts.slice(0, i - 1).join('/');
+            if (!this.capChildren.has(parent)) this.capChildren.set(parent, []);
+            const list = this.capChildren.get(parent);
+            if (!list.includes(node)) { list.push(node); list.sort(); }
+            if (!this.capChildren.has(node)) this.capChildren.set(node, []);
+        }
+    }
+
+    renderCapture() {
+        const c = this.capture;
+        const running = !!(c && c.running);
+        if (!this.$('b-capture-btn')) return;
+        this.$('b-capture-btn').innerHTML = running ? '<ix-icon name="stop" size="16"></ix-icon> Stop Capture' : '<ix-icon name="play" size="16"></ix-icon> Start Capture';
+        const state = this.$('b-capture-state');
+        const counts = c ? `${c.topics.size} topics · ${c.messages} messages${c.dropped ? ` · ${c.dropped} dropped` : ''}` : '';
+        state.textContent = !c ? 'Not capturing' : !running ? `Stopped · ${counts}`
+            : c.connected ? `Capturing since ${c.started.toLocaleTimeString()} · ${counts}` : 'Connecting…';
+        state.className = 'status-badge ' + (running ? 'status-enabled' : 'badge-neutral');
+        state.title = c ? 'Subscription: ' + c.filters.join(', ') : '';
+    }
+
+    // topicData of a live analysis: captured topics matching the filters.
+    topicData(filters) {
+        if (!this.live() || !this.capture) return null;
+        const out = [];
+        for (const [topic, t] of this.capture.topics) {
+            if (t.payload == null || !filters.some(f => topicMatches(f, topic))) continue;
+            out.push({ topic, value: t.payload });
+            if (out.length >= MAX_TOPIC_DATA) break;
+        }
+        return out;
+    }
 
     async loadArchiveGroups() {
         try {
@@ -154,15 +303,15 @@ export class OnboardingView {
         const rows = [];
         let assigned = 0, unassigned = 0;
         const visit = (topic, depth) => {
-            for (const child of this.children.get(topic) || []) {
-                const kids = this.children.get(child);
+            for (const child of this.kids(topic) || []) {
+                const kids = this.kids(child);
                 const open = this.expanded.has(child);
                 const a = assign.get(child);
                 const selected = filters.some(f => topicMatches(f, child) || f === child + '/#');
                 const inScope = filters.some(f => topicMatches(f, child));
                 if (inScope && kids && kids.length === 0) { if (a) assigned++; else unassigned++; }
                 const sw = a ? `<span class="um-swatch" style="background:${colors.get(a[0].type) || '#64748b'}" title="${esc(a.map(x => x.datapoint + '.' + x.element).join(', '))}"></span>` : '';
-                const val = this.values.get(child);
+                const val = this.value(child);
                 rows.push(`<div class="um-row" data-topic="${esc(child)}" style="padding-left:${0.3 + depth * 1.1}rem">
                     <span class="um-chevron${open ? ' expanded' : ''}" data-toggle="1">&#9656;</span>
                     <input type="checkbox" class="um-check" ${selected ? 'checked' : ''} aria-label="Analyse ${esc(child)}" data-ignore-dirty>
@@ -174,7 +323,9 @@ export class OnboardingView {
         };
         visit('', 0);
         const box = this.$('b-source');
-        box.innerHTML = rows.join('') || '<div class="um-empty">No topics in the archive group.</div>';
+        box.innerHTML = rows.join('') || (this.live()
+            ? '<div class="um-empty">No captured topics yet. Enter the topic filters and start the capture.</div>'
+            : '<div class="um-empty">No topics in the archive group.</div>');
         this.$('b-source-summary').textContent = `${assigned} assigned · ${unassigned} unassigned (expanded)`;
         box.querySelectorAll('.um-row[data-topic]').forEach(r => {
             const topic = r.dataset.topic;
@@ -183,8 +334,10 @@ export class OnboardingView {
                 if (this.expanded.has(topic)) this.expanded.delete(topic);
                 else {
                     this.expanded.add(topic);
-                    if (!this.children.has(topic)) await this.loadChildren(topic);
-                    await this.loadValues(topic);
+                    if (!this.live()) {
+                        if (!this.children.has(topic)) await this.loadChildren(topic);
+                        await this.loadValues(topic);
+                    }
                 }
                 this.renderSource();
             });
@@ -366,8 +519,8 @@ export class OnboardingView {
                 const filters = this.filters();
                 if (!filters.length) { this.h.ui.error('Select the analysed topics first'); return; }
                 try {
-                    const r = await this.h.gql.query('mutation($n: String!, $d: String!, $m: String, $a: String, $f: [String!]!) { unsModeler { importProposal(name: $n, document: $d, topicMode: $m, archiveGroup: $a, topicFilters: $f) { stored document errors issues { severity path message } } } }',
-                        { n: this.h.name, d: body.querySelector('#b-import-text').value, m: this.$('b-mode').value, a: this.archiveGroup(), f: filters });
+                    const r = await this.h.gql.query('mutation($n: String!, $d: String!, $m: String, $a: String, $f: [String!]!, $t: [TopicDataInput!]) { unsModeler { importProposal(name: $n, document: $d, topicMode: $m, archiveGroup: $a, topicFilters: $f, topicData: $t) { stored document errors issues { severity path message } } } }',
+                        { n: this.h.name, d: body.querySelector('#b-import-text').value, m: this.$('b-mode').value, a: this.archiveGroup(), f: filters, t: this.topicData(filters) });
                     const res = r.unsModeler.importProposal;
                     if (!res.stored) { this.h.ui.error('Not imported: ' + [...res.errors, ...res.issues.map(i => i.message)].join(', ')); return; }
                     close();
@@ -385,11 +538,11 @@ export class OnboardingView {
         const filters = this.filters();
         if (!filters.length) { this.h.ui.error('Select the topics to analyse first'); return; }
         if (this.saved && this.dirty() && !await this.save(true)) return;
-        const prompt = await this.h.prompt('Analyse with AI', 'Instructions for the analysis (optional)', '');
+        const prompt = await this.h.prompt('Analyse with AI', 'Instructions for the analysis (optional)', '', { multiline: true });
         if (prompt === null) return;
         try {
             const r = await this.h.gql.query('mutation($n: String!, $i: UnsModelerAiRunInput!) { unsModeler { startAiRun(name: $n, input: $i) { success errors } } }',
-                { n: this.h.name, i: { prompt, topicMode: this.$('b-mode').value, archiveGroup: this.archiveGroup(), topicFilters: filters } });
+                { n: this.h.name, i: { prompt, topicMode: this.$('b-mode').value, archiveGroup: this.archiveGroup(), topicFilters: filters, topicData: this.topicData(filters) } });
             const res = r.unsModeler.startAiRun;
             if (!res.success) { this.h.ui.error('AI run not started: ' + res.errors.join(', ')); return; }
             this.h.ui.success('AI analysis started');

@@ -170,10 +170,6 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="dev-aiprovider">AI Provider</label>
-                            <select id="dev-aiprovider" class="form-control"><option value="">None (manual modelling)</option></select>
-                        </div>
-                        <div class="form-group">
                             <label for="dev-approval">Approval Mode</label>
                             <select id="dev-approval" class="form-control">
                                 <option value="REVIEW">Review before apply</option>
@@ -286,10 +282,12 @@
                 </div>
             </div>
             <div class="section-content">
-                <div class="um-browser-filters" style="grid-template-columns: 140px 1fr 1fr; margin-bottom: 0.5rem;">
+                <div class="um-browser-filters" id="b-source-row" style="grid-template-columns: 140px 1fr 1fr; margin-bottom: 0.5rem; align-items: center;">
                     <select class="form-control" id="b-mode" aria-label="Topic source" data-ignore-dirty><option value="LIVE">Live</option><option value="ARCHIVE">Archive</option></select>
                     <select class="form-control" id="b-archive" aria-label="Archive group" data-ignore-dirty></select>
-                    <input class="form-control" id="b-filters" placeholder="Topic filters, e.g. plant/line1/# (comma separated)" aria-label="Topic filters" data-ignore-dirty>
+                    <input class="form-control" id="b-filters" placeholder="Topic filters, e.g. plant/#, factory/+/line1/# (comma separated)" aria-label="Topic filters" data-ignore-dirty>
+                    <button type="button" class="btn btn-secondary btn-sm b-live-only" id="b-capture-btn" data-requires-auth><ix-icon name="play" size="16"></ix-icon> Start Capture</button>
+                    <span class="status-badge badge-neutral b-live-only" id="b-capture-state">Not capturing</span>
                 </div>
                 <div class="um-editor">
                     <div class="um-pane">

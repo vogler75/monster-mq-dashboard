@@ -4,7 +4,7 @@ import { WinCCOaBrowserView, DRAG_TYPE } from './winccoa-browser-view.js';
 import { OnboardingView } from './uns-onboarding.js';
 
 export function mount(page) {
-const { window, document, ui, setInterval, setTimeout, clearTimeout } = page;
+const { window, document, ui, setInterval, setTimeout, clearTimeout, WebSocket } = page;
 // UNS Modeler device: configuration (A1), UNS editor (A2), live monitor (A3).
 
 const NODE_DRAG = 'application/x-uns-node';
@@ -14,7 +14,7 @@ const DEVICE_QUERY = `
     query GetUnsModeler($name: String!) {
         unsModelers(name: $name) {
             name namespace nodeId enabled isOnCurrentNode createdAt updatedAt
-            config { direction aiProvider approvalMode systemPrompt aiMaxSteps aiTimeoutSec aiTokenBudget redundancy
+            config { direction approvalMode systemPrompt aiMaxSteps aiTimeoutSec aiTokenBudget redundancy
                      unsRoot allowWrite topicDefaults payloadDefaults oaPrefix flowEnabled }
             status { running active topics dpes published writes errors lastApplied applyError }
             draft applied
@@ -48,7 +48,7 @@ class UnsModelerDetail {
 
     async init() {
         this.bindStatic();
-        await Promise.all([this.loadNodes(), this.loadProviders()]);
+        await Promise.all([this.loadNodes(), this.loadGenAi()]);
         if (this.isNew) {
             this.showNew();
             return;
@@ -81,17 +81,12 @@ class UnsModelerDetail {
         } catch (e) { /* node list is optional */ }
     }
 
-    async loadProviders() {
+    // AI runs use the broker's GenAI assistant provider.
+    async loadGenAi() {
         try {
-            const r = await this.gql.query('query { genAiProviders { name type model } }');
-            const sel = document.getElementById('dev-aiprovider');
-            for (const p of r.genAiProviders || []) {
-                const o = document.createElement('option');
-                o.value = p.name;
-                o.textContent = `${p.name} (${p.type}${p.model ? ', ' + p.model : ''})`;
-                sel.appendChild(o);
-            }
-        } catch (e) { /* GenAI may be disabled */ }
+            const features = await this.gql.getEnabledFeatures();
+            this.genAi = features.includes('GenAi');
+        } catch (e) { this.genAi = false; }
     }
 
     showNew() {
@@ -101,6 +96,7 @@ class UnsModelerDetail {
         document.getElementById('dev-maxsteps').value = 30;
         document.getElementById('dev-timeout').value = 600;
         document.getElementById('dev-tokens').value = 500000;
+        document.getElementById('dev-oaprefix').value = 'UNS_';
         const params = new URLSearchParams(window.location.search);
         if (params.get('direction')) document.getElementById('dev-direction').value = params.get('direction');
         this.showDirection();
@@ -120,8 +116,8 @@ class UnsModelerDetail {
                 await this.initEditor(dev);
             } else if (!this.onboarding) {
                 this.onboarding = new OnboardingView({
-                    document, window, ui, esc, setTimeout, clearTimeout, gql: this.gql, name: this.name,
-                    prompt: (t, l, v) => this.prompt(t, l, v), sevTag: s => this.sevTag(s), renderAiInto: (el, run) => this.renderAiInto(el, run)
+                    document, window, ui, esc, setTimeout, clearTimeout, WebSocket, gql: this.gql, name: this.name,
+                    prompt: (t, l, v, o) => this.prompt(t, l, v, o), genAi: this.genAi, sevTag: s => this.sevTag(s), renderAiInto: (el, run) => this.renderAiInto(el, run)
                 });
                 await this.onboarding.init(dev);
                 this.loadAiRuns();
@@ -152,7 +148,6 @@ class UnsModelerDetail {
         document.getElementById('dev-allowwrite').checked = c.allowWrite;
         set('dev-oaprefix', c.oaPrefix);
         document.getElementById('dev-flow').checked = c.flowEnabled;
-        set('dev-aiprovider', c.aiProvider || '');
         set('dev-approval', c.approvalMode);
         set('dev-redundancy', c.redundancy);
         set('dev-maxsteps', c.aiMaxSteps);
@@ -178,7 +173,6 @@ class UnsModelerDetail {
         const num = id => { const n = parseInt(v(id), 10); return Number.isFinite(n) ? n : null; };
         const cfg = {
             direction: v('dev-direction'),
-            aiProvider: v('dev-aiprovider'),
             approvalMode: v('dev-approval'),
             systemPrompt: v('dev-prompt'),
             redundancy: v('dev-redundancy'),
@@ -225,9 +219,15 @@ class UnsModelerDetail {
     async saveDevice() {
         const name = document.getElementById('dev-name').value.trim();
         if (!name) { ui.error('Name is required'); return; }
+        const config = this.formConfig();
+        if (config.direction === 'MQTT_TO_WINCCOA' && !config.oaPrefix) {
+            ui.error('WinCC OA Prefix is required for Direction B');
+            document.getElementById('dev-oaprefix').focus();
+            return;
+        }
         const input = {
             name, nodeId: document.getElementById('dev-node').value || null,
-            enabled: document.getElementById('dev-enabled').checked, config: this.formConfig()
+            enabled: document.getElementById('dev-enabled').checked, config
         };
         const fields = 'success errors issues { severity path message }';
         try {
@@ -295,7 +295,7 @@ class UnsModelerDetail {
         this.renderTree();
         this.renderDetails();
         this.validateSoon(0);
-        document.getElementById('ai-btn').style.display = dev.config.aiProvider ? '' : 'none';
+        document.getElementById('ai-btn').style.display = this.genAi ? '' : 'none';
         this.pollAi(true);
         this.loadAiRuns();
     }
@@ -698,21 +698,25 @@ class UnsModelerDetail {
         try { M.renameNode(this.doc, id, name); this.changed(); } catch (e) { ui.error(e.message); }
     }
 
-    prompt(title, label, value) {
+    // opts.multiline: a textarea; Enter adds a line, Ctrl+Enter confirms.
+    prompt(title, label, value, opts = {}) {
         return new Promise(resolve => {
             const body = document.createElement('div');
-            body.innerHTML = `<div class="form-group"><label for="um-prompt-input">${esc(label)}</label><input id="um-prompt-input" class="form-control" value="${esc(value)}"></div>`;
+            const field = opts.multiline
+                ? `<textarea id="um-prompt-input" class="form-control" rows="6">${esc(value)}</textarea>`
+                : `<input id="um-prompt-input" class="form-control" value="${esc(value)}">`;
+            body.innerHTML = `<div class="form-group"><label for="um-prompt-input">${esc(label)}</label>${field}</div>`;
             let done = false;
             const finish = (v, close) => { if (done) return; done = true; if (close) close(); resolve(v); };
             const m = ui.modal({
-                title, body, size: 'sm', onClose: () => finish(null),
+                title, body, size: opts.multiline ? 'md' : 'sm', onClose: () => finish(null),
                 footer: [
                     { label: 'Cancel', variant: 'secondary', onClick: close => finish(null, close) },
-                    { label: 'OK', variant: 'primary', onClick: close => finish(body.querySelector('input').value.trim(), close) }
+                    { label: 'OK', variant: 'primary', onClick: close => finish(body.querySelector('#um-prompt-input').value.trim(), close) }
                 ]
             });
-            const input = body.querySelector('input');
-            input.addEventListener('keydown', e => { if (e.key === 'Enter') finish(input.value.trim(), m.close); });
+            const input = body.querySelector('#um-prompt-input');
+            input.addEventListener('keydown', e => { if (e.key === 'Enter' && (!opts.multiline || e.ctrlKey || e.metaKey)) finish(input.value.trim(), m.close); });
         });
     }
 

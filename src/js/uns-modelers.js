@@ -7,7 +7,7 @@ const DEVICE_QUERY = `
     query GetUnsModelers {
         unsModelers {
             name nodeId enabled isOnCurrentNode
-            config { direction unsRoot oaPrefix allowWrite aiProvider }
+            config { direction unsRoot oaPrefix allowWrite }
             status { running active topics published errors }
         }
     }
