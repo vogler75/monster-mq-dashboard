@@ -48,20 +48,16 @@ class UnsModelerDetail {
 
     async init() {
         this.bindStatic();
+        // A new device shows its direction fields at once, not after the node and feature queries.
+        if (this.isNew) this.showNew();
         await Promise.all([this.loadNodes(), this.loadGenAi()]);
-        if (this.isNew) {
-            this.showNew();
-            return;
-        }
+        if (this.isNew) return;
         await this.load();
         setInterval(() => this.refreshStatus(), 5000);
     }
 
     bindStatic() {
         document.getElementById('dev-direction').addEventListener('change', () => this.showDirection());
-        for (const id of ['dev-topicdefaults', 'dev-payloaddefaults']) {
-            document.getElementById(id).addEventListener('input', () => this.renderPayloadPreview());
-        }
         document.getElementById('add-root-btn').addEventListener('click', () => this.addNodePrompt(null));
         document.getElementById('save-draft-btn').addEventListener('click', () => this.saveDraft());
         document.getElementById('discard-btn').addEventListener('click', () => this.discard());
@@ -100,6 +96,7 @@ class UnsModelerDetail {
         const params = new URLSearchParams(window.location.search);
         if (params.get('direction')) document.getElementById('dev-direction').value = params.get('direction');
         this.showDirection();
+        this.renderDefaults();
         this.renderPayloadPreview();
     }
 
@@ -159,6 +156,7 @@ class UnsModelerDetail {
         set('dev-prompt', c.systemPrompt || '');
         this.showDirection();
         this.renderStatus();
+        this.renderDefaults();
         this.renderPayloadPreview();
     }
 
@@ -166,7 +164,7 @@ class UnsModelerDetail {
 
     showDirection() {
         const dir = this.direction();
-        document.querySelectorAll('.um-direction-only').forEach(el => { el.style.display = el.dataset.direction === dir ? '' : 'none'; });
+        document.querySelectorAll('.um-direction-only').forEach(el => el.classList.toggle('um-shown', el.dataset.direction === dir));
     }
 
     formConfig() {
@@ -190,6 +188,81 @@ class UnsModelerDetail {
         }
         for (const k of Object.keys(cfg)) if (cfg[k] === null) delete cfg[k];
         return cfg;
+    }
+
+    // Device topic and payload defaults: controls that write the JSON settings
+    // into the hidden dev-topicdefaults / dev-payloaddefaults inputs.
+    renderDefaults() {
+        const tdInput = document.getElementById('dev-topicdefaults');
+        const pdInput = document.getElementById('dev-payloaddefaults');
+        const td = M.parseJSONSetting(tdInput.value) || {};
+        const pd = M.parseJSONSetting(pdInput.value);
+        const payload = Array.isArray(pd) ? pd : M.BUILTIN_SEMANTICS.payload.slice();
+        const B = M.BUILTIN_SEMANTICS;
+        // Device defaults are the last level before the built-in values: the lists
+        // show the effective value, and only values that differ from it are stored.
+        const opt = (v, cur, label) => `<option value="${v}"${String(cur) === v ? ' selected' : ''}>${label || v}</option>`;
+        const eff = k => td[k] ?? B[k];
+        const usesParam = ['deadband', 'minInterval', 'cyclic'].includes(td.publishMode);
+        const field = (label, control) => `<div class="form-group"><label>${label}</label>${control}</div>`;
+        document.getElementById('topic-defaults').innerHTML = `<div class="um-defaults">
+            ${field('Retain', `<select class="form-control" data-d="retain">${opt('false', eff('retain'))}${opt('true', eff('retain'))}</select>`)}
+            ${field('QoS', `<select class="form-control" data-d="qos">${opt('0', eff('qos'))}${opt('1', eff('qos'))}${opt('2', eff('qos'))}</select>`)}
+            ${field('Publish Mode', `<select class="form-control" data-d="publishMode">${['onChange', 'deadband', 'minInterval', 'cyclic'].map(m => opt(m, eff('publishMode'))).join('')}</select>`)}
+            ${field(td.publishMode === 'deadband' ? 'Deadband' : 'Interval (ms)', `<input class="form-control" type="number" data-d="param" value="${esc(td.publishMode === 'deadband' ? (td.deadband ?? '') : (td.intervalMs ?? ''))}" ${usesParam ? '' : 'disabled placeholder="—"'}>`)}
+            ${field('Timestamp', `<select class="form-control" data-d="timestamp">${opt('source', eff('timestamp'), 'source time')}${opt('publish', eff('timestamp'), 'publish time')}</select>`)}
+            ${field('Encoding', `<select class="form-control" data-d="encoding">${opt('json', eff('encoding'), 'json fields')}${opt('raw', eff('encoding'), 'raw value')}</select>`)}
+        </div>`;
+        const attrs = payload.filter(f => typeof f === 'object' && f);
+        const raw = (td.encoding || B.encoding) === 'raw';
+        document.getElementById('payload-defaults').innerHTML = `
+            <div class="um-fields">${M.PAYLOAD_FIELDS.map(f => `<div class="checkbox-group"><input type="checkbox" id="pd-${f}" data-f="${f}"${payload.includes(f) ? ' checked' : ''}${f === 'value' || raw ? ' disabled' : ''}><label for="pd-${f}">${f}</label></div>`).join('')}</div>
+            ${attrs.map((a, i) => `<div class="um-attr"><input class="form-control" data-a="name" data-i="${i}" value="${esc(a.name)}" placeholder="Payload key" ${raw ? 'disabled' : ''}>
+                <input class="form-control" data-a="attribute" data-i="${i}" value="${esc(a.attribute)}" placeholder="_alert_hdl.2._u_limit" ${raw ? 'disabled' : ''}>
+                <button type="button" class="btn btn-secondary btn-sm" data-a="remove" data-i="${i}" title="Remove attribute">✕</button></div>`).join('')}
+            <button type="button" class="btn btn-secondary btn-sm" data-a="add" style="margin-top:0.35rem;" ${raw ? 'disabled' : ''}>+ Config attribute</button>
+            ${raw ? '<div class="um-small">Encoding raw publishes the value only.</div>' : ''}`;
+
+        const store = (input, v, empty) => { input.value = empty ? '' : JSON.stringify(v); this.renderDefaults(); this.renderPayloadPreview(); };
+        document.querySelectorAll('#topic-defaults [data-d]').forEach(inp => inp.addEventListener('change', () => {
+            const cur = { ...td }, v = inp.value, k = inp.dataset.d;
+            switch (k) {
+                case 'retain': case 'qos': case 'timestamp': case 'encoding': {
+                    const val = k === 'retain' ? v === 'true' : k === 'qos' ? Number(v) : v;
+                    if (val === B[k]) delete cur[k]; else cur[k] = val;
+                    break;
+                }
+                case 'publishMode':
+                    delete cur.deadband; delete cur.intervalMs;
+                    if (v === B.publishMode) delete cur.publishMode;
+                    else {
+                        cur.publishMode = v;
+                        if (v === 'deadband') cur.deadband = 1;
+                        if (v === 'minInterval' || v === 'cyclic') cur.intervalMs = 1000;
+                    }
+                    break;
+                case 'param':
+                    if (cur.publishMode === 'deadband') cur.deadband = Number(v);
+                    else cur.intervalMs = Number(v);
+                    break;
+            }
+            store(tdInput, cur, !Object.keys(cur).length);
+        }));
+        // The built-in field list is stored as no setting.
+        const storePayload = list => store(pdInput, list, JSON.stringify(list) === JSON.stringify(B.payload));
+        document.querySelectorAll('#payload-defaults [data-f]').forEach(cb => cb.addEventListener('change', () => {
+            const f = cb.dataset.f;
+            storePayload(cb.checked ? [...payload, f] : payload.filter(x => x !== f));
+        }));
+        document.querySelectorAll('#payload-defaults [data-a]').forEach(el => el.addEventListener(el.tagName === 'BUTTON' ? 'click' : 'change', () => {
+            const i = Number(el.dataset.i);
+            const list = payload.slice();
+            const at = list.indexOf(attrs[i]);
+            if (el.dataset.a === 'add') list.push({ name: `attr${attrs.length + 1}`, attribute: '' });
+            else if (el.dataset.a === 'remove') list.splice(at, 1);
+            else list[at] = { ...attrs[i], [el.dataset.a]: el.value.trim() };
+            storePayload(list);
+        }));
     }
 
     configForSemantics() {
@@ -221,6 +294,11 @@ class UnsModelerDetail {
         const name = document.getElementById('dev-name').value.trim();
         if (!name) { ui.error('Name is required'); return; }
         const config = this.formConfig();
+        if (config.direction === 'WINCCOA_TO_UNS' && !config.unsRoot) {
+            ui.error('UNS Root is required for Direction A, e.g. acme/vienna/hall2');
+            document.getElementById('dev-unsroot').focus();
+            return;
+        }
         if (config.direction === 'MQTT_TO_WINCCOA' && !config.oaPrefix) {
             ui.error('WinCC OA Prefix is required for Direction B');
             document.getElementById('dev-oaprefix').focus();

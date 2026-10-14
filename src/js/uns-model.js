@@ -292,9 +292,10 @@ export function payloadPreview(sem, info = {}) {
 // dropOnNode applies a drop from the WinCC OA browser (§4.1). items are
 // { kind: 'element'|'datapoint'|'type', system, type, datapoint, path,
 //   pattern, elements }. A dropped element binds the node unless it has a
-// binding or children, then it becomes a new child leaf; a datapoint or type
-// binds the node, or becomes a child when the node is bound already. Several
-// items always become children. Returns the nodes that got a binding.
+// binding or children, then it becomes a new child leaf; a datapoint always
+// becomes a child named after it; a type binds the node, or becomes a child
+// when the node is bound already. Several items always become children.
+// Returns the nodes that got a binding.
 export function dropOnNode(doc, nodeId, items) {
     const f = nodeId ? findNode(doc, nodeId) : null;
     if (nodeId && !f) throw new Error('target node not found');
@@ -304,7 +305,7 @@ export function dropOnNode(doc, nodeId, items) {
     const asChild = !target || list.length > 1 || !!target.binding;
     for (const it of list) {
         const binding = bindingFor(it);
-        if (!asChild && !(it.kind === 'element' && Array.isArray(target.children) && target.children.length)) {
+        if (!asChild && it.kind !== 'datapoint' && !(it.kind === 'element' && Array.isArray(target.children) && target.children.length)) {
             target.binding = binding;
             clearAi(target);
             out.push(target);

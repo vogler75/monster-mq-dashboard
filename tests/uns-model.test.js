@@ -48,6 +48,12 @@ test('drops create bindings like the editor rules of §4.1', () => {
     const [dp] = M.dropOnNode(doc, empty.id, { kind: 'datapoint', type: 'PumpType', datapoint: 'P104' });
     assert.equal(dp.name, 'P104');
     assert.equal(dp.binding.elements, undefined);
+    // A datapoint on an unbound node becomes a child named after it, too.
+    const area = M.addNode(doc, null, 'area');
+    const [dp2] = M.dropOnNode(doc, area.id, { kind: 'datapoint', type: 'PumpType', datapoint: 'P105' });
+    assert.equal(dp2.name, 'P105');
+    assert.equal(area.binding, undefined);
+    assert.deepEqual(area.children.map(n => n.name), ['P105']);
     // A type becomes a pattern binding.
     const tgt = M.addNode(doc, null, 'all');
     M.dropOnNode(doc, tgt.id, { kind: 'type', type: 'PumpType', pattern: 'Hall2_*', elements: ['flow'] });

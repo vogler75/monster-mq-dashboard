@@ -58,6 +58,8 @@
         .um-ovr { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; }
         .um-ovr label { display: flex; flex-direction: column; font-size: 0.7rem; color: var(--text-muted, #94a3b8); gap: 0.1rem; }
         .um-ovr .wide { grid-column: 1 / -1; }
+        .um-fields { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; }
+        .um-attr { display: grid; grid-template-columns: 1fr 2fr auto; gap: 0.35rem; align-items: center; margin-top: 0.35rem; }
         .um-tabs { display: flex; gap: 0.25rem; border-bottom: 1px solid var(--dark-border, #334155); margin-top: 0.75rem; }
         .um-tab { background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted, #94a3b8); padding: 0.4rem 0.75rem; cursor: pointer; font: inherit; font-size: 0.8rem; }
         .um-tab.active { color: #fff; border-bottom-color: var(--monster-purple, #7c3aed); }
@@ -65,8 +67,17 @@
         .um-issue { display: flex; gap: 0.5rem; align-items: baseline; padding: 0.2rem 0; font-size: 0.75rem; cursor: pointer; }
         .um-issue code { color: var(--text-muted, #94a3b8); }
         .um-json { width: 100%; min-height: 320px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.75rem; }
-        .um-config-json { min-height: 70px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.75rem; }
-        .um-direction-only { display: none; }
+        .um-direction-only:not(.um-shown) { display: none; }
+        /* Device configuration layout */
+        .um-grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .um-span2 { grid-column: span 2; }
+        .um-inline-check { margin-top: 1.6rem; }
+        .um-defaults { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--sp-3); margin: 0.6rem 0 0.9rem; }
+        .um-defaults .form-group { margin-bottom: 0; }
+        .um-payload-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-3); }
+        .um-payload-row .form-group { margin-bottom: 0; }
+        .um-payload-row .um-pre { min-height: 90px; }
+        @media (max-width: 1100px) { .um-grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .um-defaults { grid-template-columns: repeat(3, minmax(0, 1fr)); } .um-payload-row { grid-template-columns: 1fr; } }
         /* Live monitor: fixed-height frame; the header stays visible while the rows scroll */
         .um-live-scroll { max-height: 320px; overflow: auto; }
         .um-live-scroll thead th { position: sticky; top: 0; z-index: 1; }
@@ -78,6 +89,7 @@
         .um-swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
         .um-small { font-size: 0.68rem; color: var(--text-muted, #94a3b8); }
         .um-subhead { font-size: 0.9rem; margin: 1rem 0 0.4rem; color: var(--text-secondary, #cbd5e1); }
+        .form-section > .um-subhead:first-child { margin-top: 0; }
         .um-log { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
         .um-log td, .um-log th { padding: 0.2rem 0.4rem; border-bottom: 1px solid var(--dark-border, #334155); text-align: left; vertical-align: top; }
         .um-log td.detail { font-family: ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 900px; }
@@ -127,7 +139,7 @@
             </div>
             <div class="section-content">
                 <form id="device-form" onsubmit="return false;">
-                    <div class="form-grid">
+                    <div class="form-grid um-grid4">
                         <div class="form-group">
                             <label for="dev-name">Name *</label>
                             <input type="text" id="dev-name" class="form-control" required>
@@ -145,41 +157,6 @@
                             <select id="dev-node" class="form-control"></select>
                         </div>
                         <div class="form-group">
-                            <div class="checkbox-group" style="margin-top:1.8rem;">
-                                <input type="checkbox" id="dev-enabled" checked>
-                                <label for="dev-enabled">Enabled</label>
-                            </div>
-                        </div>
-                        <div class="form-group um-direction-only" data-direction="WINCCOA_TO_UNS">
-                            <label for="dev-unsroot">UNS Root *</label>
-                            <input type="text" id="dev-unsroot" class="form-control" placeholder="acme/vienna/hall2">
-                            <span class="form-hint">All topics of the device lie below this subtree.</span>
-                        </div>
-                        <div class="form-group um-direction-only" data-direction="WINCCOA_TO_UNS">
-                            <div class="checkbox-group" style="margin-top:1.8rem;">
-                                <input type="checkbox" id="dev-allowwrite">
-                                <label for="dev-allowwrite">Allow write-through (&lt;topic&gt;/..set)</label>
-                            </div>
-                        </div>
-                        <div class="form-group um-direction-only" data-direction="MQTT_TO_WINCCOA">
-                            <label for="dev-oaprefix">WinCC OA Prefix *</label>
-                            <input type="text" id="dev-oaprefix" class="form-control" placeholder="UNS_">
-                            <span class="form-hint">Created types and datapoints must start with it.</span>
-                        </div>
-                        <div class="form-group um-direction-only" data-direction="MQTT_TO_WINCCOA">
-                            <div class="checkbox-group" style="margin-top:1.8rem;">
-                                <input type="checkbox" id="dev-flow" checked>
-                                <label for="dev-flow">Value flow into WinCC OA after create</label>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="dev-approval">Approval Mode</label>
-                            <select id="dev-approval" class="form-control">
-                                <option value="REVIEW">Review before apply</option>
-                                <option value="AUTO">Apply error-free AI proposals automatically</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
                             <label for="dev-redundancy">Redundancy</label>
                             <select id="dev-redundancy" class="form-control">
                                 <option value="HOT_STANDBY">Hot standby</option>
@@ -188,29 +165,81 @@
                             </select>
                             <span class="form-hint">Takes effect with the redundancy role manager.</span>
                         </div>
-                        <div class="form-group">
-                            <label for="dev-maxsteps">AI Run Limits (steps / timeout s / tokens)</label>
-                            <div style="display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:0.35rem;">
-                                <input type="number" id="dev-maxsteps" class="form-control" min="1" aria-label="Maximum tool calls">
-                                <input type="number" id="dev-timeout" class="form-control" min="10" aria-label="Timeout in seconds">
-                                <input type="number" id="dev-tokens" class="form-control" min="1000" aria-label="Token budget">
+                        <div class="form-group um-span2 um-direction-only" data-direction="WINCCOA_TO_UNS">
+                            <label for="dev-unsroot">UNS Root *</label>
+                            <input type="text" id="dev-unsroot" class="form-control" placeholder="e.g. acme/vienna/hall2">
+                            <span class="form-hint">Required. All topics of the device lie below this subtree.</span>
+                        </div>
+                        <div class="form-group um-direction-only" data-direction="WINCCOA_TO_UNS">
+                            <div class="checkbox-group um-inline-check">
+                                <input type="checkbox" id="dev-allowwrite">
+                                <label for="dev-allowwrite">Allow write-through (&lt;topic&gt;/..set)</label>
                             </div>
                         </div>
-                        <div class="form-group um-direction-only" data-direction="WINCCOA_TO_UNS">
-                            <label for="dev-topicdefaults">Topic Defaults (JSON)</label>
-                            <textarea id="dev-topicdefaults" class="form-control um-config-json" placeholder='{"retain": false, "qos": 0, "publishMode": "onChange", "timestamp": "source", "encoding": "json"}'></textarea>
+                        <div class="form-group um-span2 um-direction-only" data-direction="MQTT_TO_WINCCOA">
+                            <label for="dev-oaprefix">WinCC OA Prefix *</label>
+                            <input type="text" id="dev-oaprefix" class="form-control" placeholder="UNS_">
+                            <span class="form-hint">Created types and datapoints must start with it.</span>
                         </div>
-                        <div class="form-group um-direction-only" data-direction="WINCCOA_TO_UNS">
-                            <label for="dev-payloaddefaults">Payload Defaults (JSON)</label>
-                            <textarea id="dev-payloaddefaults" class="form-control um-config-json" placeholder='["value", "time"]'></textarea>
+                        <div class="form-group um-direction-only" data-direction="MQTT_TO_WINCCOA">
+                            <div class="checkbox-group um-inline-check">
+                                <input type="checkbox" id="dev-flow" checked>
+                                <label for="dev-flow">Value flow into WinCC OA after create</label>
+                            </div>
                         </div>
-                        <div class="form-group um-direction-only" data-direction="WINCCOA_TO_UNS" style="grid-column:1/-1;">
-                            <label>Payload Preview</label>
-                            <pre class="um-pre" id="payload-preview"></pre>
+                        <div class="form-group">
+                            <div class="checkbox-group um-inline-check">
+                                <input type="checkbox" id="dev-enabled" checked>
+                                <label for="dev-enabled">Enabled</label>
+                            </div>
                         </div>
-                        <div class="form-group" style="grid-column:1/-1;">
-                            <label for="dev-prompt">System Prompt</label>
-                            <textarea id="dev-prompt" class="form-control" rows="4" placeholder="Leave empty to use the built-in prompt of the direction."></textarea>
+                    </div>
+
+                    <div class="form-section um-direction-only" data-direction="WINCCOA_TO_UNS">
+                        <h3 class="um-subhead">Publishing Defaults</h3>
+                        <span class="form-hint">How every topic is published unless a node in the tree overrides it.</span>
+                        <input type="hidden" id="dev-topicdefaults">
+                        <div id="topic-defaults"></div>
+                        <div class="um-payload-row">
+                            <div class="form-group">
+                                <label>Payload Fields</label>
+                                <input type="hidden" id="dev-payloaddefaults">
+                                <div id="payload-defaults"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>Payload Preview</label>
+                                <pre class="um-pre" id="payload-preview"></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="um-subhead">AI Assistant</h3>
+                        <div class="form-grid um-grid4">
+                            <div class="form-group">
+                                <label for="dev-approval">Approval Mode</label>
+                                <select id="dev-approval" class="form-control">
+                                    <option value="REVIEW">Review before apply</option>
+                                    <option value="AUTO">Apply error-free AI proposals automatically</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="dev-maxsteps">Max Steps</label>
+                                <input type="number" id="dev-maxsteps" class="form-control" min="1">
+                                <span class="form-hint">Tool calls per run.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="dev-timeout">Timeout (s)</label>
+                                <input type="number" id="dev-timeout" class="form-control" min="10">
+                            </div>
+                            <div class="form-group">
+                                <label for="dev-tokens">Token Budget</label>
+                                <input type="number" id="dev-tokens" class="form-control" min="1000">
+                            </div>
+                            <div class="form-group" style="grid-column:1/-1;">
+                                <label for="dev-prompt">System Prompt</label>
+                                <textarea id="dev-prompt" class="form-control" rows="4" placeholder="Leave empty to use the built-in prompt of the direction."></textarea>
+                            </div>
                         </div>
                     </div>
                 </form>
