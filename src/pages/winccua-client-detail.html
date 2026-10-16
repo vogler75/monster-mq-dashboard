@@ -482,16 +482,17 @@
                         <label for="address-type">Subscription Type *</label>
                         <select id="address-type" required onchange="clientDetailManager.updateAddressFormFields()">
                             <option value="">Select Type...</option>
-                            <option value="TAG_VALUES">TAG_VALUES</option>
-                            <option value="ACTIVE_ALARMS">ACTIVE_ALARMS</option>
+                            <option value="TAG_VALUES">TAG_VALUES (Read Tags)</option>
+                            <option value="ACTIVE_ALARMS">ACTIVE_ALARMS (Read Alarms)</option>
+                            <option value="TAG_WRITE">TAG_WRITE (Write Tag)</option>
                         </select>
-                        <small class="form-hint">Type of subscription to create</small>
+                        <small class="form-hint">Type of subscription or tag mapping to create</small>
                     </div>
                     <div class="form-group">
                         <label for="address-topic">MQTT Topic *</label>
                         <input type="text" id="address-topic" required
                                placeholder="e.g., plant/sensor/value">
-                        <small class="form-hint">MQTT topic where values will be published</small>
+                        <small class="form-hint" id="address-topic-hint">MQTT topic where values will be published</small>
                     </div>
                     <div class="form-group">
                         <label for="address-description">Description</label>
@@ -528,7 +529,30 @@
                         <input type="text" id="address-filter-string" placeholder="Optional filter">
                         <small class="form-hint">Filter string for ACTIVE_ALARMS</small>
                     </div>
-                    <div class="form-group">
+                    <div id="tag-name-group" class="form-group conditional-field">
+                        <label for="address-tag-name">WinCC Unified Tag Name *</label>
+                        <input type="text" id="address-tag-name" placeholder="e.g., HMI_Setpoint_1">
+                        <small class="form-hint">Exact WinCC Unified tag name to write to (wildcards are not supported)</small>
+                    </div>
+                    <div id="json-path-group" class="form-group conditional-field">
+                        <label for="address-json-path">Value JSON Path</label>
+                        <input type="text" id="address-json-path" placeholder="Leave empty for 1:1 raw payload, or e.g., value / data.temperature.value" oninput="clientDetailManager.updateTimestampFieldsState()">
+                        <small class="form-hint">Optional dot-separated JSON path. Leave empty to map the raw MQTT payload 1:1 to the tag.</small>
+                    </div>
+                    <div id="timestamp-json-path-group" class="form-group conditional-field">
+                        <label for="address-timestamp-json-path">Timestamp JSON Path (GraphQL only)</label>
+                        <input type="text" id="address-timestamp-json-path" placeholder="Optional, e.g., time or data.timestamp" oninput="clientDetailManager.updateTimestampFieldsState()">
+                        <small class="form-hint">Optional dot-separated JSON path to timestamp (requires Value JSON Path and GraphQL mode)</small>
+                    </div>
+                    <div id="timestamp-format-group" class="form-group conditional-field">
+                        <label for="address-timestamp-format">Timestamp Format</label>
+                        <select id="address-timestamp-format">
+                            <option value="ISO" selected>ISO 8601 Date (e.g., 2026-06-06T12:00:00Z)</option>
+                            <option value="MS">Milliseconds since Epoch (e.g., 1749211200000)</option>
+                        </select>
+                        <small class="form-hint">Format of the timestamp at Timestamp JSON Path</small>
+                    </div>
+                    <div id="retained-group" class="form-group conditional-field visible">
                         <div class="checkbox-group">
                             <input type="checkbox" id="address-retained">
                             <label for="address-retained">Publish with Retained Flag</label>

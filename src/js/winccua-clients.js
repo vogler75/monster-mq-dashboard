@@ -85,6 +85,10 @@ class WinCCUaClientManager {
                                 includeQuality
                                 systemNames
                                 filterString
+                                tagName
+                                jsonPath
+                                timestampJsonPath
+                                timestampFormat
                                 retained
                             }
                         }

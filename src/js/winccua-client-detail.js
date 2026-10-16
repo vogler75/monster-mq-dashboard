@@ -188,6 +188,10 @@ class WinCCUaClientDetailManager {
                                 pipeTagMode
                                 systemNames
                                 filterString
+                                tagName
+                                jsonPath
+                                timestampJsonPath
+                                timestampFormat
                                 retained
                             }
                         }
@@ -333,7 +337,18 @@ class WinCCUaClientDetailManager {
                 if (address.systemNames) optionsBadges.push(`Systems: ${this.escapeHtml(address.systemNames.join(', '))}`);
                 if (address.filterString) optionsBadges.push(`Filter: ${this.escapeHtml(address.filterString)}`);
             }
-            if (address.retained) optionsBadges.push('Retained');
+            if (address.type === 'TAG_WRITE') {
+                if (address.tagName) optionsBadges.push(`Tag: ${this.escapeHtml(address.tagName)}`);
+                if (address.jsonPath) {
+                    optionsBadges.push(`JSON: ${this.escapeHtml(address.jsonPath)}`);
+                } else {
+                    optionsBadges.push('Raw 1:1');
+                }
+                if (address.timestampJsonPath) {
+                    optionsBadges.push(`TS: ${this.escapeHtml(address.timestampJsonPath)} (${this.escapeHtml(address.timestampFormat || 'ISO')})`);
+                }
+            }
+            if (address.type !== 'TAG_WRITE' && address.retained) optionsBadges.push('Retained');
             const optionsText = optionsBadges.length > 0 ? optionsBadges.join(', ') : 'None';
 
             row.innerHTML = `
@@ -368,6 +383,13 @@ class WinCCUaClientDetailManager {
         const pipeTagModeGroup = document.getElementById('pipe-tag-mode-group');
         const systemNamesGroup = document.getElementById('system-names-group');
         const filterStringGroup = document.getElementById('filter-string-group');
+        const tagNameGroup = document.getElementById('tag-name-group');
+        const jsonPathGroup = document.getElementById('json-path-group');
+        const timestampJsonPathGroup = document.getElementById('timestamp-json-path-group');
+        const timestampFormatGroup = document.getElementById('timestamp-format-group');
+        const retainedGroup = document.getElementById('retained-group');
+        const tagNameInput = document.getElementById('address-tag-name');
+        const topicHint = document.getElementById('address-topic-hint');
 
         // Hide all conditional fields
         browseArgsGroup.classList.remove('visible');
@@ -375,6 +397,13 @@ class WinCCUaClientDetailManager {
         pipeTagModeGroup.classList.remove('visible');
         systemNamesGroup.classList.remove('visible');
         filterStringGroup.classList.remove('visible');
+        if (tagNameGroup) tagNameGroup.classList.remove('visible');
+        if (jsonPathGroup) jsonPathGroup.classList.remove('visible');
+        if (timestampJsonPathGroup) timestampJsonPathGroup.classList.remove('visible');
+        if (timestampFormatGroup) timestampFormatGroup.classList.remove('visible');
+        if (retainedGroup) retainedGroup.classList.add('visible');
+        if (tagNameInput) tagNameInput.required = false;
+        if (topicHint) topicHint.textContent = 'MQTT topic where values will be published';
 
         // Show relevant fields based on type
         if (type === 'TAG_VALUES') {
@@ -384,7 +413,31 @@ class WinCCUaClientDetailManager {
         } else if (type === 'ACTIVE_ALARMS') {
             systemNamesGroup.classList.add('visible');
             filterStringGroup.classList.add('visible');
+        } else if (type === 'TAG_WRITE') {
+            if (tagNameGroup) tagNameGroup.classList.add('visible');
+            if (jsonPathGroup) jsonPathGroup.classList.add('visible');
+            if (timestampJsonPathGroup) timestampJsonPathGroup.classList.add('visible');
+            if (timestampFormatGroup) timestampFormatGroup.classList.add('visible');
+            if (retainedGroup) retainedGroup.classList.remove('visible');
+            if (tagNameInput) tagNameInput.required = true;
+            if (topicHint) topicHint.textContent = 'Exact MQTT topic to subscribe to (no + or # wildcards)';
+            this.updateTimestampFieldsState();
         }
+    }
+
+    updateTimestampFieldsState() {
+        const jsonPathInput = document.getElementById('address-json-path');
+        const tsPathInput = document.getElementById('address-timestamp-json-path');
+        const tsFormatSelect = document.getElementById('address-timestamp-format');
+        if (!jsonPathInput || !tsPathInput || !tsFormatSelect) return;
+
+        const hasJsonPath = jsonPathInput.value.trim().length > 0;
+        tsPathInput.disabled = !hasJsonPath;
+        if (!hasJsonPath) {
+            tsPathInput.value = '';
+        }
+        const hasTsPath = hasJsonPath && tsPathInput.value.trim().length > 0;
+        tsFormatSelect.disabled = !hasTsPath;
     }
 
     showAddAddressModal() {
@@ -423,6 +476,10 @@ class WinCCUaClientDetailManager {
         document.getElementById('address-pipe-tag-mode').value = address.pipeTagMode || 'SINGLE';
         document.getElementById('address-system-names').value = (address.systemNames && address.systemNames.length > 0) ? address.systemNames.join(', ') : '';
         document.getElementById('address-filter-string').value = address.filterString || '';
+        document.getElementById('address-tag-name').value = address.tagName || '';
+        document.getElementById('address-json-path').value = address.jsonPath || '';
+        document.getElementById('address-timestamp-json-path').value = address.timestampJsonPath || '';
+        document.getElementById('address-timestamp-format').value = address.timestampFormat || 'ISO';
         document.getElementById('address-retained').checked = address.retained || false;
 
         // Update conditional fields
@@ -444,11 +501,12 @@ class WinCCUaClientDetailManager {
         }
 
         const type = document.getElementById('address-type').value.trim();
+        const topic = document.getElementById('address-topic').value.trim();
         const addressData = {
             type: type,
-            topic: document.getElementById('address-topic').value.trim(),
+            topic: topic,
             description: document.getElementById('address-description').value.trim(),
-            retained: document.getElementById('address-retained').checked
+            retained: type === 'TAG_WRITE' ? false : document.getElementById('address-retained').checked
         };
 
         // Add type-specific fields
@@ -461,6 +519,33 @@ class WinCCUaClientDetailManager {
             const systemNamesValue = document.getElementById('address-system-names').value.trim();
             addressData.systemNames = systemNamesValue ? systemNamesValue.split(',').map(s => s.trim()).filter(s => s.length > 0) : null;
             addressData.filterString = document.getElementById('address-filter-string').value.trim() || null;
+        } else if (type === 'TAG_WRITE') {
+            const tagName = document.getElementById('address-tag-name').value.trim();
+            const jsonPath = document.getElementById('address-json-path').value.trim();
+            const timestampJsonPath = document.getElementById('address-timestamp-json-path').value.trim();
+            const timestampFormat = document.getElementById('address-timestamp-format').value || 'ISO';
+
+            if (topic.includes('+') || topic.includes('#')) {
+                this.showError('MQTT topic cannot contain wildcards (+ or #) for TAG_WRITE');
+                return;
+            }
+            if (!tagName) {
+                this.showError('WinCC Unified Tag Name is required for TAG_WRITE');
+                return;
+            }
+            if (tagName.includes('*') || tagName.includes('?')) {
+                this.showError('WinCC Unified Tag Name cannot contain wildcards (* or ?) for TAG_WRITE');
+                return;
+            }
+            if (timestampJsonPath && !jsonPath) {
+                this.showError('Timestamp JSON Path requires Value JSON Path to be set');
+                return;
+            }
+
+            addressData.tagName = tagName;
+            addressData.jsonPath = jsonPath || null;
+            addressData.timestampJsonPath = (jsonPath && timestampJsonPath) ? timestampJsonPath : null;
+            addressData.timestampFormat = (jsonPath && timestampJsonPath) ? timestampFormat : null;
         }
 
         const isEditing = this.editingAddressIndex !== null;
