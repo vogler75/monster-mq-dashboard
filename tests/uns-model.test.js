@@ -125,3 +125,14 @@ test('diff identifies nodes by id; issues map to nodes', () => {
     assert.equal(map.get('').length, 1);
     assert.ok(M.hasErrors(issues));
 });
+
+test('object layout publishes one JSON topic per datapoint', () => {
+    const dp = { kind: 'datapoint', type: 'PumpType', datapoint: 'P1', layout: 'object', elements: [{ path: 'flow' }, { path: 'motor.speed' }] };
+    assert.deepEqual(M.bindingTopics('u/pump', dp), [{ topic: 'u/pump', dpe: 'P1.', path: '', object: true, paths: ['flow', 'motor.speed'] }]);
+    const pat = { kind: 'pattern', type: 'PumpType', pattern: '*', layout: 'object' };
+    assert.deepEqual(M.bindingTopics('u/pumps', pat, { typeElements: ['flow'], matches: ['P1', 'P/2'] }).map(t => t.topic), ['u/pumps/P1', 'u/pumps/P%2F2']);
+    const sem = p => p === 'flow' ? { ...M.BUILTIN_SEMANTICS, encoding: 'raw' } : M.BUILTIN_SEMANTICS;
+    const out = JSON.parse(M.objectPreview(['flow', 'motor.speed'], sem, () => ({ value: 7, stime: '2026-01-01T00:00:00.000Z' })));
+    assert.equal(out.flow, 7);
+    assert.deepEqual(out.motor.speed, { value: 7, time: '2026-01-01T00:00:00.000Z' });
+});

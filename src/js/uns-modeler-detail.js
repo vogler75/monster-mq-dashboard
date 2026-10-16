@@ -583,8 +583,9 @@ class UnsModelerDetail {
     bindingLabel(b) {
         const sys = b.system ? b.system + ':' : '';
         if (b.kind === 'element') return `${sys}${b.datapoint}.${b.element}`;
-        if (b.kind === 'datapoint') return `${sys}${b.datapoint} (${b.elements ? b.elements.length : 'all'} el.)`;
-        return `${sys}${b.type} ${b.pattern} (${b.elements ? b.elements.length : 'all'} el.)`;
+        const obj = b.layout === 'object' ? ', JSON object' : '';
+        if (b.kind === 'datapoint') return `${sys}${b.datapoint} (${b.elements ? b.elements.length : 'all'} el.${obj})`;
+        return `${sys}${b.type} ${b.pattern} (${b.elements ? b.elements.length : 'all'} el.${obj})`;
     }
 
     nodeRow(n, depth, d) {
@@ -622,7 +623,7 @@ class UnsModelerDetail {
         const shown = list.slice(0, 200);
         const rows = shown.map(t => `<div class="um-row derived" style="padding-left:${0.3 + depth * 1.1}rem" title="${esc(t.dpe)}">
             <span class="um-chevron hidden"></span><span class="um-label">${esc(t.topic.replace(topic + '/', '') || '(node)')}</span>
-            <span class="um-tag">${b.kind === 'pattern' ? 'from pattern' : 'element'}</span><span class="um-meta">${esc(t.dpe)}</span></div>`);
+            <span class="um-tag">${t.object ? 'JSON object' : b.kind === 'pattern' ? 'from pattern' : 'element'}</span><span class="um-meta">${esc(t.object ? `${t.dpe} (${t.paths.length} el.)` : t.dpe)}</span></div>`);
         if (list.length > shown.length) rows.push(`<div class="um-row derived" style="padding-left:${0.3 + depth * 1.1}rem">… ${list.length - shown.length} more</div>`);
         return rows;
     }
@@ -853,6 +854,12 @@ class UnsModelerDetail {
         if (b.datapoint) rows.push(`<dt>Datapoint</dt><dd>${esc(b.datapoint)}</dd>`);
         if (b.kind === 'element') rows.push(`<dt>Element</dt><dd>${esc(b.element || '(root)')}</dd>`);
         if (b.kind === 'pattern') rows.push(`<dt>Pattern</dt><dd><input class="form-control" data-b="pattern" value="${esc(b.pattern)}"></dd>`);
+        if (b.kind !== 'element') {
+            const obj = b.layout === 'object';
+            rows.push(`<dt>Publish as</dt><dd><select class="form-control" data-b="layout">
+                <option value="elements"${obj ? '' : ' selected'}>One topic per element</option>
+                <option value="object"${obj ? ' selected' : ''}>One JSON topic per datapoint</option></select></dd>`);
+        }
         let elements = '';
         if (b.kind !== 'element') {
             elements = `<h3>Elements</h3><div data-role="elements"><div class="um-empty">Loading type structure…</div></div>`;
@@ -864,6 +871,14 @@ class UnsModelerDetail {
         const b = n.binding;
         const pat = pane.querySelector('[data-b="pattern"]');
         if (pat) pat.addEventListener('change', () => { b.pattern = pat.value.trim() || '*'; this.matches.delete(n.id); this.changed({ keepDetails: true }); });
+        const layout = pane.querySelector('[data-b="layout"]');
+        if (layout) layout.addEventListener('change', () => {
+            if (layout.value === 'object') b.layout = 'object'; else delete b.layout;
+            M.clearAi(n);
+            this.changed({ keepDetails: true });
+            this.renderElementTable(pane, n);
+            this.renderEffective(pane, n);
+        });
         // Current value of the first DPE.
         const sys = b.system ? b.system + ':' : '';
         let dpe = null;
@@ -884,6 +899,7 @@ class UnsModelerDetail {
         }
         if (this.selectedId !== n.id) return;
         this.renderElementTable(pane, n);
+        this.renderEffective(pane, n);
     }
 
     renderElementTable(pane, n) {
@@ -894,12 +910,16 @@ class UnsModelerDetail {
         const sels = b.elements || null;
         const selected = p => !sels || sels.some(s => s.path === p);
         const topicOf = p => { const s = sels && sels.find(x => x.path === p); return s && s.topic !== undefined ? s.topic : ''; };
-        box.innerHTML = `<table class="um-elements"><thead><tr><th></th><th>Element</th><th>Type</th><th>Topic override</th><th></th></tr></thead><tbody>
+        // An object topic has no element topics: the checked elements are the leaves of its JSON.
+        const obj = b.layout === 'object';
+        box.innerHTML = `<table class="um-elements"><thead><tr><th></th><th>Element</th><th>Type</th>${obj ? '' : '<th>Topic override</th>'}<th></th></tr></thead><tbody>
             ${struct.map(e => `<tr data-path="${esc(e.path)}"><td><input type="checkbox" ${selected(e.path) ? 'checked' : ''} aria-label="Select ${esc(e.path)}"></td>
                 <td>${esc(e.path || '(root)')}</td><td>${esc(e.elementType)}</td>
-                <td><input type="text" class="form-control" value="${esc(topicOf(e.path))}" placeholder="${esc(M.elementRel(e.path))}" ${selected(e.path) ? '' : 'disabled'}></td>
+                ${obj ? '' : `<td><input type="text" class="form-control" value="${esc(topicOf(e.path))}" placeholder="${esc(M.elementRel(e.path))}" ${selected(e.path) ? '' : 'disabled'}></td>`}
                 <td>${sels && sels.some(s => s.path === e.path) ? '<button type="button" class="btn btn-secondary btn-sm" data-ovr-el="1">Overrides</button>' : ''}</td></tr>`).join('')}
-            </tbody></table><span class="form-hint">All checked and no topic override: the binding publishes all value elements, also elements added to the type later (next apply).</span>
+            </tbody></table><span class="form-hint">${obj
+                ? 'The checked elements are connected together and published as one JSON object; all checked: also elements added to the type later (next apply).'
+                : 'All checked and no topic override: the binding publishes all value elements, also elements added to the type later (next apply).'}</span>
             <div data-role="el-ovr"></div>`;
         box.querySelectorAll('tr[data-path]').forEach(tr => {
             const path = tr.dataset.path;
@@ -912,8 +932,9 @@ class UnsModelerDetail {
                 M.clearAi(n);
                 this.changed({ keepDetails: true });
                 this.renderElementTable(pane, n);
+                this.renderEffective(pane, n);
             });
-            topicInput.addEventListener('change', () => {
+            if (topicInput) topicInput.addEventListener('change', () => {
                 if (!b.elements) M.setElementSelection(b, struct.map(e => e.path));
                 const sel = b.elements.find(s => s.path === path);
                 if (!sel) return;
@@ -955,12 +976,24 @@ class UnsModelerDetail {
         const semEl = pane.querySelector('[data-role="sem"]');
         if (semEl) semEl.textContent = JSON.stringify(sem, null, 2);
         const prev = pane.querySelector('[data-role="preview"]');
-        if (prev) {
+        if (prev && b && b.layout === 'object' && b.kind !== 'element') {
+            // The object topic: one leaf per selected element, sample values.
+            const struct = this.structures.get(`${b.system || ''}|${b.type}`) || [];
+            const paths = b.elements ? b.elements.map(e => e.path)
+                : struct.filter(e => e.valueElement && e.elementType !== 'unknown').map(e => e.path);
+            const config = this.configForSemantics();
+            prev.textContent = paths.length
+                ? M.objectPreview(paths, p => M.effectiveSemantics(this.doc, n.id, config, p), p => ({ value: p === firstPath && this.currentInfo ? this.currentValue() : 42.7 }))
+                : 'Loading type structure…';
+        } else if (prev) {
             const info = this.currentInfo && this.selectedId === n.id ? this.currentInfo : {};
-            let value = 42.7;
-            if (info.value != null) { try { value = JSON.parse(info.value); } catch { value = info.value; } }
-            prev.textContent = M.payloadPreview(sem, { ...info, value });
+            prev.textContent = M.payloadPreview(sem, { ...info, value: this.currentValue(info) });
         }
+    }
+
+    currentValue(info = this.currentInfo || {}) {
+        if (info.value == null) return 42.7;
+        try { return JSON.parse(info.value); } catch { return info.value; }
     }
 
     // renderOverrides edits obj[key] (an Overrides object) in place.
@@ -1152,7 +1185,8 @@ class UnsModelerDetail {
                 const prev = this.liveLast.get(t.topic);
                 const rate = prev ? ((t.published - prev.n) / Math.max((now - prev.at) / 1000, 0.001)) : 0;
                 this.liveLast.set(t.topic, { n: t.published, at: now });
-                return `<tr><td><code>${esc(t.topic)}</code></td><td>${esc(t.dpe)}</td><td><code>${esc(t.value)}</code></td>
+                const value = t.value || '';
+            return `<tr><td><code>${esc(t.topic)}</code></td><td>${esc(t.dpe)}</td><td><code title="${esc(value)}">${esc(value.length > 80 ? value.slice(0, 80) + '…' : value)}</code></td>
                     ${b ? '' : `<td class="num">${t.status == null ? '' : '0x' + Number(t.status).toString(16)}</td>`}<td class="num">${rate.toFixed(2)}</td>
                     <td class="num">${t.published}</td><td>${esc(b && t.lastPublish ? new Date(t.lastPublish).toLocaleString() : t.lastPublish || '')}</td>${b
                     ? `<td>${t.sourceTime ? esc(new Date(t.sourceTime).toLocaleString()) : (t.lastPublish ? '<span class="um-small">receive time</span>' : '')}</td>` : ''}<td>${t.lastError ? `<span class="um-tag err" title="${esc(t.lastErrorAt)}">${esc(t.lastError)}</span>` : ''}</td></tr>`;

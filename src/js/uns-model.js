@@ -206,6 +206,12 @@ export function bindingTopics(topic, binding, { typeElements = [], matches = [] 
     const dpe = (dp, path) => `${sys ? sys + ':' : ''}${dp}.${path || ''}`;
     if (binding.kind === 'element') return [{ topic, dpe: dpe(binding.datapoint, binding.element), path: binding.element }];
     const sels = Array.isArray(binding.elements) ? binding.elements : typeElements.map(p => ({ path: p }));
+    // Layout object: one JSON topic per datapoint carrying all selected elements.
+    if (binding.layout === 'object') {
+        const paths = sels.map(s => s.path);
+        if (binding.kind === 'datapoint') return [{ topic, dpe: dpe(binding.datapoint, ''), path: '', object: true, paths }];
+        return matches.map(dp => ({ topic: `${topic}/${encodeLevel(dp)}`, dpe: dpe(dp, ''), path: '', object: true, paths, datapoint: dp }));
+    }
     if (binding.kind === 'datapoint') {
         return sels.map(s => ({ topic: join(topic, elementRel(s.path, s.topic)), dpe: dpe(binding.datapoint, s.path), path: s.path }));
     }
@@ -285,6 +291,26 @@ export function payloadPreview(sem, info = {}) {
         }
     }
     return JSON.stringify(out, null, 2);
+}
+
+// objectPreview renders the payload of an object topic: the element paths
+// as nested objects, each leaf the element's payload by its semantics.
+// semFor(path) returns the effective semantics, infoFor(path) the sample.
+export function objectPreview(paths, semFor, infoFor = () => ({})) {
+    const root = {};
+    for (const p of paths) {
+        let leaf;
+        try { leaf = JSON.parse(payloadPreview(semFor(p), infoFor(p))); } catch { leaf = null; }
+        if (p === '') return JSON.stringify(leaf, null, 2);
+        const keys = p.split('.');
+        let cur = root;
+        for (const k of keys.slice(0, -1)) {
+            if (!cur[k] || typeof cur[k] !== 'object') cur[k] = {};
+            cur = cur[k];
+        }
+        cur[keys[keys.length - 1]] = leaf;
+    }
+    return JSON.stringify(root, null, 2);
 }
 
 // Drag & drop -------------------------------------------------------------
