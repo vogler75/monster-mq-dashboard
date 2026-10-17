@@ -27,12 +27,19 @@ class InfluxDBLoggerDetail {
         try {
             const result = await window.graphqlClient.query(`query { brokers { nodeId } }`);
             const select = document.getElementById('nodeId');
-            result.brokers.forEach(b => {
-                const opt = document.createElement('option');
-                opt.value = b.nodeId;
-                opt.textContent = b.nodeId;
-                select.appendChild(opt);
-            });
+            if (select) {
+                select.innerHTML = '';
+                const brokers = result?.brokers || [];
+                brokers.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.nodeId;
+                    opt.textContent = b.nodeId;
+                    select.appendChild(opt);
+                });
+                if (brokers.length > 0 && !select.value) {
+                    select.value = brokers[0].nodeId;
+                }
+            }
         } catch (e) { console.error(e); }
     }
 

@@ -241,6 +241,9 @@ class MqttClientDetailManager {
         document.getElementById('client-name').disabled = false;
         document.getElementById('client-namespace').value = '';
         document.getElementById('client-broker-url').value = '';
+        if (this.clusterNodes?.length > 0) {
+            document.getElementById('client-node').value = this.clusterNodes[0].nodeId;
+        }
         document.getElementById('client-id').value = 'monstermq-client';
         document.getElementById('client-username').value = '';
         document.getElementById('client-password').value = '';
@@ -291,13 +294,16 @@ class MqttClientDetailManager {
 
             const nodeSelect = document.getElementById('client-node');
             if (nodeSelect) {
-                nodeSelect.innerHTML = '<option value="">Select Node...</option>';
+                nodeSelect.innerHTML = '';
                 this.clusterNodes.forEach(node => {
                     const option = document.createElement('option');
                     option.value = node.nodeId;
                     option.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
                     nodeSelect.appendChild(option);
                 });
+                if (this.clusterNodes.length > 0 && !nodeSelect.value) {
+                    nodeSelect.value = this.clusterNodes[0].nodeId;
+                }
             }
         } catch (error) {
             console.error('Error loading cluster nodes:', error);

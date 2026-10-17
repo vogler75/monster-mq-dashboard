@@ -70,8 +70,7 @@ const FlowEdit = (() => {
     const nodeSelect = qs('#fi-nodeId');
     if(!nodeSelect || nodeSelect.tagName !== 'SELECT') return;
 
-    // Clear existing options except the first one
-    while(nodeSelect.options.length > 1) nodeSelect.remove(1);
+    nodeSelect.innerHTML = '';
 
     // Add "*" option for automatic assignment
     const autoOption = document.createElement('option');
@@ -86,6 +85,10 @@ const FlowEdit = (() => {
       option.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
       nodeSelect.appendChild(option);
     });
+
+    if(!nodeSelect.value && nodeSelect.options.length > 0) {
+      nodeSelect.value = nodeSelect.options[0].value;
+    }
   }
 
   async function loadAllForClass() {
@@ -228,7 +231,7 @@ const FlowEdit = (() => {
           <div class="form-grid">
             <div class="form-group"><label>Name</label><input id="fi-name" class="form-control" value="${escape(state.flowInstance.name||'')}"></div>
             <div class="form-group"><label>Namespace</label><input id="fi-namespace" class="form-control" value="${escape(state.flowInstance.namespace||'default')}"></div>
-            <div class="form-group"><label>Node ID</label><select id="fi-nodeId" class="form-control"><option value="">Select Node...</option></select></div>
+            <div class="form-group"><label>Node ID</label><select id="fi-nodeId" class="form-control"></select></div>
             <div class="form-group"><label>Flow Class</label><select id="fi-flowClass" class="form-control">${classOptions}</select></div>
           </div>
         </div>

@@ -53,13 +53,16 @@ class NatsClientDetailManager {
             this.clusterNodes = result.brokers || [];
             const nodeSelect = document.getElementById('client-node');
             if (nodeSelect) {
-                nodeSelect.innerHTML = '<option value="">Select Node...</option>';
+                nodeSelect.innerHTML = '';
                 this.clusterNodes.forEach(node => {
                     const opt = document.createElement('option');
                     opt.value = node.nodeId;
                     opt.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
                     nodeSelect.appendChild(opt);
                 });
+                if (this.clusterNodes.length > 0 && !nodeSelect.value) {
+                    nodeSelect.value = this.clusterNodes[0].nodeId;
+                }
             }
         } catch (e) {
             console.error('Error loading cluster nodes', e);
@@ -108,6 +111,9 @@ class NatsClientDetailManager {
         document.getElementById('client-name').value = '';
         document.getElementById('client-name').disabled = false;
         document.getElementById('client-namespace').value = '';
+        if (this.clusterNodes?.length > 0) {
+            document.getElementById('client-node').value = this.clusterNodes[0].nodeId;
+        }
         document.getElementById('client-servers').value = 'nats://localhost:4222';
         document.getElementById('client-auth-type').value = 'ANONYMOUS';
         document.getElementById('client-username').value = '';

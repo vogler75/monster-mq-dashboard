@@ -107,6 +107,9 @@ class I3xClientDetailManager {
                     option.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
                     nodeSelect.appendChild(option);
                 });
+                if (nodeSelect.options.length > 0 && !nodeSelect.value) {
+                    nodeSelect.value = nodeSelect.options[0].value;
+                }
             }
         } catch (error) {
             console.error('Error loading cluster nodes:', error);

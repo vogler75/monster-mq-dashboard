@@ -99,10 +99,7 @@ class JDBCLoggerDetailManager {
         const nodeSelect = document.getElementById('logger-node');
         if (!nodeSelect) return;
 
-        // Clear existing options except the first one
-        while (nodeSelect.options.length > 1) {
-            nodeSelect.remove(1);
-        }
+        nodeSelect.innerHTML = '';
 
         // Add "*" option for automatic assignment
         const autoOption = document.createElement('option');
@@ -117,6 +114,10 @@ class JDBCLoggerDetailManager {
             option.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
             nodeSelect.appendChild(option);
         });
+
+        if (!nodeSelect.value && nodeSelect.options.length > 0) {
+            nodeSelect.value = nodeSelect.options[0].value;
+        }
     }
 
     initNewLogger() {
@@ -124,6 +125,7 @@ class JDBCLoggerDetailManager {
         document.getElementById('logger-content').style.display = 'block';
 
         // Set defaults
+        document.getElementById('logger-node').value = '*';
         document.getElementById('logger-enabled').checked = true;
         document.getElementById('logger-queue-type').value = 'MEMORY';
         document.getElementById('logger-payload-format').value = 'JSON';

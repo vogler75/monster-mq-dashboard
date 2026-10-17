@@ -55,13 +55,16 @@ async function loadClusterNodes() {
         // Populate node selector
         const nodeSelect = document.getElementById('nodeId');
         if (nodeSelect) {
-            nodeSelect.innerHTML = '<option value="">Select Node...</option>';
+            nodeSelect.innerHTML = '';
             clusterNodes.forEach(node => {
                 const option = document.createElement('option');
                 option.value = node.nodeId;
                 option.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
                 nodeSelect.appendChild(option);
             });
+            if (clusterNodes.length > 0 && !nodeSelect.value) {
+                nodeSelect.value = clusterNodes[0].nodeId;
+            }
         }
     } catch (error) {
         console.error('Error loading cluster nodes:', error);

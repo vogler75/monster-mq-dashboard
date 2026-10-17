@@ -42,6 +42,8 @@ class KafkaServerDetail {
                 document.getElementById('page-subtitle').textContent = 'Create a new Kafka protocol listener';
                 document.getElementById('timestamp-section').style.display = 'none';
                 document.getElementById('server-status').style.display = 'none';
+                const nodeSelect = document.getElementById('server-node');
+                if (nodeSelect && nodeSelect.options.length > 0) nodeSelect.value = nodeSelect.options[0].value;
                 // Add one empty stream row to start
                 this.addStreamRow('', '', 168);
             }
@@ -65,6 +67,9 @@ class KafkaServerDetail {
                     opt.textContent = `${broker.nodeId} ${broker.isCurrent ? '(Current)' : ''}`;
                     select.appendChild(opt);
                 });
+                if (select.options.length > 0 && !select.value) {
+                    select.value = select.options[0].value;
+                }
             }
         } catch (e) {
             console.error('Failed to load cluster nodes:', e);

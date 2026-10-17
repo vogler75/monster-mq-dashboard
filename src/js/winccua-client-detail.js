@@ -101,13 +101,16 @@ class WinCCUaClientDetailManager {
             // Populate node selector
             const nodeSelect = document.getElementById('client-node');
             if (nodeSelect) {
-                nodeSelect.innerHTML = '<option value="">Select Node...</option>';
+                nodeSelect.innerHTML = '';
                 this.clusterNodes.forEach(node => {
                     const option = document.createElement('option');
                     option.value = node.nodeId;
                     option.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
                     nodeSelect.appendChild(option);
                 });
+                if (this.clusterNodes.length > 0 && !nodeSelect.value) {
+                    nodeSelect.value = this.clusterNodes[0].nodeId;
+                }
             }
 
         } catch (error) {
@@ -122,6 +125,9 @@ class WinCCUaClientDetailManager {
 
         // Set default values
         document.getElementById('client-enabled').checked = true;
+        if (this.clusterNodes?.length > 0) {
+            document.getElementById('client-node').value = this.clusterNodes[0].nodeId;
+        }
         document.getElementById('client-convert-dot-to-slash').checked = true;
         document.getElementById('client-message-format').value = 'JSON_ISO';
         document.getElementById('client-reconnect-delay').value = '5000';

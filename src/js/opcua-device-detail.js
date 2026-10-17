@@ -83,13 +83,16 @@ class OpcUaDeviceDetailManager {
             this.clusterNodes = result.brokers || [];
             const nodeSelect = document.getElementById('device-node');
             if (nodeSelect) {
-                nodeSelect.innerHTML = '<option value="">Select Node...</option>';
+                nodeSelect.innerHTML = '';
                 this.clusterNodes.forEach(node => {
                     const opt = document.createElement('option');
                     opt.value = node.nodeId;
                     opt.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
                     nodeSelect.appendChild(opt);
                 });
+                if (this.clusterNodes.length > 0 && !nodeSelect.value) {
+                    nodeSelect.value = this.clusterNodes[0].nodeId;
+                }
             }
         } catch (e) {
             console.error('Error loading cluster nodes', e);
@@ -259,6 +262,9 @@ class OpcUaDeviceDetailManager {
         document.getElementById('device-name').value = '';
         document.getElementById('device-name').disabled = false;
         document.getElementById('device-namespace').value = '';
+        if (this.clusterNodes?.length > 0) {
+            document.getElementById('device-node').value = this.clusterNodes[0].nodeId;
+        }
         document.getElementById('device-endpoint').value = '';
         document.getElementById('device-security').value = 'None';
         document.getElementById('device-update-endpoint').checked = false;

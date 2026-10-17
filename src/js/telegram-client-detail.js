@@ -47,13 +47,16 @@ class TelegramClientDetailManager {
             this.clusterNodes = result.brokers || [];
             const nodeSelect = document.getElementById('client-node');
             if (nodeSelect) {
-                nodeSelect.innerHTML = '<option value="">Select Node...</option>';
+                nodeSelect.innerHTML = '';
                 this.clusterNodes.forEach(node => {
                     const opt = document.createElement('option');
                     opt.value = node.nodeId;
                     opt.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
                     nodeSelect.appendChild(opt);
                 });
+                if (this.clusterNodes.length > 0 && !nodeSelect.value) {
+                    nodeSelect.value = this.clusterNodes[0].nodeId;
+                }
             }
         } catch (e) {
             console.error('Error loading cluster nodes', e);
@@ -96,6 +99,9 @@ class TelegramClientDetailManager {
         document.getElementById('client-name').value = '';
         document.getElementById('client-name').disabled = false;
         document.getElementById('client-namespace').value = '';
+        if (this.clusterNodes?.length > 0) {
+            document.getElementById('client-node').value = this.clusterNodes[0].nodeId;
+        }
         document.getElementById('client-bot-token').value = '';
         document.getElementById('client-bot-token').placeholder = '123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11';
         document.getElementById('client-parse-mode').value = 'Text';

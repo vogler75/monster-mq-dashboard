@@ -41,13 +41,16 @@ class WinCCOaClientManager {
             // Populate node selector in the add client form
             const nodeSelect = document.getElementById('client-node');
             if (nodeSelect) {
-                nodeSelect.innerHTML = '<option value="">Select Node...</option>';
+                nodeSelect.innerHTML = '';
                 this.clusterNodes.forEach(node => {
                     const option = document.createElement('option');
                     option.value = node.nodeId;
                     option.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
                     nodeSelect.appendChild(option);
                 });
+                if (this.clusterNodes.length > 0 && !nodeSelect.value) {
+                    nodeSelect.value = this.clusterNodes[0].nodeId;
+                }
             }
 
         } catch (error) {

@@ -376,7 +376,34 @@ export class OnboardingView {
         if (e.pvRange) parts.push(`_pv_range ${e.pvRange.min}..${e.pvRange.max}`);
         if (e.alert) parts.push(e.alert.kind === 'binary' ? `_alert_hdl binary (${e.alert.class})` :
             `_alert_hdl ${e.alert.limits.map(l => (l.when === 'above' ? '>' : '<') + l.limit + ' ' + l.class).join(', ')}`);
+        if (e.archive) {
+            if (e.archive.enabled === false) parts.push(`_archive off`);
+            else if (e.archive.group) parts.push(`_archive ${e.archive.group}`);
+            else parts.push(`_archive on`);
+        } else if (this.dev && this.dev.config && this.dev.config.oaArchiveEnabled) {
+            const devGroup = this.dev.config.oaArchiveGroup;
+            parts.push(devGroup ? `_archive ${devGroup}` : `_archive default`);
+        }
         return parts.join(' · ');
+    }
+
+    archiveBadge(e, kind, parentName, elemIdx) {
+        const esc = this.h.esc;
+        const a = e.archive;
+        if (!a) {
+            const devArch = this.dev && this.dev.config && this.dev.config.oaArchiveEnabled;
+            const devGroup = this.dev && this.dev.config && this.dev.config.oaArchiveGroup;
+            if (devArch) {
+                const grp = devGroup ? ` (${esc(devGroup)})` : '';
+                return `<span class="um-tag info" data-arch-toggle="${esc(kind)}:${esc(parentName)}:${elemIdx}" title="Archiving inherited from device default (${esc(devGroup || 'default')}); click to override" style="cursor:pointer;">archive${grp}</span>`;
+            }
+            return `<span class="um-tag" data-arch-toggle="${esc(kind)}:${esc(parentName)}:${elemIdx}" title="Click to configure archiving" style="cursor:pointer;">+ archive</span>`;
+        }
+        if (a.enabled === false) {
+            return `<span class="um-tag warn" data-arch-toggle="${esc(kind)}:${esc(parentName)}:${elemIdx}" title="Archiving disabled; click to edit" style="cursor:pointer;">archive off</span>`;
+        }
+        const grp = a.group ? ` (${esc(a.group)})` : '';
+        return `<span class="um-tag info" data-arch-toggle="${esc(kind)}:${esc(parentName)}:${elemIdx}" title="Archiving enabled; click to edit" style="cursor:pointer;">archive${grp}</span>`;
     }
 
     render() {
@@ -392,7 +419,7 @@ export class OnboardingView {
                 ${t.reuse ? '<span class="um-tag info">reuse</span>' : ''}${t.excluded ? '<span class="um-tag">excluded</span>' : ''}${this.issueTags(iss)}
                 <button type="button" class="btn btn-secondary btn-sm" data-a="rename" data-requires-auth>Rename</button>
                 <button type="button" class="btn btn-secondary btn-sm" data-a="exclude" data-requires-auth>${t.excluded ? 'Include' : 'Exclude'}</button></div>
-                ${(t.elements || []).map(e => `<div><code>${esc(e.path)}</code> <span class="um-small">${esc(e.elementType)}</span> <span class="um-small">${esc(this.metaText(e))}</span></div>`).join('') || '<div class="um-small">existing type, used as is</div>'}
+                ${(t.elements || []).map((e, ei) => `<div><code>${esc(e.path)}</code> <span class="um-small">${esc(e.elementType)}</span> <span class="um-small">${esc(this.metaText(e))}</span> ${this.archiveBadge(e, 'type', t.name, ei)}</div>`).join('') || '<div class="um-small">existing type, used as is</div>'}
                 ${iss.map(x => `<div class="um-small">${esc(x.severity.toLowerCase())}: ${esc(x.message)}</div>`).join('')}
             </div>`;
         }).join('') || '<div class="um-empty">No types yet. Run the AI analysis or import a proposal.</div>';
@@ -408,7 +435,7 @@ export class OnboardingView {
                 ${(d.bindings || []).map(b => `<div><code>${esc(b.topic)}</code>${b.jsonPath ? ` <span class="um-small">${esc(b.jsonPath)}</span>` : ''} &#8594; <code>${esc(b.element || '(root)')}</code>${b.timePath
                     ? ` <span class="um-tag info" title="Source time from the payload (dpSetTimed)">time ${esc(b.timePath)} (${esc(TIME_FORMATS[b.timeFormat] || b.timeFormat)})</span>`
                     : ' <span class="um-small" title="No timestamp in the payload: the receive time is the source time">receive time</span>'}</div>`).join('')}
-                ${(d.elements || []).map(e => `<div class="um-small">${esc(e.path)}: ${esc(this.metaText(e))}</div>`).join('')}
+                ${(d.elements || []).map((e, ei) => `<div class="um-small">${esc(e.path)}: ${esc(this.metaText(e))} ${this.archiveBadge(e, 'datapoint', d.name, ei)}</div>`).join('')}
                 ${iss.map(x => `<div class="um-small">${esc(x.severity.toLowerCase())}: ${esc(x.message)}</div>`).join('')}
             </div>`;
         }).join('') || '<div class="um-empty">No datapoints yet.</div>';
@@ -416,9 +443,40 @@ export class OnboardingView {
         this.$('b-dps-summary').textContent = `${dps.filter(d => !d.excluded).length} of ${dps.length}`;
         this.$('b-types').querySelectorAll('[data-type]').forEach(c => this.bindCard(c, 'type', c.dataset.type));
         this.$('b-dps').querySelectorAll('[data-dp]').forEach(c => this.bindCard(c, 'datapoint', c.dataset.dp));
+        this.$('b-types').querySelectorAll('[data-arch-toggle]').forEach(el => this.bindArchiveToggle(el));
+        this.$('b-dps').querySelectorAll('[data-arch-toggle]').forEach(el => this.bindArchiveToggle(el));
         this.renderSource();
         this.renderIssues();
         this.updateState();
+    }
+
+    bindArchiveToggle(el) {
+        el.addEventListener('click', async (evt) => {
+            evt.stopPropagation();
+            const parts = el.dataset.archToggle.split(':');
+            const kind = parts[0], parentName = parts[1], elemIdx = parseInt(parts[2], 10);
+            const list = kind === 'type' ? this.doc.types : this.doc.datapoints;
+            const item = (list || []).find(x => x.name === parentName);
+            if (!item || !item.elements || !item.elements[elemIdx]) return;
+            const elem = item.elements[elemIdx];
+            const curArch = elem.archive || {};
+            const curGroup = curArch.group || '';
+            const curVal = curArch.enabled === false ? 'off' : curGroup;
+
+            const res = await this.h.prompt(`Archive settings for ${elem.path || parentName}`,
+                'Archive group (leave empty to inherit device/type default, or type "off" to disable archiving)',
+                curVal);
+            if (res === null) return;
+            const val = res.trim();
+            if (val.toLowerCase() === 'off' || val.toLowerCase() === 'none' || val.toLowerCase() === 'false') {
+                elem.archive = { enabled: false };
+            } else if (val === '' || val.toLowerCase() === 'inherit' || val.toLowerCase() === 'default') {
+                delete elem.archive;
+            } else {
+                elem.archive = { enabled: true, group: val };
+            }
+            this.changed();
+        });
     }
 
     bindCard(card, kind, name) {

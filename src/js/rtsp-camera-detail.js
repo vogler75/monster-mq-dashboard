@@ -90,14 +90,16 @@ class RtspCameraDetailManager {
             this.clusterNodes = result?.brokers || [];
             const nodeSelect = document.getElementById('camera-node');
             if (nodeSelect) {
-                nodeSelect.innerHTML = '<option value="">Select Node...</option>';
+                nodeSelect.innerHTML = '';
                 this.clusterNodes.forEach(node => {
                     const opt = document.createElement('option');
                     opt.value = node.nodeId;
                     opt.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
-                    if (node.isCurrent) opt.selected = true;
                     nodeSelect.appendChild(opt);
                 });
+                if (this.clusterNodes.length > 0 && !nodeSelect.value) {
+                    nodeSelect.value = this.clusterNodes[0].nodeId;
+                }
             }
         } catch (e) {
             console.error('Failed to load nodes:', e);
@@ -109,6 +111,9 @@ class RtspCameraDetailManager {
         document.getElementById('page-title').textContent = 'New Camera';
         document.getElementById('camera-status-badge').textContent = 'New';
         document.getElementById('camera-status-badge').className = 'status-badge';
+        if (this.clusterNodes?.length > 0) {
+            document.getElementById('camera-node').value = this.clusterNodes[0].nodeId;
+        }
         document.getElementById('delete-btn').style.display = 'none';
         document.getElementById('trigger-btn').style.display = 'none';
         document.getElementById('status-card').style.display = 'none';

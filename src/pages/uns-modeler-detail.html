@@ -190,8 +190,15 @@
                         <div class="form-group">
                             <div class="checkbox-group um-inline-check">
                                 <input type="checkbox" id="dev-enabled" checked>
-                                <label for="dev-enabled">Enabled</label>
+                                <label for="dev-enabled">Device enabled</label>
                             </div>
+                        </div>
+                        <div class="form-group um-span2 um-direction-only" data-direction="MQTT_TO_WINCCOA">
+                            <label for="dev-archive-group">Default Archive Group</label>
+                            <select id="dev-archive-group" class="form-control" disabled>
+                                <option value="">(Disabled)</option>
+                            </select>
+                            <span class="form-hint">Default group for created datapoints. Select (Disabled) to disable archiving.</span>
                         </div>
                     </div>
 

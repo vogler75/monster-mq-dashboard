@@ -39,6 +39,9 @@ class Neo4jClientDetailManager {
         document.getElementById('page-title').textContent = 'New Neo4j Client';
         document.getElementById('page-subtitle').textContent = 'Create a new Neo4j graph database client';
         document.getElementById('client-topic-filters').value = '#';
+        if (this.clusterNodes?.length > 0) {
+            document.getElementById('client-node').value = this.clusterNodes[0].nodeId;
+        }
         document.getElementById('client-enabled').checked = true;
         const deleteBtn = document.getElementById('delete-btn');
         if (deleteBtn) deleteBtn.style.display = 'none';
@@ -63,13 +66,16 @@ class Neo4jClientDetailManager {
             this.clusterNodes = result.brokers || [];
             const nodeSelect = document.getElementById('client-node');
             if (nodeSelect) {
-                nodeSelect.innerHTML = '<option value="">Select Node...</option>';
+                nodeSelect.innerHTML = '';
                 this.clusterNodes.forEach(node => {
                     const opt = document.createElement('option');
                     opt.value = node.nodeId;
                     opt.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
                     nodeSelect.appendChild(opt);
                 });
+                if (this.clusterNodes.length > 0 && !nodeSelect.value) {
+                    nodeSelect.value = this.clusterNodes[0].nodeId;
+                }
             }
         } catch (e) {
             console.error('Error loading cluster nodes', e);

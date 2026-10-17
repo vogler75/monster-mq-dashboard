@@ -41,13 +41,16 @@ class OpcUaServerDetailManager {
             this.clusterNodes = result.brokers || [];
             const nodeSelect = document.getElementById('server-node');
             if (nodeSelect) {
-                nodeSelect.innerHTML = '<option value="">Select Node...</option>';
+                nodeSelect.innerHTML = '';
                 this.clusterNodes.forEach(node => {
                     const opt = document.createElement('option');
                     opt.value = node.nodeId;
                     opt.textContent = node.nodeId + (node.isCurrent ? ' (Current)' : '');
                     nodeSelect.appendChild(opt);
                 });
+                if (this.clusterNodes.length > 0 && !nodeSelect.value) {
+                    nodeSelect.value = this.clusterNodes[0].nodeId;
+                }
             }
         } catch (e) {
             console.error('Error loading cluster nodes', e);
@@ -172,6 +175,9 @@ class OpcUaServerDetailManager {
         document.getElementById('server-name').value = '';
         document.getElementById('server-name').disabled = false;
         document.getElementById('server-namespace').value = '';
+        if (this.clusterNodes?.length > 0) {
+            document.getElementById('server-node').value = this.clusterNodes[0].nodeId;
+        }
         document.getElementById('server-port').value = '4840';
         document.getElementById('server-path').value = 'monstermq';
         document.getElementById('server-hostname').value = '';

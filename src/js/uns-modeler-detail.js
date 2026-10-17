@@ -15,7 +15,7 @@ const DEVICE_QUERY = `
         unsModelers(name: $name) {
             name namespace nodeId enabled isOnCurrentNode createdAt updatedAt
             config { direction approvalMode systemPrompt aiMaxSteps aiTimeoutSec aiTokenBudget redundancy
-                     unsRoot allowWrite topicDefaults payloadDefaults oaPrefix flowEnabled }
+                     unsRoot allowWrite topicDefaults payloadDefaults oaPrefix flowEnabled oaArchiveEnabled oaArchiveGroup }
             status { running active topics dpes published writes errors lastApplied applyError }
             draft applied
         }
@@ -40,6 +40,7 @@ class UnsModelerDetail {
         this.matches = new Map();
         this.structures = new Map();
         this.liveLast = new Map();
+        this.archiveGroups = [];
         this.validateTimer = null;
         this.init();
     }
@@ -50,7 +51,7 @@ class UnsModelerDetail {
         this.bindStatic();
         // A new device shows its direction fields at once, not after the node and feature queries.
         if (this.isNew) this.showNew();
-        await Promise.all([this.loadNodes(), this.loadGenAi()]);
+        await Promise.all([this.loadNodes(), this.loadGenAi(), this.loadArchiveGroups()]);
         if (this.isNew) return;
         await this.load();
         setInterval(() => this.refreshStatus(), 5000);
@@ -73,7 +74,12 @@ class UnsModelerDetail {
         try {
             const r = await this.gql.query('query { brokers { nodeId isCurrent } }');
             const sel = document.getElementById('dev-node');
-            sel.innerHTML = (r.brokers || []).map(b => `<option value="${esc(b.nodeId)}"${b.isCurrent ? ' selected' : ''}>${esc(b.nodeId)}${b.isCurrent ? ' (current)' : ''}</option>`).join('');
+            if (!sel) return;
+            const brokers = r.brokers || [];
+            sel.innerHTML = brokers.map(b => `<option value="${esc(b.nodeId)}">${esc(b.nodeId)}${b.isCurrent ? ' (current)' : ''}</option>`).join('');
+            if (brokers.length > 0 && (!sel.value || this.isNew)) {
+                sel.value = brokers[0].nodeId;
+            }
         } catch (e) { /* node list is optional */ }
     }
 
@@ -85,6 +91,35 @@ class UnsModelerDetail {
         } catch (e) { this.genAi = false; }
     }
 
+    async loadArchiveGroups() {
+        try {
+            const r = await this.gql.query('query { winccoa { archiveGroups { name dpName displayName kind } } }');
+            this.archiveGroups = (r && r.winccoa && r.winccoa.archiveGroups) || [];
+        } catch (e) { this.archiveGroups = []; }
+        this.renderArchiveGroupSelect();
+    }
+
+    renderArchiveGroupSelect() {
+        const sel = document.getElementById('dev-archive-group');
+        if (!sel) return;
+        const curVal = (this.device && this.device.config && this.device.config.oaArchiveGroup) || sel.value;
+        if (!this.archiveGroups || this.archiveGroups.length === 0) {
+            sel.innerHTML = '<option value="">(No archive groups available)</option>';
+            sel.disabled = true;
+            return;
+        }
+        let html = '<option value="">(Disabled)</option>';
+        html += this.archiveGroups.map(g => `<option value="${esc(g.name)}">${esc(g.displayName || g.name)} (${esc(g.name)}, ${esc(g.kind)})</option>`).join('');
+        sel.innerHTML = html;
+        sel.disabled = false;
+        if (curVal && (!this.device || !this.device.config || this.device.config.oaArchiveEnabled !== false)) {
+            const match = this.archiveGroups.find(g => g.name === curVal || g.dpName === curVal || g.displayName === curVal);
+            sel.value = match ? match.name : curVal;
+        } else {
+            sel.value = '';
+        }
+    }
+
     showNew() {
         document.getElementById('page-title').textContent = 'Add UNS Modeler';
         document.getElementById('page-subtitle').textContent = 'Choose the direction; it cannot be changed later.';
@@ -93,6 +128,8 @@ class UnsModelerDetail {
         document.getElementById('dev-timeout').value = 600;
         document.getElementById('dev-tokens').value = 500000;
         document.getElementById('dev-oaprefix').value = 'UNS_';
+        const sel = document.getElementById('dev-archive-group');
+        if (sel) sel.value = '';
         const params = new URLSearchParams(window.location.search);
         if (params.get('direction')) document.getElementById('dev-direction').value = params.get('direction');
         this.showDirection();
@@ -146,6 +183,13 @@ class UnsModelerDetail {
         document.getElementById('dev-allowwrite').checked = c.allowWrite;
         set('dev-oaprefix', c.oaPrefix);
         document.getElementById('dev-flow').checked = c.flowEnabled;
+        this.renderArchiveGroupSelect();
+        if (c.oaArchiveEnabled && c.oaArchiveGroup) {
+            const match = this.archiveGroups.find(g => g.name === c.oaArchiveGroup || g.dpName === c.oaArchiveGroup || g.displayName === c.oaArchiveGroup);
+            document.getElementById('dev-archive-group').value = match ? match.name : c.oaArchiveGroup;
+        } else {
+            document.getElementById('dev-archive-group').value = '';
+        }
         set('dev-approval', c.approvalMode);
         set('dev-redundancy', c.redundancy);
         set('dev-maxsteps', c.aiMaxSteps);
@@ -185,6 +229,9 @@ class UnsModelerDetail {
         } else {
             cfg.oaPrefix = v('dev-oaprefix').trim();
             cfg.flowEnabled = document.getElementById('dev-flow').checked;
+            const ag = v('dev-archive-group').trim();
+            cfg.oaArchiveEnabled = !!ag;
+            cfg.oaArchiveGroup = ag || null;
         }
         for (const k of Object.keys(cfg)) if (cfg[k] === null) delete cfg[k];
         return cfg;
@@ -302,6 +349,11 @@ class UnsModelerDetail {
         if (config.direction === 'MQTT_TO_WINCCOA' && !config.oaPrefix) {
             ui.error('WinCC OA Prefix is required for Direction B');
             document.getElementById('dev-oaprefix').focus();
+            return;
+        }
+        if (config.direction === 'MQTT_TO_WINCCOA' && config.oaArchiveEnabled && !config.oaArchiveGroup) {
+            ui.error('Archive Group is required when archiving is enabled');
+            document.getElementById('dev-archive-group').focus();
             return;
         }
         const input = {
