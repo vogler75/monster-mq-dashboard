@@ -70,11 +70,12 @@
                         <div class="form-group">
                             <label for="client-payload-format">Payload Format</label>
                             <select id="client-payload-format">
-                                <option value="DEFAULT">DEFAULT</option>
-                                <option value="JSON">JSON</option>
-                                <option value="BINARY">BINARY</option>
-                                <option value="TEXT">TEXT</option>
+                                <option value="DEFAULT">DEFAULT – MonsterMQ message (binary envelope)</option>
+                                <option value="JSON">JSON – MonsterMQ message (JSON envelope)</option>
+                                <option value="BINARY">BINARY – raw value, key = MQTT topic</option>
+                                <option value="TEXT">TEXT – UTF-8 value, key = MQTT topic</option>
                             </select>
+                            <span class="json-hint" id="client-payload-format-hint"></span>
                         </div>
                         <div class="form-group">
                             <label for="client-reconnect-delay">Reconnect Delay (ms)</label>

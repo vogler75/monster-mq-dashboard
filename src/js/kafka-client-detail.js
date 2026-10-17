@@ -15,6 +15,9 @@ class KafkaClientDetailManager {
     }
 
     async init() {
+        const formatSelect = document.getElementById('client-payload-format');
+        formatSelect.addEventListener('change', () => this.updatePayloadFormatHint());
+
         const urlParams = new URLSearchParams(window.location.search);
         this.clientName = urlParams.get('client');
         this.isNew = urlParams.get('new') === 'true';
@@ -33,6 +36,20 @@ class KafkaClientDetailManager {
         await this.loadClientData();
     }
 
+    // What the selected payload format expects on the Kafka topic. JSON means
+    // a MonsterMQ message envelope, not any JSON value, which is easy to
+    // mistake: plain JSON records (e.g. {"tag":...,"value":...}) need TEXT.
+    updatePayloadFormatHint() {
+        const hints = {
+            DEFAULT: 'Records are MonsterMQ messages in the broker\'s binary envelope (as written by another MonsterMQ broker with DEFAULT). Topic, QoS and flags come from the envelope; the record key is not used for the topic.',
+            JSON: 'Records are MonsterMQ messages as a JSON envelope with a "topicName" (or "topic") field plus "payload" or "payloadBase64". Records without a topic field are dropped. For plain JSON values, use TEXT.',
+            BINARY: 'Any record value is published as-is. The record key becomes the MQTT topic (after Key Regex and Destination Topic Prefix); records without a key are dropped.',
+            TEXT: 'Any record value is published as UTF-8 text, e.g. plain JSON like {"tag": ..., "value": ...}. The record key becomes the MQTT topic (after Key Regex and Destination Topic Prefix); records without a key are dropped.'
+        };
+        const format = document.getElementById('client-payload-format').value;
+        document.getElementById('client-payload-format-hint').textContent = hints[format] || '';
+    }
+
     showNewClientForm() {
         document.getElementById('page-title').textContent = 'Add Kafka Client';
         document.getElementById('page-subtitle').textContent = 'Create a new Kafka consumer/producer client';
@@ -43,6 +60,7 @@ class KafkaClientDetailManager {
         document.getElementById('client-namespace').value = '';
         document.getElementById('client-bootstrap').value = '';
         document.getElementById('client-payload-format').value = 'DEFAULT';
+        this.updatePayloadFormatHint();
         document.getElementById('client-reconnect-delay').value = '5000';
         document.getElementById('client-enabled').checked = true;
 
@@ -141,6 +159,7 @@ class KafkaClientDetailManager {
         document.getElementById('client-node').value = d.nodeId;
         document.getElementById('client-bootstrap').value = cfg.bootstrapServers;
         document.getElementById('client-payload-format').value = cfg.payloadFormat;
+        this.updatePayloadFormatHint();
         document.getElementById('client-reconnect-delay').value = cfg.reconnectDelayMs;
         document.getElementById('client-enabled').checked = d.enabled;
 

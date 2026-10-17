@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { resolve, join } from 'path';
+import { resolve, join, sep } from 'path';
 import { readdirSync, readFileSync, writeFileSync, copyFileSync, mkdirSync, existsSync, statSync } from 'fs';
 
 // Recursively copy files, skipping those already produced by rollup
@@ -259,7 +259,8 @@ export default defineConfig({
     name: 'copy-static',
     configureServer(server) {
       const svgRoot = resolve(__dirname, 'node_modules/@siemens/ix-icons/dist/ix-icons/svg');
-      const svgRootPrefix = `${svgRoot}/`;
+      // path.resolve uses the platform separator (backslash on Windows).
+      const svgRootPrefix = svgRoot + sep;
       const configRoot = resolve(__dirname, 'src/config');
 
       server.middlewares.use(async (req, res, next) => {
