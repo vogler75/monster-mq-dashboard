@@ -271,7 +271,7 @@ class SidebarManager {
                 section: 'WinCC OA', sectionIcon: 'rack-ipc', feature: 'UnsModeler',
                 items: [
                     { href: '/pages/uns-modelers.html', icon: 'hierarchy', text: 'UNS Modeler', feature: 'UnsModeler' },
-                    { href: '/pages/winccoa-browser.html', icon: 'search', text: 'WinCC OA Browser', feature: 'UnsModeler' }
+                    { href: '/pages/winccoa-browser.html', icon: 'search', text: 'Tag Browser', feature: 'UnsModeler' }
                 ]
             },
             {
