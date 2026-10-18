@@ -48,7 +48,7 @@ VITE_LOCAL_GRAPHQL_TARGET=http://localhost:4000 ./run.sh
 
 ## Build Commands
 
-The unified `build.sh` (and `build.bat` on Windows) script supports building both the web dashboard and desktop applications.
+The unified `build.sh` (and `build.ps1` on Windows) script supports building both the web dashboard and desktop applications.
 
 ### Web Dashboard Build
 
@@ -80,9 +80,9 @@ npm run electron:dev
 ```
 
 On Windows:
-```cmd
-build.bat --all
-build.bat --win
+```powershell
+.\build.ps1 -All
+.\build.ps1 -Win
 ```
 
 Desktop packages will be generated in `dist-desktop/`.
@@ -164,7 +164,7 @@ dashboard/
 ├── package.json          # Dependencies & build scripts
 ├── vite.config.js        # Vite bundler configuration & multi-broker dev server
 ├── build.sh              # Unified build script (web & desktop)
-├── build.bat             # Unified build script for Windows (web & desktop)
+├── build.ps1             # Unified build script for Windows (web & desktop)
 ├── release.sh            # Version bump, release notes generation & git tagging
 ├── publish.sh            # Upload desktop apps to GitHub Releases
 ├── run.sh                # Local Vite dev server runner with proxy support

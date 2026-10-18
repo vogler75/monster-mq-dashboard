@@ -88,7 +88,7 @@ jobs:
         run: npm ci
 
       - name: Build Windows setup
-        run: ./build.bat --win
+        run: pwsh ./build.ps1 -Win
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
