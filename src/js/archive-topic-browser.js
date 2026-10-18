@@ -17,24 +17,34 @@ export class ArchiveTopicBrowser {
         this.resizeHandle = opts.resizeHandle || this.doc.getElementById('topic-panel-resize-handle');
 
         this.treeNodes = new Map();
-        this.selectedArchiveGroup = opts.archiveGroup || 'Default';
+        this.selectedArchiveGroup = opts.archiveGroup || this.archiveGroupSelect?.value || 'Default';
         this.isOpen = false;
         this.panelWidth = 380;
+        this._lastToggle = 0;
 
         ArchiveTopicBrowser.instance = this;
         this.init();
     }
 
+    static getInstance() {
+        return ArchiveTopicBrowser.instance ||
+            (typeof window !== 'undefined' && (window.TopicChartSidePanel?.instance || window.explorerTopicBrowser)) ||
+            null;
+    }
+
     static toggle() {
-        if (ArchiveTopicBrowser.instance) ArchiveTopicBrowser.instance.toggle();
+        const inst = ArchiveTopicBrowser.getInstance();
+        if (inst) inst.toggle();
     }
 
     static close() {
-        if (ArchiveTopicBrowser.instance) ArchiveTopicBrowser.instance.close();
+        const inst = ArchiveTopicBrowser.getInstance();
+        if (inst) inst.close();
     }
 
     static open() {
-        if (ArchiveTopicBrowser.instance) ArchiveTopicBrowser.instance.open();
+        const inst = ArchiveTopicBrowser.getInstance();
+        if (inst) inst.open();
     }
 
     init() {
@@ -47,6 +57,11 @@ export class ArchiveTopicBrowser {
         if (this.archiveGroupSelect) {
             this.archiveGroupSelect.addEventListener('change', (e) => {
                 this.selectedArchiveGroup = e.target.value;
+                const mainSelect = this.doc.getElementById('archive-group-select');
+                if (mainSelect && mainSelect.value !== e.target.value) {
+                    mainSelect.value = e.target.value;
+                    mainSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                }
                 this.browseRoot();
             });
         }
@@ -89,7 +104,7 @@ export class ArchiveTopicBrowser {
         }
     }
 
-    syncArchiveGroups(groups) {
+    syncArchiveGroups(groups, selectedGroup = null) {
         if (!this.archiveGroupSelect || !groups || !groups.length) return;
         this.archiveGroupSelect.innerHTML = '';
         groups.forEach(group => {
@@ -100,12 +115,22 @@ export class ArchiveTopicBrowser {
             opt.textContent = name + (enabled ? '' : ' (disabled)');
             this.archiveGroupSelect.appendChild(opt);
         });
+        if (selectedGroup) {
+            this.selectedArchiveGroup = selectedGroup;
+        } else if (!this.selectedArchiveGroup || !groups.some(g => (typeof g === 'string' ? g : g.name) === this.selectedArchiveGroup)) {
+            const defaultGroup = groups.find(g => (typeof g === 'string' ? g : g.name) === 'Default') || groups[0];
+            this.selectedArchiveGroup = typeof defaultGroup === 'string' ? defaultGroup : defaultGroup.name;
+        }
         if (this.selectedArchiveGroup) {
             this.archiveGroupSelect.value = this.selectedArchiveGroup;
         }
+        this.browseRoot();
     }
 
     toggle() {
+        const now = Date.now();
+        if (this._lastToggle && (now - this._lastToggle) < 100) return;
+        this._lastToggle = now;
         if (this.isOpen) {
             this.close();
         } else {
@@ -114,8 +139,12 @@ export class ArchiveTopicBrowser {
     }
 
     open() {
-        if (!this.panel) return;
+        if (!this.panel) {
+            this.panel = this.doc.getElementById('topic-browser-panel');
+            if (!this.panel) return;
+        }
         this.panel.classList.add('open');
+        this.doc.body?.classList.add('topic-panel-open');
         if (this.toggleButton) {
             this.toggleButton.classList.add('active');
             this.toggleButton.setAttribute('aria-expanded', 'true');
@@ -132,13 +161,23 @@ export class ArchiveTopicBrowser {
                     this.archiveGroupSelect.value = mainArchiveGroupEl.value;
                 }
                 this.browseRoot();
+                return;
             }
+        }
+
+        // If tree is empty or had error/loading placeholder, reload root
+        if (!this.tree || !this.tree.children.length || this.tree.querySelector('.loading-item') || this.tree.textContent.includes('Error:')) {
+            this.browseRoot();
         }
     }
 
     close() {
-        if (!this.panel) return;
+        if (!this.panel) {
+            this.panel = this.doc.getElementById('topic-browser-panel');
+            if (!this.panel) return;
+        }
         this.panel.classList.remove('open');
+        this.doc.body?.classList.remove('topic-panel-open');
         if (this.toggleButton) {
             this.toggleButton.classList.remove('active');
             this.toggleButton.setAttribute('aria-expanded', 'false');
@@ -264,15 +303,18 @@ export class ArchiveTopicBrowser {
 
             if (levels.length > targetLevel) {
                 const nextLevel = levels[targetLevel];
-                const hasChildren = true;
-                const hasValue = levels.length === targetLevel + 1 && topic.hasValue;
+                const isDeeper = levels.length > targetLevel + 1;
+                const isExact = levels.length === targetLevel + 1;
 
                 if (!grouped.has(nextLevel)) {
-                    grouped.set(nextLevel, { hasValue, hasChildren });
+                    grouped.set(nextLevel, {
+                        hasValue: isExact && topic.hasValue,
+                        hasChildren: isDeeper
+                    });
                 } else {
                     const existing = grouped.get(nextLevel);
-                    existing.hasValue = existing.hasValue || hasValue;
-                    existing.hasChildren = existing.hasChildren || hasChildren;
+                    existing.hasValue = existing.hasValue || (isExact && topic.hasValue);
+                    existing.hasChildren = existing.hasChildren || isDeeper;
                 }
             }
         }

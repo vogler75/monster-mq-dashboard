@@ -558,12 +558,17 @@ var ArchiveExplorerManager = class ArchiveExplorerManager {
 };
 
 // --- Init ---
-document.addEventListener('DOMContentLoaded', function() {
-    window.archiveExplorer = new ArchiveExplorerManager();
-    window.archiveExplorer.init();
-    window.explorerTopicBrowser = new ArchiveTopicBrowser({
+let archiveExplorer;
+let explorerTopicBrowser;
+
+function init() {
+    if (archiveExplorer) return;
+    archiveExplorer = new ArchiveExplorerManager();
+    window.archiveExplorer = archiveExplorer;
+    archiveExplorer.init();
+    explorerTopicBrowser = new ArchiveTopicBrowser({
         document,
-        gql: graphqlClient,
+        gql: window.graphqlClient,
         onSelectTopic: (topic) => {
             const filter = document.getElementById('topic-filter');
             if (filter) {
@@ -572,13 +577,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-});
+    window.explorerTopicBrowser = explorerTopicBrowser;
+    ArchiveTopicBrowser.instance = explorerTopicBrowser;
+}
+
+document.addEventListener('DOMContentLoaded', init);
+init();
 
 page.expose({
     get ArchiveExplorerManager() { return ArchiveExplorerManager; },
     get ExplorerTopicBrowser() { return ArchiveTopicBrowser; },
-    get ArchiveTopicBrowser() { return ArchiveTopicBrowser; }
+    get ArchiveTopicBrowser() { return ArchiveTopicBrowser; },
+    get archiveExplorer() { return archiveExplorer; },
+    get explorerTopicBrowser() { return explorerTopicBrowser; }
 });
 page.ready();
-return () => page.dispose();
+return () => {
+    if (explorerTopicBrowser?.isOpen) explorerTopicBrowser.close();
+    page.dispose();
+};
 }

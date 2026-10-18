@@ -174,6 +174,13 @@ class TopicChartManager {
         // Archive group select
         document.getElementById('archive-group-select').addEventListener('change', (e) => {
             this.archiveGroup = e.target.value;
+            const panelSelect = document.getElementById('topic-panel-archive-group');
+            if (panelSelect && panelSelect.value !== this.archiveGroup) panelSelect.value = this.archiveGroup;
+            const browserInst = topicBrowser || ArchiveTopicBrowser.instance;
+            if (browserInst && browserInst.selectedArchiveGroup !== this.archiveGroup) {
+                browserInst.selectedArchiveGroup = this.archiveGroup;
+                browserInst.browseRoot();
+            }
             this.saveState();
             this.refreshChart();
         });
@@ -263,6 +270,11 @@ class TopicChartManager {
                     this.archiveGroup = defaultGroup.name;
                     mainSelect.value = this.archiveGroup;
                     panelSelect.value = this.archiveGroup;
+                }
+
+                const browserInst = topicBrowser || ArchiveTopicBrowser.instance;
+                if (browserInst) {
+                    browserInst.syncArchiveGroups(groups, this.archiveGroup);
                 }
             }
         } catch (error) {
@@ -1064,24 +1076,36 @@ class TopicChartManager {
 
 // Initialize when DOM is ready
 let topicChartManager;
-document.addEventListener('DOMContentLoaded', () => {
+let topicBrowser;
+
+function init() {
+    if (topicChartManager) return;
     topicChartManager = new TopicChartManager();
-    TopicChartSidePanel.instance = new ArchiveTopicBrowser({
+    topicBrowser = new ArchiveTopicBrowser({
         document,
-        gql: graphqlClient,
+        gql: window.graphqlClient,
+        archiveGroup: topicChartManager.archiveGroup,
         onSelectTopic: (topic, archiveGroup) => {
             topicChartManager.showJsonFieldModal(topic, archiveGroup);
         }
     });
-});
+    ArchiveTopicBrowser.instance = topicBrowser;
+}
+
+document.addEventListener('DOMContentLoaded', init);
+init();
 
 page.expose({
     get CHART_COLORS() { return CHART_COLORS; },
     get TopicChartManager() { return TopicChartManager; },
     get TopicChartSidePanel() { return ArchiveTopicBrowser; },
     get ArchiveTopicBrowser() { return ArchiveTopicBrowser; },
-    get topicChartManager() { return topicChartManager; }
+    get topicChartManager() { return topicChartManager; },
+    get topicBrowser() { return topicBrowser; }
 });
 page.ready();
-return () => page.dispose();
+return () => {
+    if (topicBrowser?.isOpen) topicBrowser.close();
+    page.dispose();
+};
 }
