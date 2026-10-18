@@ -567,7 +567,7 @@ export class OnboardingView {
 
     importJson() {
         const body = this.d.createElement('div');
-        body.innerHTML = `<p class="form-hint">Paste a Direction B proposal (types, datapoints, bindings). The broker stamps the source from the current topic selection (${this.h.esc(this.filters().join(', ') || 'none')}) and validates it like an AI answer.</p>
+        body.innerHTML = `<p class="form-hint">Paste an MQTT → WinCC OA onboarding proposal (types, datapoints, bindings). The broker stamps the source from the current topic selection (${this.h.esc(this.filters().join(', ') || 'none')}) and validates it like an AI answer.</p>
             <div class="form-group"><label for="b-import-file">File</label><input type="file" id="b-import-file" class="form-control" accept=".json,application/json"></div>
             <textarea class="form-control um-json" id="b-import-text" spellcheck="false"></textarea>`;
         body.querySelector('#b-import-file').addEventListener('change', async e => {

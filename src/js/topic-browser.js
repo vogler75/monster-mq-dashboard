@@ -48,6 +48,7 @@ class TopicExplorer {
 
         // UI Elements - Tree
         this.treeFilter = document.getElementById('tree-filter');
+        this.treeSubWildcardBtn = document.getElementById('tree-sub-wildcard-btn');
         this.treeSortBtn = document.getElementById('tree-sort-btn');
         this.treeExpandAllBtn = document.getElementById('tree-expand-all-btn');
         this.treeCollapseAllBtn = document.getElementById('tree-collapse-all-btn');
@@ -93,6 +94,18 @@ class TopicExplorer {
         this.subModalToggleActive = document.getElementById('sub-modal-toggle-active');
         this.subModalClose = document.getElementById('sub-modal-close');
         this.subModalDone = document.getElementById('sub-modal-done');
+
+        // UI Elements - Tree Context Menu
+        this.treeContextMenu = document.getElementById('tree-context-menu');
+        this.treeCtxHeader = document.getElementById('tree-ctx-header');
+        this.treeCtxSubMulti = document.getElementById('tree-ctx-sub-multi');
+        this.treeCtxSubMultiText = document.getElementById('tree-ctx-sub-multi-text');
+        this.treeCtxSubSingle = document.getElementById('tree-ctx-sub-single');
+        this.treeCtxSubSingleText = document.getElementById('tree-ctx-sub-single-text');
+        this.treeCtxCopy = document.getElementById('tree-ctx-copy');
+        this.contextMenuTopic = null;
+        this._docClickHandler = null;
+        this._docContextMenuHandler = null;
 
         // UI Elements - AI
         this.closeAiBtn = document.getElementById('close-ai-btn');
@@ -169,6 +182,7 @@ class TopicExplorer {
         this.setupRateMeter();
         await this.loadArchiveGroups();
         this.renderSubscriptionTags();
+        this.updateWildcardSubButtons();
 
         // Connect live subscriptions if enabled and filters exist
         if (this.subEnabled && this.subscriptions.length > 0) {
@@ -412,6 +426,19 @@ class TopicExplorer {
 
         // Tree actions
         this.treeFilter?.addEventListener('input', () => this.filterTree());
+        this.treeSubWildcardBtn?.addEventListener('click', () => {
+            if (!this.selectedTopic) {
+                ui.toast('Please select a topic node in the tree first', 'info');
+                return;
+            }
+            const filter = this.getWildcardFilter(this.selectedTopic, '#');
+            if (this.subscriptions.includes(filter)) {
+                ui.toast(`Already subscribed to ${filter}`, 'info');
+                this.openSubscriptionsModal();
+            } else {
+                this.addSubscription(filter);
+            }
+        });
         this.treeSortBtn?.addEventListener('click', () => {
             this.isSortedAZ = !this.isSortedAZ;
             this.treeSortBtn.classList.toggle('active', this.isSortedAZ);
@@ -420,6 +447,54 @@ class TopicExplorer {
         this.treeExpandAllBtn?.addEventListener('click', () => this.expandAllTree());
         this.treeCollapseAllBtn?.addEventListener('click', () => this.collapseAllTree());
         this.treeClearBtn?.addEventListener('click', () => this.browseRoot());
+
+        // Tree context menu actions
+        this.treeCtxSubMulti?.addEventListener('click', () => {
+            if (this.contextMenuTopic) {
+                const filter = this.getWildcardFilter(this.contextMenuTopic, '#');
+                if (this.subscriptions.includes(filter)) {
+                    this.removeSubscription(filter);
+                } else {
+                    this.addSubscription(filter);
+                }
+            }
+            this.hideTreeContextMenu();
+        });
+
+        this.treeCtxSubSingle?.addEventListener('click', () => {
+            if (this.contextMenuTopic) {
+                const filter = this.getWildcardFilter(this.contextMenuTopic, '+');
+                if (this.subscriptions.includes(filter)) {
+                    this.removeSubscription(filter);
+                } else {
+                    this.addSubscription(filter);
+                }
+            }
+            this.hideTreeContextMenu();
+        });
+
+        this.treeCtxCopy?.addEventListener('click', () => {
+            if (this.contextMenuTopic) {
+                const topicToCopy = this.contextMenuTopic;
+                if (navigator.clipboard?.writeText) {
+                    navigator.clipboard.writeText(topicToCopy).catch(() => {});
+                }
+                ui.toast(`Copied topic: ${topicToCopy}`, 'info');
+            }
+            this.hideTreeContextMenu();
+        });
+
+        this._docClickHandler = () => this.hideTreeContextMenu();
+        document.addEventListener('click', this._docClickHandler);
+
+        this._docContextMenuHandler = (e) => {
+            if (this.treeContextMenu && !this.treeContextMenu.contains(e.target)) {
+                this.hideTreeContextMenu();
+            }
+        };
+        document.addEventListener('contextmenu', this._docContextMenuHandler);
+
+        this.treeContent?.addEventListener('scroll', () => this.hideTreeContextMenu());
 
         // Table actions
         this.tableClearBtn?.addEventListener('click', () => this.clearTableLog());
@@ -450,17 +525,12 @@ class TopicExplorer {
 
         this.detailQuickSubBtn?.addEventListener('click', () => {
             if (!this.selectedTopic) return;
-            const filter = `${this.selectedTopic}/#`;
-            if (!this.subscriptions.includes(filter)) {
-                this.subscriptions.push(filter);
-                safeStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
-                this.renderSubscriptionTags();
-                this.subEnabled = true;
-                safeStorage.setItem(STORAGE_KEYS.SUB_ENABLED, 'true');
-                this.connectWebSocket();
-                ui.toast(`Subscribed to ${filter}`, 'success');
-            } else {
+            const filter = this.getWildcardFilter(this.selectedTopic, '#');
+            if (this.subscriptions.includes(filter)) {
                 ui.toast(`Already subscribed to ${filter}`, 'info');
+                this.openSubscriptionsModal();
+            } else {
+                this.addSubscription(filter);
             }
         });
     }
@@ -930,9 +1000,38 @@ class TopicExplorer {
             row.appendChild(count);
         }
 
+        // Wildcard subscription quick action button
+        const wildcardFilter = this.getWildcardFilter(path, '#');
+        const isAlreadySubbed = this.subscriptions.includes(wildcardFilter);
+        const subBtn = document.createElement('button');
+        subBtn.type = 'button';
+        subBtn.className = `tree-row-action-sub ${isAlreadySubbed ? 'active' : ''}`;
+        subBtn.innerHTML = isAlreadySubbed ? '✓ #' : '+ #';
+        subBtn.title = isAlreadySubbed
+            ? `Already subscribed to ${wildcardFilter} (click to manage)`
+            : `Subscribe to wildcard (${wildcardFilter})`;
+        subBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleTopicSelected(path);
+            if (isAlreadySubbed) {
+                this.openSubscriptionsModal();
+            } else {
+                this.addSubscription(wildcardFilter);
+            }
+        });
+        row.appendChild(subBtn);
+
         // Row Click: select topic
         row.addEventListener('click', () => {
             this.handleTopicSelected(path);
+        });
+
+        // Context menu on right click
+        row.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.handleTopicSelected(path);
+            this.showTreeContextMenu(e.clientX, e.clientY, path);
         });
 
         // Double click: toggle expand/collapse
@@ -1045,6 +1144,7 @@ class TopicExplorer {
     async handleTopicSelected(topic) {
         this.selectedTopic = topic;
         this.renderTree();
+        this.updateWildcardSubButtons();
 
         // Update Topic string in Detail strip
         if (this.detailTopicText) {
@@ -1944,22 +2044,172 @@ class TopicExplorer {
         }
     }
 
+    getWildcardFilter(topic, wildcard = '#') {
+        if (!topic || topic === '/') return wildcard;
+        return topic.endsWith('/') ? `${topic}${wildcard}` : `${topic}/${wildcard}`;
+    }
+
+    addSubscription(filter) {
+        if (!filter) return false;
+        filter = filter.trim();
+        if (!filter) return false;
+
+        if (this.subscriptions.includes(filter)) {
+            ui.toast(`Already subscribed to ${filter}`, 'info');
+            return false;
+        }
+
+        this.subscriptions.push(filter);
+        safeStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
+        this.renderSubscriptionTags();
+
+        // Auto-enable when adding filter
+        this.subEnabled = true;
+        safeStorage.setItem(STORAGE_KEYS.SUB_ENABLED, 'true');
+        this.updateSubscriptionActiveButton();
+
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.sendSubscribe();
+        } else {
+            this.connectWebSocket();
+        }
+
+        this.updateWildcardSubButtons();
+        ui.toast(`Subscribed to ${filter}`, 'success');
+        return true;
+    }
+
+    removeSubscription(filter) {
+        if (!filter) return false;
+        const idx = this.subscriptions.indexOf(filter);
+        if (idx === -1) return false;
+
+        this.subscriptions.splice(idx, 1);
+        safeStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
+        this.renderSubscriptionTags();
+        this.updateWildcardSubButtons();
+
+        if (this.subscriptions.length === 0) {
+            this.disconnectWebSocket();
+            this.updateConnectionStatus(false, 'Live Off');
+        } else if (this.subEnabled) {
+            this.sendSubscribe();
+        }
+
+        ui.toast(`Removed subscription ${filter}`, 'info');
+        return true;
+    }
+
+    updateWildcardSubButtons() {
+        // 1. Header button
+        if (this.treeSubWildcardBtn) {
+            if (!this.selectedTopic) {
+                this.treeSubWildcardBtn.title = 'Select a node in tree to add wildcard subscription (+#)';
+                this.treeSubWildcardBtn.innerHTML = '+ #';
+                this.treeSubWildcardBtn.classList.remove('active');
+            } else {
+                const filter = this.getWildcardFilter(this.selectedTopic, '#');
+                const isSubbed = this.subscriptions.includes(filter);
+                this.treeSubWildcardBtn.title = isSubbed 
+                    ? `Already subscribed to ${filter} (click to manage)` 
+                    : `Subscribe to wildcard (${filter})`;
+                this.treeSubWildcardBtn.innerHTML = isSubbed ? '✓ #' : '+ #';
+                this.treeSubWildcardBtn.classList.toggle('active', isSubbed);
+            }
+        }
+
+        // 2. Detail button
+        if (this.detailQuickSubBtn) {
+            if (!this.selectedTopic) {
+                this.detailQuickSubBtn.title = 'Select a topic to subscribe';
+                this.detailQuickSubBtn.textContent = '+ Sub';
+                this.detailQuickSubBtn.classList.remove('active');
+            } else {
+                const filter = this.getWildcardFilter(this.selectedTopic, '#');
+                const isSubbed = this.subscriptions.includes(filter);
+                this.detailQuickSubBtn.title = isSubbed 
+                    ? `Already subscribed to ${filter} (click to manage)` 
+                    : `Subscribe to wildcard (${filter})`;
+                this.detailQuickSubBtn.textContent = isSubbed ? '✓ Sub' : '+ Sub';
+                this.detailQuickSubBtn.classList.toggle('active', isSubbed);
+            }
+        }
+
+        // 3. Tree rows currently in DOM
+        if (this.treeRowElements) {
+            for (const [path, rowEl] of this.treeRowElements.entries()) {
+                if (!rowEl || !rowEl.isConnected) continue;
+                const btn = rowEl.querySelector('.tree-row-action-sub');
+                if (btn) {
+                    const filter = this.getWildcardFilter(path, '#');
+                    const isSubbed = this.subscriptions.includes(filter);
+                    btn.className = `tree-row-action-sub ${isSubbed ? 'active' : ''}`;
+                    btn.innerHTML = isSubbed ? '✓ #' : '+ #';
+                    btn.title = isSubbed 
+                        ? `Already subscribed to ${filter} (click to manage)` 
+                        : `Subscribe to wildcard (${filter})`;
+                }
+            }
+        }
+    }
+
+    showTreeContextMenu(x, y, path) {
+        if (!this.treeContextMenu) return;
+        this.contextMenuTopic = path;
+
+        const multiFilter = this.getWildcardFilter(path, '#');
+        const singleFilter = this.getWildcardFilter(path, '+');
+        const isMultiSubbed = this.subscriptions.includes(multiFilter);
+        const isSingleSubbed = this.subscriptions.includes(singleFilter);
+
+        if (this.treeCtxHeader) {
+            this.treeCtxHeader.textContent = path;
+            this.treeCtxHeader.title = path;
+        }
+
+        if (this.treeCtxSubMultiText) {
+            this.treeCtxSubMultiText.textContent = isMultiSubbed 
+                ? `Unsubscribe from ${multiFilter}` 
+                : `Subscribe to wildcard (${multiFilter})`;
+        }
+        if (this.treeCtxSubMulti) {
+            this.treeCtxSubMulti.style.color = isMultiSubbed ? '#f87171' : '#38bdf8';
+        }
+
+        if (this.treeCtxSubSingleText) {
+            this.treeCtxSubSingleText.textContent = isSingleSubbed 
+                ? `Unsubscribe from ${singleFilter}` 
+                : `Subscribe to single-level (${singleFilter})`;
+        }
+        if (this.treeCtxSubSingle) {
+            this.treeCtxSubSingle.style.color = isSingleSubbed ? '#f87171' : '#38bdf8';
+        }
+
+        this.treeContextMenu.style.display = 'block';
+        const menuWidth = this.treeContextMenu.offsetWidth || 230;
+        const menuHeight = this.treeContextMenu.offsetHeight || 150;
+
+        const posX = Math.min(x, window.innerWidth - menuWidth - 10);
+        const posY = Math.min(y, window.innerHeight - menuHeight - 10);
+
+        this.treeContextMenu.style.left = `${Math.max(10, posX)}px`;
+        this.treeContextMenu.style.top = `${Math.max(10, posY)}px`;
+    }
+
+    hideTreeContextMenu() {
+        if (this.treeContextMenu) {
+            this.treeContextMenu.style.display = 'none';
+        }
+        this.contextMenuTopic = null;
+    }
+
     handleAddSubscriptionFilter() {
         if (!this.subModalInput) return;
         const filter = this.subModalInput.value.trim();
         if (!filter) return;
 
-        if (!this.subscriptions.includes(filter)) {
-            this.subscriptions.push(filter);
-            safeStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
-            this.renderSubscriptionTags();
+        if (this.addSubscription(filter)) {
             this.subModalInput.value = '';
-
-            // Auto-enable when adding filter
-            this.subEnabled = true;
-            safeStorage.setItem(STORAGE_KEYS.SUB_ENABLED, 'true');
-            this.updateSubscriptionActiveButton();
-            this.connectWebSocket();
         }
     }
 
@@ -1984,15 +2234,7 @@ class TopicExplorer {
             removeBtn.style.cssText = 'cursor: pointer; opacity: 0.7; font-weight: bold; margin-left: 2px;';
             removeBtn.textContent = '✕';
             removeBtn.addEventListener('click', () => {
-                this.subscriptions.splice(idx, 1);
-                safeStorage.setItem(STORAGE_KEYS.SUBSCRIPTIONS, JSON.stringify(this.subscriptions));
-                this.renderSubscriptionTags();
-                if (this.subscriptions.length === 0) {
-                    this.disconnectWebSocket();
-                    this.updateConnectionStatus(false, 'Live Off');
-                } else if (this.subEnabled) {
-                    this.sendSubscribe();
-                }
+                this.removeSubscription(filter);
             });
             chip.appendChild(removeBtn);
 
@@ -2235,6 +2477,14 @@ class TopicExplorer {
         if (this._renderTreeTimer) {
             clearTimeout(this._renderTreeTimer);
             this._renderTreeTimer = null;
+        }
+        if (this._docClickHandler) {
+            document.removeEventListener('click', this._docClickHandler);
+            this._docClickHandler = null;
+        }
+        if (this._docContextMenuHandler) {
+            document.removeEventListener('contextmenu', this._docContextMenuHandler);
+            this._docContextMenuHandler = null;
         }
     }
 }

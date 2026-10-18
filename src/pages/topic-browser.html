@@ -371,6 +371,102 @@
             margin-left: 0;
         }
 
+        .tree-row-action-sub {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 0.35rem;
+            height: 18px;
+            margin-left: 0.25rem;
+            margin-right: 0.25rem;
+            border-radius: 3px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            line-height: 18px;
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.15s ease;
+            font-family: monospace;
+            user-select: none;
+        }
+
+        .tree-row-action-sub:hover {
+            background: #38bdf8;
+            color: #0f172a;
+            border-color: #38bdf8;
+            box-shadow: 0 0 6px rgba(56, 189, 248, 0.3);
+        }
+
+        .tree-row-action-sub.active {
+            display: inline-flex;
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            border-color: rgba(16, 185, 129, 0.35);
+        }
+
+        .tree-row-action-sub.active:hover {
+            background: #10b981;
+            color: #0f172a;
+            border-color: #10b981;
+        }
+
+        .tree-item-row:hover .tree-row-action-sub,
+        .tree-item-row.selected .tree-row-action-sub {
+            display: inline-flex;
+        }
+
+        /* Tree Context Menu */
+        .tree-context-menu {
+            position: fixed;
+            z-index: 10001;
+            background: var(--dark-surface-2, #182234);
+            border: 1px solid var(--dark-border, #334155);
+            border-radius: 6px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            padding: 0.3rem 0;
+            min-width: 230px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.75rem;
+            display: none;
+        }
+
+        .tree-context-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.75rem;
+            color: var(--text-primary, #f1f5f9);
+            cursor: pointer;
+            transition: background 0.12s ease;
+            user-select: none;
+        }
+
+        .tree-context-menu-item:hover {
+            background: rgba(124, 58, 237, 0.25);
+            color: #38bdf8;
+        }
+
+        .tree-context-menu-divider {
+            height: 1px;
+            background: var(--dark-border, #334155);
+            margin: 0.25rem 0;
+        }
+
+        .tree-context-menu-header {
+            padding: 0.3rem 0.75rem;
+            font-size: 0.7rem;
+            color: var(--text-muted, #94a3b8);
+            border-bottom: 1px solid var(--dark-border, #334155);
+            margin-bottom: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+
         /* Center Pane (Table on top, Detail on bottom) */
         .center-pane {
             display: flex;
@@ -754,6 +850,9 @@
                     <div id="tree-pane" class="tree-pane">
                         <div class="tree-pane-header">
                             <input id="tree-filter" type="text" class="tree-filter-input" placeholder="Filter topics..." />
+                            <button id="tree-sub-wildcard-btn" class="explorer-btn explorer-btn-icon" title="Select a node in tree to add wildcard subscription (+#)" style="color: #38bdf8; font-weight: 700; font-size: 0.72rem; min-width: 26px;">
+                                + #
+                            </button>
                             <button id="tree-sort-btn" class="explorer-btn explorer-btn-icon" title="Toggle Sort A-Z">
                                 <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M3.5 10.5V2.5m0 0L1.5 4.5m2-2l2 2M10.5 3.5v8m0 0l-2-2m2 2l2-2" />
@@ -985,6 +1084,24 @@
                 </button>
                 <button id="sub-modal-done" class="explorer-btn" style="background: var(--dark-border);">Done</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Tree Node Context Menu -->
+    <div id="tree-context-menu" class="tree-context-menu">
+        <div id="tree-ctx-header" class="tree-context-menu-header">Topic</div>
+        <div id="tree-ctx-sub-multi" class="tree-context-menu-item">
+            <span>📡</span>
+            <span id="tree-ctx-sub-multi-text">Subscribe to wildcard (topic/#)</span>
+        </div>
+        <div id="tree-ctx-sub-single" class="tree-context-menu-item">
+            <span>📡</span>
+            <span id="tree-ctx-sub-single-text">Subscribe to single-level (topic/+)</span>
+        </div>
+        <div class="tree-context-menu-divider"></div>
+        <div id="tree-ctx-copy" class="tree-context-menu-item">
+            <span>📋</span>
+            <span>Copy Topic</span>
         </div>
     </div>
 

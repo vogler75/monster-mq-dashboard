@@ -48,11 +48,11 @@ class UnsModelerListManager {
         const mode = params.get('mode') || 'live';
         const q = new URLSearchParams({ topics: filter, mode });
         document.getElementById('analyse-banner').style.display = '';
-        document.getElementById('analyse-text').textContent = `Topics ${filter} (${mode}). Open a Direction B device to analyse them, or create a new one.`;
+        document.getElementById('analyse-text').textContent = `Topics ${filter} (${mode}). Select an MQTT → WinCC OA device to onboard them, or create a new one.`;
         const box = document.getElementById('analyse-devices');
         const devs = this.devices.filter(d => d.config.direction === 'MQTT_TO_WINCCOA');
         box.innerHTML = devs.map(d => `<a class="btn btn-secondary" href="/pages/uns-modeler-detail.html?name=${encodeURIComponent(d.name)}&${q}">${ui.escapeHtml(d.name)}</a>`).join('') +
-            `<a class="btn btn-primary" href="/pages/uns-modeler-detail.html?new=true&direction=MQTT_TO_WINCCOA&${q}" data-requires-auth><ix-icon name="add-circle" size="16"></ix-icon> New Direction B Device</a>`;
+            `<a class="btn btn-primary" href="/pages/uns-modeler-detail.html?new=true&direction=MQTT_TO_WINCCOA&${q}" data-requires-auth><ix-icon name="add-circle" size="16"></ix-icon> New MQTT &#8594; WinCC OA Modeler</a>`;
     }
 
     updateMetrics() {
@@ -82,7 +82,10 @@ class UnsModelerListManager {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><strong>${ui.escapeHtml(d.name)}</strong></td>
-                <td>${dirA ? 'WinCC OA &#8594; UNS' : 'MQTT &#8594; WinCC OA'}</td>
+                <td>
+                    <div style="font-weight: 500;">${dirA ? 'WinCC OA &#8594; UNS' : 'MQTT &#8594; WinCC OA'}</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">${dirA ? 'Model UNS from WinCC OA' : 'Onboard MQTT into WinCC OA'}</div>
+                </td>
                 <td><code>${ui.escapeHtml(dirA ? (cfg.unsRoot || '') : (cfg.oaPrefix || ''))}</code>${dirA && cfg.allowWrite ? ' <span class="status-badge badge-warn">..set</span>' : ''}</td>
                 <td>${ui.escapeHtml(d.nodeId || '')}${d.isOnCurrentNode ? ' <span class="status-badge badge-info">this node</span>' : ''}</td>
                 <td>${state}</td>

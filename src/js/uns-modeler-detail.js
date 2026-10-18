@@ -342,12 +342,12 @@ class UnsModelerDetail {
         if (!name) { ui.error('Name is required'); return; }
         const config = this.formConfig();
         if (config.direction === 'WINCCOA_TO_UNS' && !config.unsRoot) {
-            ui.error('UNS Root is required for Direction A, e.g. acme/vienna/hall2');
+            ui.error('UNS Root is required for WinCC OA → UNS, e.g. acme/vienna/hall2');
             document.getElementById('dev-unsroot').focus();
             return;
         }
         if (config.direction === 'MQTT_TO_WINCCOA' && !config.oaPrefix) {
-            ui.error('WinCC OA Prefix is required for Direction B');
+            ui.error('WinCC OA Prefix is required for MQTT → WinCC OA');
             document.getElementById('dev-oaprefix').focus();
             return;
         }

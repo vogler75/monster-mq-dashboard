@@ -147,8 +147,8 @@
                         <div class="form-group">
                             <label for="dev-direction">Direction *</label>
                             <select id="dev-direction" class="form-control">
-                                <option value="WINCCOA_TO_UNS">WinCC OA &#8594; UNS (Direction A)</option>
-                                <option value="MQTT_TO_WINCCOA">MQTT &#8594; WinCC OA (Direction B)</option>
+                                <option value="WINCCOA_TO_UNS">WinCC OA &#8594; UNS (Model UNS from WinCC OA)</option>
+                                <option value="MQTT_TO_WINCCOA">MQTT &#8594; WinCC OA (Onboard MQTT into WinCC OA)</option>
                             </select>
                             <span class="form-hint">Fixed when the device is created.</span>
                         </div>
@@ -245,7 +245,7 @@
                             </div>
                             <div class="form-group" style="grid-column:1/-1;">
                                 <label for="dev-prompt">System Prompt</label>
-                                <textarea id="dev-prompt" class="form-control" rows="4" placeholder="Leave empty to use the built-in prompt of the direction."></textarea>
+                                <textarea id="dev-prompt" class="form-control" rows="4" placeholder="Leave empty to use the built-in default prompt for the selected direction."></textarea>
                             </div>
                         </div>
                     </div>
