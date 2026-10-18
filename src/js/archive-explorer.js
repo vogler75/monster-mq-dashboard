@@ -1,3 +1,5 @@
+import { ArchiveTopicBrowser } from './archive-topic-browser.js';
+
 // Mounted by the SPA router; resources and handler bindings belong to this visit.
 export function mount(page) {
 const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
@@ -555,300 +557,27 @@ var ArchiveExplorerManager = class ArchiveExplorerManager {
     }
 };
 
-/**
- * Topic Browser Side Panel for Archive Explorer (with drag-and-drop)
- */
-var ExplorerTopicBrowser = class ExplorerTopicBrowser {
-    constructor() {
-        this.panel = document.getElementById('topic-browser-panel');
-        this.tree = document.getElementById('topic-panel-tree-root');
-        this.archiveGroupSelect = document.getElementById('topic-panel-archive-group');
-        this.toggleButton = document.getElementById('topic-browser-floating-toggle');
-        this.resizeHandle = document.getElementById('topic-panel-resize-handle');
-
-        this.treeNodes = new Map();
-        this.selectedArchiveGroup = 'Default';
-        this.isOpen = false;
-        this.panelWidth = 380;
-
-        this.init();
-    }
-
-    init() {
-        this.toggleButton.addEventListener('click', () => this.toggle());
-        document.getElementById('topic-panel-close').addEventListener('click', () => this.close());
-
-        this.archiveGroupSelect.addEventListener('change', (e) => {
-            this.selectedArchiveGroup = e.target.value;
-            this.browseRoot();
-        });
-
-        this.createRootNode();
-        this.setupResize();
-    }
-
-    toggle() {
-        if (this.isOpen) this.close(); else this.open();
-    }
-
-    open() {
-        this.panel.classList.add('open');
-        this.toggleButton.classList.add('active');
-        this.updateMainContentMargin();
-        this.isOpen = true;
-
-        // Sync archive group with main selector
-        const mainArchiveGroup = document.getElementById('archive-group-select').value;
-        if (mainArchiveGroup) {
-            this.selectedArchiveGroup = mainArchiveGroup;
-            this.archiveGroupSelect.value = mainArchiveGroup;
-            this.browseRoot();
-        }
-    }
-
-    close() {
-        this.panel.classList.remove('open');
-        this.toggleButton.classList.remove('active');
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) mainContent.style.marginRight = '0';
-        this.isOpen = false;
-    }
-
-    updateMainContentMargin() {
-        const mainContent = document.querySelector('.main-content');
-        if (mainContent) mainContent.style.marginRight = this.panelWidth + 'px';
-    }
-
-    setupResize() {
-        let isResizing = false;
-        let startX = 0;
-        let startWidth = 0;
-
-        this.resizeHandle.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            startX = e.clientX;
-            startWidth = this.panel.offsetWidth;
-            document.body.style.cursor = 'col-resize';
-            document.body.style.userSelect = 'none';
-            e.preventDefault();
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isResizing) return;
-            const deltaX = startX - e.clientX;
-            const newWidth = Math.max(300, Math.min(600, startWidth + deltaX));
-            this.panelWidth = newWidth;
-            this.panel.style.width = newWidth + 'px';
-            if (this.isOpen) this.updateMainContentMargin();
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (isResizing) {
-                isResizing = false;
-                document.body.style.cursor = '';
-                document.body.style.userSelect = '';
-            }
-        });
-    }
-
-    browseRoot() {
-        this.tree.innerHTML = '';
-        this.treeNodes.clear();
-        this.createRootNode();
-    }
-
-    createRootNode() {
-        this.loadTopicLevel('+', this.tree, '');
-    }
-
-    async loadTopicLevel(pattern, container, parentPath) {
-        try {
-            const loadingItem = document.createElement('li');
-            loadingItem.className = 'tree-node loading-item';
-            loadingItem.innerHTML = '<div class="tree-item" style="color:var(--text-muted);font-style:italic;">Loading...</div>';
-            container.appendChild(loadingItem);
-
-            const query = 'query BrowseTopics($topic: String!, $archiveGroup: String!) { browseTopics(topic: $topic, archiveGroup: $archiveGroup) { name } }';
-            const response = await graphqlClient.query(query, {
-                topic: pattern,
-                archiveGroup: this.selectedArchiveGroup
-            });
-
-            container.removeChild(loadingItem);
-
-            if (response && response.browseTopics && response.browseTopics.length > 0) {
-                const topics = response.browseTopics.map(t => ({ topic: t.name, hasValue: true }));
-                const grouped = this.groupTopicsByLevel(topics, parentPath);
-
-                if (grouped.size === 0) {
-                    container.appendChild(this.emptyItem());
-                    return;
-                }
-
-                for (const [levelName, topicData] of grouped) {
-                    const fullPath = parentPath ? parentPath + '/' + levelName : levelName;
-                    container.appendChild(this.createTreeItem(levelName, fullPath, topicData.hasValue, topicData.hasChildren));
-                }
-            } else {
-                container.appendChild(this.emptyItem());
-            }
-        } catch (error) {
-            console.error('Error loading topic level:', error);
-            const loadingItems = container.querySelectorAll('.loading-item');
-            loadingItems.forEach(item => container.removeChild(item));
-            const errItem = document.createElement('li');
-            errItem.className = 'tree-node';
-            errItem.innerHTML = '<div class="tree-item" style="color:var(--monster-red);font-style:italic;">Error: ' + error.message + '</div>';
-            container.appendChild(errItem);
-        }
-    }
-
-    groupTopicsByLevel(topics, parentPath) {
-        const grouped = new Map();
-        const parentLevels = parentPath ? parentPath.split('/').length : 0;
-
-        for (const topic of topics) {
-            const levels = topic.topic.split('/');
-            const targetLevel = parentLevels === 0 ? 0 : parentLevels;
-
-            if (levels.length > targetLevel) {
-                const nextLevel = levels[targetLevel];
-                const hasChildren = true;
-                const hasValue = levels.length === targetLevel + 1 && topic.hasValue;
-
-                if (!grouped.has(nextLevel)) {
-                    grouped.set(nextLevel, { hasValue, hasChildren });
-                } else {
-                    const existing = grouped.get(nextLevel);
-                    existing.hasValue = existing.hasValue || hasValue;
-                    existing.hasChildren = existing.hasChildren || hasChildren;
-                }
-            }
-        }
-        return grouped;
-    }
-
-    createTreeItem(name, fullPath, hasValue, hasChildren) {
-        const li = document.createElement('li');
-        li.className = 'tree-node';
-
-        const item = document.createElement('div');
-        item.className = 'tree-item';
-        if (hasValue) item.classList.add('has-data');
-
-        // Make draggable
-        item.setAttribute('draggable', 'true');
-        item.addEventListener('dragstart', (e) => {
-            e.dataTransfer.setData('text/plain', fullPath);
-            e.dataTransfer.effectAllowed = 'copy';
-        });
-
-        const toggle = document.createElement('button');
-        toggle.className = 'tree-toggle';
-        if (hasChildren) {
-            toggle.innerHTML = `
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s ease; display: inline-block;">
-                    <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-            `;
-        } else {
-            toggle.innerHTML = '';
-        }
-
-        const icon = document.createElement('span');
-        icon.className = 'tree-icon';
-        if (hasChildren) {
-            icon.className += ' folder';
-            icon.innerHTML = `
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--monster-purple)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-top: -2px;">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                </svg>
-            `;
-        } else {
-            icon.className += ' topic';
-            icon.innerHTML = `
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--monster-teal)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-top: -2px;">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                    <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-            `;
-        }
-
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = name;
-
-        item.appendChild(toggle);
-        item.appendChild(icon);
-        item.appendChild(nameSpan);
-        li.appendChild(item);
-
-        this.treeNodes.set(fullPath, { element: li, item, toggle, expanded: false, hasChildren, fullPath });
-
-        if (hasChildren) {
-            toggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.toggleNode(fullPath);
-            });
-        }
-
-        // Click to set topic filter directly
-        item.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (hasValue) {
-                document.getElementById('topic-filter').value = fullPath;
-            } else if (hasChildren) {
-                this.toggleNode(fullPath);
-            }
-        });
-
-        return li;
-    }
-
-    async toggleNode(fullPath) {
-        const nodeData = this.treeNodes.get(fullPath);
-        if (!nodeData || !nodeData.hasChildren) return;
-
-        if (nodeData.expanded) {
-            const childContainer = nodeData.element.querySelector('.tree-children');
-            if (childContainer) childContainer.classList.add('collapsed');
-            nodeData.toggle.classList.remove('expanded');
-            nodeData.expanded = false;
-        } else {
-            let childContainer = nodeData.element.querySelector('.tree-children');
-            if (!childContainer) {
-                childContainer = document.createElement('ul');
-                childContainer.className = 'tree-children';
-                nodeData.element.appendChild(childContainer);
-                const pattern = fullPath + '/+';
-                await this.loadTopicLevel(pattern, childContainer, fullPath);
-            }
-            childContainer.classList.remove('collapsed');
-            nodeData.toggle.classList.add('expanded');
-            nodeData.expanded = true;
-        }
-    }
-
-    emptyItem() {
-        const li = document.createElement('li');
-        li.className = 'tree-node';
-        li.innerHTML = '<div class="tree-item" style="color:var(--text-muted);font-style:italic;">No topics found</div>';
-        return li;
-    }
-};
-
 // --- Init ---
 document.addEventListener('DOMContentLoaded', function() {
     window.archiveExplorer = new ArchiveExplorerManager();
     window.archiveExplorer.init();
-    window.explorerTopicBrowser = new ExplorerTopicBrowser();
+    window.explorerTopicBrowser = new ArchiveTopicBrowser({
+        document,
+        gql: graphqlClient,
+        onSelectTopic: (topic) => {
+            const filter = document.getElementById('topic-filter');
+            if (filter) {
+                filter.value = topic;
+                filter.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }
+    });
 });
 
 page.expose({
     get ArchiveExplorerManager() { return ArchiveExplorerManager; },
-    get ExplorerTopicBrowser() { return ExplorerTopicBrowser; }
+    get ExplorerTopicBrowser() { return ArchiveTopicBrowser; },
+    get ArchiveTopicBrowser() { return ArchiveTopicBrowser; }
 });
 page.ready();
 return () => page.dispose();
