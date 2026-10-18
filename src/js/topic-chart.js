@@ -204,12 +204,23 @@ class TopicChartManager {
         });
 
         // Modal buttons
+        document.getElementById('modal-close')?.addEventListener('click', () => this.hideJsonFieldModal());
         document.getElementById('modal-cancel').addEventListener('click', () => this.hideJsonFieldModal());
         document.getElementById('modal-add').addEventListener('click', () => this.confirmJsonFieldModal());
         document.getElementById('modal-use-raw').addEventListener('click', () => this.useRawValue());
         document.getElementById('modal-json-field').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.confirmJsonFieldModal();
         });
+        const modalEl = document.getElementById('json-field-modal');
+        if (modalEl) {
+            modalEl.addEventListener('click', (e) => {
+                if (e.target === modalEl) this.hideJsonFieldModal();
+            });
+            modalEl.addEventListener('mmq:closed', () => {
+                this.pendingTopicFromBrowser = null;
+                this.selectedJsonField = '';
+            });
+        }
     }
 
     async loadArchiveGroups() {
@@ -806,12 +817,23 @@ class TopicChartManager {
         // Use provided archive group or fall back to manager's archive group
         const queryArchiveGroup = archiveGroup || this.archiveGroup;
 
-        // Update title
-        document.getElementById('modal-topic-title').textContent = `Select Field: ${topic}`;
+        // Update title and topic badge
+        const titleEl = document.getElementById('modal-topic-title');
+        if (titleEl) titleEl.textContent = 'Select Metric Field';
+        const topicNameEl = document.getElementById('modal-topic-name');
+        if (topicNameEl) {
+            topicNameEl.textContent = topic;
+            topicNameEl.title = topic;
+        }
 
         // Show modal with loading state
         this.showModalLoading();
-        document.getElementById('json-field-modal').classList.remove('hidden');
+        const modal = document.getElementById('json-field-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('active');
+            modal.style.display = 'flex';
+        }
 
         // Fetch current value
         try {
@@ -1001,7 +1023,12 @@ class TopicChartManager {
     }
 
     hideJsonFieldModal() {
-        document.getElementById('json-field-modal').classList.add('hidden');
+        const modal = document.getElementById('json-field-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+        }
         this.pendingTopicFromBrowser = null;
         this.selectedJsonField = '';
     }

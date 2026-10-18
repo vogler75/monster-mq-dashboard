@@ -420,60 +420,188 @@
         }
 
         
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+        /* Topic Field Selection Modal */
+        #json-field-modal.active,
+        #json-field-modal:not(.hidden) {
+            display: flex;
+        }
+
+        #json-field-modal.hidden {
+            display: none !important;
+        }
+
+        .topic-modal-header-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .topic-modal-header-title {
             display: flex;
             align-items: center;
-            justify-content: center;
-            z-index: 2000;
+            gap: 0.5rem;
         }
 
-        .modal-overlay.hidden {
-            display: none;
+        .topic-modal-header-icon {
+            font-size: 1.15rem;
+            color: var(--monster-purple);
+            flex-shrink: 0;
         }
 
-        .modal-actions {
+        .topic-modal-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--dark-surface-2);
+            border: 1px solid var(--dark-border);
+            border-radius: var(--r-sm);
+            padding: 0.2rem 0.55rem;
+            width: fit-content;
+            max-width: 100%;
+        }
+
+        .topic-modal-badge-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .topic-modal-code {
+            font-family: 'Fira Code', 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--monster-light);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .modal-loading-state {
             display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             gap: 0.75rem;
-            justify-content: flex-end;
+            padding: 2.25rem 1rem;
+            text-align: center;
         }
 
-        
+        .modal-loading-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .modal-loading-title {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .modal-loading-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .modal-info-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            padding: 0.75rem 0.85rem;
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.25);
+            border-radius: var(--r-sm);
+            font-size: 0.82rem;
+            line-height: 1.45;
+            color: var(--text-secondary);
+        }
+
+        .modal-info-banner.success {
+            background: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.25);
+        }
+
+        .modal-info-icon {
+            font-size: 1rem;
+            color: var(--c-info);
+            flex-shrink: 0;
+            margin-top: 0.1rem;
+        }
+
+        .modal-info-banner.success .modal-info-icon {
+            color: var(--c-ok);
+        }
+
+        .modal-section-hint {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            margin: 0 0 0.5rem 0;
+        }
+
         .json-viewer {
             background: var(--dark-bg);
             border: 1px solid var(--dark-border);
-            border-radius: 8px;
-            padding: 1rem;
-            max-height: 300px;
+            border-radius: var(--r-sm);
+            padding: 0.75rem 1rem;
+            max-height: 260px;
             overflow-y: auto;
             font-family: 'Fira Code', 'JetBrains Mono', monospace;
             font-size: 0.8rem;
             line-height: 1.6;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
 
         .json-line {
             display: block;
-            padding: 2px 4px;
+            padding: 2px 6px;
             border-radius: 4px;
             white-space: pre;
+            transition: background 0.15s ease;
         }
 
         .json-line.clickable {
             cursor: pointer;
+            position: relative;
         }
 
         .json-line.clickable:hover {
+            background: rgba(124, 58, 237, 0.18);
+        }
+
+        .json-line.clickable::after {
+            content: 'Select';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.68rem;
+            padding: 1px 6px;
             background: rgba(124, 58, 237, 0.2);
+            color: #c4b5fd;
+            border-radius: 3px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+
+        .json-line.clickable:hover::after {
+            opacity: 1;
         }
 
         .json-line.selected {
-            background: rgba(124, 58, 237, 0.3);
+            background: rgba(124, 58, 237, 0.35);
+            outline: 1px solid rgba(167, 139, 250, 0.6);
+        }
+
+        .json-line.selected::after {
+            content: 'Selected';
+            opacity: 1;
+            background: #7c3aed;
+            color: #ffffff;
         }
 
         .json-key {
@@ -497,28 +625,48 @@
         }
 
         .field-selection {
-            margin-bottom: 1rem;
-            padding: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 0.85rem;
             background: var(--dark-surface-2);
-            border-radius: 6px;
-            font-size: 0.875rem;
+            border: 1px solid var(--dark-border);
+            border-radius: var(--r-sm);
+            font-size: 0.82rem;
         }
 
         .field-selection-label {
             color: var(--text-secondary);
-            margin-right: 0.5rem;
         }
 
         .field-selection-value {
-            color: var(--monster-purple);
-            font-weight: 500;
-            font-family: monospace;
+            color: var(--monster-light);
+            font-weight: 600;
+            font-family: 'Fira Code', 'JetBrains Mono', monospace;
+            background: rgba(124, 58, 237, 0.15);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid rgba(124, 58, 237, 0.3);
         }
 
-        .modal-loading {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-muted);
+        .modal-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--sp-2);
+        }
+
+        .modal-footer-left {
+            display: flex;
+            align-items: center;
+            gap: var(--sp-2);
+        }
+
+        .modal-footer-right {
+            display: flex;
+            align-items: center;
+            gap: var(--sp-2);
+            margin-left: auto;
         }
 
         .hidden {
@@ -676,40 +824,87 @@
     </div>
 
     <!-- JSON Field Modal -->
-    <div class="modal-overlay hidden" id="json-field-modal">
-        <div class="modal-content" style="max-width: 500px;">
-            <h3 id="modal-topic-title">Select Field</h3>
-
-            <!-- Loading state -->
-            <div id="modal-loading" class="modal-loading hidden">
-                Loading topic value&hellip;
+    <div class="modal hidden" id="json-field-modal" style="display: none;">
+        <div class="modal-content" style="max-width: 520px;">
+            <div class="modal-header">
+                <div class="topic-modal-header-content">
+                    <div class="topic-modal-header-title">
+                        <ix-icon name="linechart" class="topic-modal-header-icon" size="16"></ix-icon>
+                        <h3 id="modal-topic-title">Select Metric Field</h3>
+                    </div>
+                    <div class="topic-modal-badge" id="modal-topic-badge" title="Target Topic">
+                        <span class="topic-modal-badge-label">Topic:</span>
+                        <code id="modal-topic-name" class="topic-modal-code">winccoa/systems</code>
+                    </div>
+                </div>
+                <button type="button" class="modal-close" id="modal-close" aria-label="Close modal">&times;</button>
             </div>
 
-            <!-- JSON viewer (shown when payload is JSON object) -->
-            <div id="modal-json-section" class="hidden">
-                <p>Click on a numeric field to select it:</p>
-                <div id="modal-json-viewer" class="json-viewer"></div>
-                <div class="field-selection" id="modal-field-selection">
-                    <span class="field-selection-label">Selected:</span>
-                    <span class="field-selection-value" id="modal-selected-field">(none)</span>
+            <div class="modal-body">
+                <!-- Loading state -->
+                <div id="modal-loading" class="modal-loading-state hidden">
+                    <ix-spinner size="small"></ix-spinner>
+                    <div class="modal-loading-text">
+                        <span class="modal-loading-title">Inspecting latest topic payload&hellip;</span>
+                        <span class="modal-loading-hint">Fetching sample data to detect numeric fields</span>
+                    </div>
+                </div>
+
+                <!-- JSON viewer (shown when payload is JSON object) -->
+                <div id="modal-json-section" class="hidden">
+                    <p class="modal-section-hint">Click a numeric property below to plot on the chart:</p>
+                    <div id="modal-json-viewer" class="json-viewer"></div>
+                    <div class="field-selection" id="modal-field-selection">
+                        <span class="field-selection-label">Selected property:</span>
+                        <span class="field-selection-value" id="modal-selected-field">(none)</span>
+                    </div>
+                </div>
+
+                <!-- Simple input (fallback) -->
+                <div id="modal-simple-section" class="hidden">
+                    <div class="modal-info-banner">
+                        <ix-icon name="info" class="modal-info-icon" size="16"></ix-icon>
+                        <div class="modal-info-text">
+                            No cached JSON payload was detected for this topic. Enter a property path if messages contain JSON, or click <strong>Use Raw Value</strong> to plot numeric payloads directly.
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="modal-json-field" class="form-label" style="font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.35rem; display: block;">
+                            JSON Field Path
+                        </label>
+                        <input type="text"
+                               id="modal-json-field"
+                               class="form-control"
+                               placeholder="e.g., temperature or data.value"
+                               autocomplete="off"
+                               spellcheck="false">
+                        <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.35rem;">
+                            Nested properties use dot notation (e.g., <code>sensors.temperature</code>). Leave blank to chart the raw value.
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Raw value info (shown when not JSON) -->
+                <div id="modal-raw-section" class="hidden">
+                    <div class="modal-info-banner success">
+                        <ix-icon name="success" class="modal-info-icon" size="16"></ix-icon>
+                        <div class="modal-info-text">
+                            This topic contains a raw numeric value. It will be plotted directly without extraction.
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Simple input (fallback) -->
-            <div id="modal-simple-section" class="hidden">
-                <p>Enter the JSON field path to extract:</p>
-                <input type="text" id="modal-json-field" placeholder="e.g., temperature or data.value">
-            </div>
-
-            <!-- Raw value info (shown when not JSON) -->
-            <div id="modal-raw-section" class="hidden">
-                <p>This topic contains a raw numeric value. It will be added directly.</p>
-            </div>
-
-            <div class="modal-actions">
-                <button class="btn btn-secondary btn-small hidden" id="modal-use-raw">Use Raw Value</button>
-                <button class="btn btn-secondary btn-small" id="modal-cancel">Cancel</button>
-                <button class="btn btn-primary btn-small" id="modal-add">Add Topic</button>
+            <div class="modal-footer">
+                <div class="modal-footer-left">
+                    <button type="button" class="btn btn-secondary btn-sm hidden" id="modal-use-raw" title="Add topic without JSON path extraction">Use Raw Value</button>
+                </div>
+                <div class="modal-footer-right">
+                    <button type="button" class="btn btn-secondary btn-sm" id="modal-cancel">Cancel</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="modal-add">
+                        <ix-icon name="plus" size="16"></ix-icon> Add Topic
+                    </button>
+                </div>
             </div>
         </div>
     </div>
