@@ -124,7 +124,7 @@ class RedfishGatewayManager {
                     <td>
                         <div style="display:flex; gap:0.25rem; align-items:center;">
                             <a href="/redfish/v1/Chassis/${encodeURIComponent(chassis)}/Sensors" target="_blank" class="btn btn-secondary btn-small" title="Open Redfish Sensors REST API">
-                                <ix-icon name="launch" size="14"></ix-icon>
+                                <ix-icon name="open-external" size="14"></ix-icon>
                             </a>
                             <a href="/pages/redfish-gateway-detail.html?name=${encodeURIComponent(g.name)}" class="btn btn-secondary btn-small" title="Edit Gateway">
                                 <ix-icon name="pen" size="14"></ix-icon>
