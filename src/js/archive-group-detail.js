@@ -8,6 +8,7 @@ class ArchiveGroupDetailManager {
         this.groupName = null;
         this.isNew = false;
         this.groupData = null;
+        this.enabledFeatures = [];
         this.databaseConnections = [];
         this.connectionNamesByType = {};
         this.redisServerEnabled = false;
@@ -23,13 +24,13 @@ class ArchiveGroupDetailManager {
 
         await this.loadEnabledFeatures();
         this.updateRedisDbNumberVisibility();
-        await this.filterStorageOptions();
 
         const urlParams = new URLSearchParams(window.location.search);
         this.isNew = urlParams.get('new') === 'true';
         this.groupName = urlParams.get('name');
 
         if (this.isNew) {
+            await this.filterStorageOptions();
             document.getElementById('page-title').textContent = 'New Archive Group';
             document.getElementById('page-subtitle').textContent = 'Create a new archive group';
             const createFields = await window.graphqlClient.getTypeFields('CreateArchiveGroupInput');
@@ -52,6 +53,7 @@ class ArchiveGroupDetailManager {
         this.showLoading(true);
         try {
             await this.loadData();
+            await this.filterStorageOptions();
             this.renderForm();
         } catch (error) {
             this.showError('Failed to load archive group: ' + error.message);
@@ -68,9 +70,11 @@ class ArchiveGroupDetailManager {
     async loadEnabledFeatures() {
         try {
             const features = await window.graphqlClient.getEnabledFeatures();
-            this.redisServerEnabled = Array.isArray(features) && features.includes('RedisServer');
+            this.enabledFeatures = Array.isArray(features) ? features : [];
+            this.redisServerEnabled = this.enabledFeatures.includes('RedisServer');
         } catch (e) {
             console.warn('Failed to fetch enabled features for archive group detail:', e);
+            this.enabledFeatures = [];
             this.redisServerEnabled = false;
         }
     }
@@ -260,6 +264,10 @@ class ArchiveGroupDetailManager {
             if (cfg.mongoDbUrl || this.databaseConnections.some(conn => conn.type === 'MONGODB')) archiveAllowed.add('MONGODB');
             if (cfg.sqlitePath || this.databaseConnections.some(conn => conn.type === 'SQLITE')) archiveAllowed.add('SQLITE');
 
+            const hasUnsModeler = Array.isArray(this.enabledFeatures) && this.enabledFeatures.includes('UnsModeler');
+            if (hasUnsModeler || this.groupData?.lastValType === 'WINCCOA') lastValAllowed.add('WINCCOA');
+            if (hasUnsModeler || this.groupData?.archiveType === 'WINCCOA') archiveAllowed.add('WINCCOA');
+
             const filterSelect = (id, allowed) => {
                 const select = document.getElementById(id);
                 if (!select) return;
@@ -273,8 +281,14 @@ class ArchiveGroupDetailManager {
 
             const lastValSelect = document.getElementById('group-last-val-type');
             const archiveSelect = document.getElementById('group-archive-type');
-            if (lastValSelect) lastValSelect.addEventListener('change', () => this.updateDatabaseConnectionOptions());
-            if (archiveSelect) archiveSelect.addEventListener('change', () => this.updateDatabaseConnectionOptions());
+            if (lastValSelect) lastValSelect.addEventListener('change', () => {
+                this.updateDatabaseConnectionOptions();
+                this.updateLastValRetentionHelp();
+            });
+            if (archiveSelect) archiveSelect.addEventListener('change', () => {
+                this.updateDatabaseConnectionOptions();
+                this.updateLastValRetentionHelp();
+            });
             await this.updateDatabaseConnectionOptions();
         } catch (e) {
             console.warn('Failed to fetch broker config for storage filtering:', e);
@@ -593,17 +607,47 @@ class ArchiveGroupDetailManager {
     }
 
     updateLastValRetentionHelp() {
-        const lastValType = document.getElementById('group-last-val-type').value;
+        const lastValType = document.getElementById('group-last-val-type')?.value;
+        const archiveType = document.getElementById('group-archive-type')?.value;
         const help = document.getElementById('last-val-retention-help');
-        if (!help) return;
-        if (lastValType === 'MEMORY') {
-            help.textContent = 'Size-based format required for MEMORY store (e.g., 50k, 100000k = number of entries)';
-        } else if (lastValType === 'NONE') {
-            help.textContent = 'No retention needed for NONE store';
-        } else if (['POSTGRES', 'CRATEDB', 'MONGODB', 'SQLITE', 'HAZELCAST'].includes(lastValType)) {
-            help.textContent = 'Time-based format (e.g., 7d, 24h, 60m, 1y)';
-        } else {
-            help.textContent = 'Size-based (MEMORY): 50k, 100000k | Time-based (others): 7d, 24h, 60m';
+        if (help) {
+            if (lastValType === 'WINCCOA' || archiveType === 'WINCCOA') {
+                help.textContent = 'No retention: WinCC OA manages its archive';
+            } else if (lastValType === 'MEMORY') {
+                help.textContent = 'Size-based format required for MEMORY store (e.g., 50k, 100000k = number of entries)';
+            } else if (lastValType === 'NONE') {
+                help.textContent = 'No retention needed for NONE store';
+            } else if (['POSTGRES', 'CRATEDB', 'MONGODB', 'SQLITE', 'HAZELCAST'].includes(lastValType)) {
+                help.textContent = 'Time-based format (e.g., 7d, 24h, 60m, 1y)';
+            } else {
+                help.textContent = 'Size-based (MEMORY): 50k, 100000k | Time-based (others): 7d, 24h, 60m';
+            }
+        }
+        this.updateReadOnlyBoxes();
+    }
+
+    updateReadOnlyBoxes() {
+        const lastValType = document.getElementById('group-last-val-type')?.value;
+        const archiveType = document.getElementById('group-archive-type')?.value;
+        const lastValRo = document.getElementById('group-last-val-read-only');
+        const archiveRo = document.getElementById('group-archive-read-only');
+        const isWinCCOA = lastValType === 'WINCCOA' || archiveType === 'WINCCOA';
+
+        if (lastValRo) {
+            if (isWinCCOA) {
+                lastValRo.checked = true;
+                lastValRo.disabled = true;
+            } else {
+                lastValRo.disabled = false;
+            }
+        }
+        if (archiveRo) {
+            if (isWinCCOA) {
+                archiveRo.checked = true;
+                archiveRo.disabled = true;
+            } else {
+                archiveRo.disabled = false;
+            }
         }
     }
 
