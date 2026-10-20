@@ -64,6 +64,7 @@ class TopicExplorer {
         this.tableAutoScrollBtn = document.getElementById('table-autoscroll-btn');
         this.tableFilter = document.getElementById('table-filter');
         this.tableRowCount = document.getElementById('table-row-count');
+        this.tableRefreshBtn = document.getElementById('table-refresh-btn');
         this.tableBody = document.getElementById('message-table-body');
 
         // UI Elements - Detail
@@ -498,6 +499,7 @@ class TopicExplorer {
 
         // Table actions
         this.tableClearBtn?.addEventListener('click', () => this.clearTableLog());
+        this.tableRefreshBtn?.addEventListener('click', () => this.refreshArchiveValues());
         this.modeLiveBtn?.addEventListener('click', () => this.switchViewMode('live'));
         this.modeHistoryBtn?.addEventListener('click', () => this.switchViewMode('history'));
         this.tableAutoScrollBtn?.addEventListener('click', () => {
@@ -1196,6 +1198,49 @@ class TopicExplorer {
                     this.liveTopics.set(childPath, msg);
                     this.historyMessages.push(msg);
                 }
+
+                // Query archive current values for direct children to ensure actual payloads are present
+                try {
+                    const resChildren = await window.graphqlClient.query(`
+                        query GetChildrenValues($topicFilter: String!, $archiveGroup: String!) {
+                            currentValues(topicFilter: $topicFilter, archiveGroup: $archiveGroup, limit: 500) {
+                                topic
+                                payload
+                                format
+                                timestamp
+                                qos
+                            }
+                        }
+                    `, {
+                        topicFilter: `${topic}/+`,
+                        archiveGroup: this.selectedArchiveGroup
+                    });
+                    const items = resChildren?.currentValues || [];
+                    for (const cv of items) {
+                        const m = {
+                            id: ++this.messageIdCounter,
+                            topic: cv.topic,
+                            payload: cv.payload || '',
+                            format: cv.format || 'TEXT',
+                            qos: cv.qos || 0,
+                            retain: true,
+                            timestamp: Number(cv.timestamp) || Date.now(),
+                            source: 'archive'
+                        };
+                        this.ensureTreeNode(cv.topic, true, m, 'archive');
+                        if (this.isStaleArchiveMessage(cv.topic, m)) continue;
+                        this.liveTopics.set(cv.topic, m);
+                        const existingIdx = this.historyMessages.findIndex(x => x.topic === cv.topic);
+                        if (existingIdx >= 0) {
+                            this.historyMessages[existingIdx] = m;
+                        } else {
+                            this.historyMessages.push(m);
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Failed to load children values:', e);
+                }
+
                 this.selectedMessage = this.liveTopics.get(childPaths[0]) || null;
                 this.renderDetailContent();
                 this.renderTableRows();
@@ -1344,6 +1389,12 @@ class TopicExplorer {
                 };
                 this.ensureTreeNode(topic, true, msg, 'archive');
                 this.liveTopics.set(topic, msg);
+                const existingIdx = this.historyMessages.findIndex(x => x.topic === topic);
+                if (existingIdx >= 0) {
+                    this.historyMessages[existingIdx] = msg;
+                } else {
+                    this.historyMessages.push(msg);
+                }
                 this.selectedMessage = msg;
                 this.renderDetailContent();
                 this.renderTableRows();
@@ -1361,6 +1412,238 @@ class TopicExplorer {
             }
         } catch (e) {
             console.warn('Failed to fetch currentValue for topic:', e);
+        }
+    }
+
+    // =========================================================================
+    // Re-read From Last Val Archive
+    // =========================================================================
+
+    async refreshArchiveValues() {
+        const icon = this.tableRefreshBtn?.querySelector('svg');
+        if (icon) icon.classList.add('spinning');
+        if (this.tableRefreshBtn) this.tableRefreshBtn.disabled = true;
+
+        try {
+            const archiveGroup = this.selectedArchiveGroup || 'Default';
+
+            if (this.selectedTopic) {
+                const topic = this.selectedTopic;
+                const node = this.treeNodes.get(topic);
+
+                if (this.fetchSubnodes) {
+                    await this.fetchDeepSubnodes(topic);
+
+                    // Ensure the selected topic itself is queried in case currentValues(topic/#) didn't return it
+                    try {
+                        const resSelf = await window.graphqlClient.query(`
+                            query GetCurrentValue($topic: String!, $archiveGroup: String!) {
+                                currentValue(topic: $topic, archiveGroup: $archiveGroup) {
+                                    topic
+                                    payload
+                                    format
+                                    timestamp
+                                    qos
+                                }
+                            }
+                        `, { topic, archiveGroup });
+                        if (resSelf?.currentValue) {
+                            const cv = resSelf.currentValue;
+                            const msg = {
+                                id: ++this.messageIdCounter,
+                                topic: cv.topic,
+                                payload: cv.payload || '',
+                                format: cv.format || 'TEXT',
+                                qos: cv.qos || 0,
+                                retain: true,
+                                timestamp: Number(cv.timestamp) || Date.now(),
+                                isNew: true,
+                                source: 'archive'
+                            };
+                            this.ensureTreeNode(topic, true, msg, 'archive');
+                            if (!this.isStaleArchiveMessage(topic, msg)) {
+                                this.liveTopics.set(topic, msg);
+                                const existingIdx = this.historyMessages.findIndex(m => m.topic === topic);
+                                if (existingIdx >= 0) {
+                                    this.historyMessages[existingIdx] = msg;
+                                } else {
+                                    this.historyMessages.push(msg);
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Failed to re-read currentValue for selected topic:', e);
+                    }
+                } else {
+                    // Fetch direct children and/or self
+                    if (node && node.canHaveChildren) {
+                        await this.loadTopicLevel(`${topic}/+`, topic);
+                    }
+
+                    this.liveTopics.clear();
+                    this.historyMessages = [];
+
+                    const queryChildren = `
+                        query GetChildrenValues($topicFilter: String!, $archiveGroup: String!) {
+                            currentValues(topicFilter: $topicFilter, archiveGroup: $archiveGroup, limit: 500) {
+                                topic
+                                payload
+                                format
+                                timestamp
+                                qos
+                            }
+                        }
+                    `;
+                    const resChildren = await window.graphqlClient.query(queryChildren, {
+                        topicFilter: `${topic}/+`,
+                        archiveGroup
+                    });
+                    const items = resChildren?.currentValues || [];
+
+                    // Also fetch currentValue for the topic itself
+                    try {
+                        const resSelf = await window.graphqlClient.query(`
+                            query GetCurrentValue($topic: String!, $archiveGroup: String!) {
+                                currentValue(topic: $topic, archiveGroup: $archiveGroup) {
+                                    topic
+                                    payload
+                                    format
+                                    timestamp
+                                    qos
+                                }
+                            }
+                        `, { topic, archiveGroup });
+                        if (resSelf?.currentValue) {
+                            items.unshift(resSelf.currentValue);
+                        }
+                    } catch (e) {
+                        console.warn('Failed to re-read currentValue for self:', e);
+                    }
+
+                    for (const cv of items) {
+                        const msg = {
+                            id: ++this.messageIdCounter,
+                            topic: cv.topic,
+                            payload: cv.payload || '',
+                            format: cv.format || 'TEXT',
+                            qos: cv.qos || 0,
+                            retain: true,
+                            timestamp: Number(cv.timestamp) || Date.now(),
+                            isNew: true,
+                            source: 'archive'
+                        };
+                        this.ensureTreeNode(cv.topic, true, msg, 'archive');
+                        if (this.isStaleArchiveMessage(cv.topic, msg)) continue;
+                        this.liveTopics.set(cv.topic, msg);
+                        this.historyMessages.push(msg);
+                    }
+
+                    // Also populate any known child node that had no value in archive
+                    if (node && node.children && node.children.size > 0) {
+                        for (const childPath of node.children) {
+                            if (!this.liveTopics.has(childPath)) {
+                                const childNode = this.treeNodes.get(childPath);
+                                const placeholder = childNode?.lastMessage || {
+                                    id: ++this.messageIdCounter,
+                                    topic: childPath,
+                                    payload: '',
+                                    format: 'TEXT',
+                                    qos: 0,
+                                    retain: false,
+                                    timestamp: childNode?.updatedAt || null,
+                                    source: childNode?.source || 'archive'
+                                };
+                                this.liveTopics.set(childPath, placeholder);
+                                this.historyMessages.push(placeholder);
+                            }
+                        }
+                    }
+
+                    // Merge subscription values if they are newer
+                    for (const [subTopic, subMsg] of this.subscriptionValues) {
+                        const isSelf = subTopic === topic;
+                        const isChild = this.isDirectChild(topic, subTopic);
+                        if (!isSelf && !isChild) continue;
+                        const existing = this.liveTopics.get(subTopic);
+                        if (existing === subMsg) continue;
+                        if (existing && (existing.timestamp || 0) > (subMsg.timestamp || 0)) continue;
+                        this.liveTopics.set(subTopic, subMsg);
+                        this.historyMessages.push(subMsg);
+                    }
+
+                    this.historyMessages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+                    if (this.liveTopics.has(topic)) {
+                        this.selectedMessage = this.liveTopics.get(topic);
+                    } else if (this.historyMessages.length > 0) {
+                        this.selectedMessage = this.historyMessages[0];
+                    }
+                }
+            } else {
+                // No topic selected: re-read root level and fetch all archived current values
+                await this.loadTopicLevel('+', '');
+
+                this.liveTopics.clear();
+                this.historyMessages = [];
+
+                const queryAll = `
+                    query GetAllCurrentValues($archiveGroup: String!) {
+                        currentValues(topicFilter: "#", archiveGroup: $archiveGroup, limit: 500) {
+                            topic
+                            payload
+                            format
+                            timestamp
+                            qos
+                        }
+                    }
+                `;
+                const res = await window.graphqlClient.query(queryAll, { archiveGroup });
+                const items = res?.currentValues || [];
+
+                for (const cv of items) {
+                    const msg = {
+                        id: ++this.messageIdCounter,
+                        topic: cv.topic,
+                        payload: cv.payload || '',
+                        format: cv.format || 'TEXT',
+                        qos: cv.qos || 0,
+                        retain: true,
+                        timestamp: Number(cv.timestamp) || Date.now(),
+                        isNew: true,
+                        source: 'archive'
+                    };
+                    this.ensureTreeNode(cv.topic, true, msg, 'archive');
+                    if (this.isStaleArchiveMessage(cv.topic, msg)) continue;
+                    this.liveTopics.set(cv.topic, msg);
+                    this.historyMessages.push(msg);
+                }
+
+                // Merge values received via live subscription
+                for (const [subTopic, subMsg] of this.subscriptionValues) {
+                    const existing = this.liveTopics.get(subTopic);
+                    if (existing === subMsg) continue;
+                    if (existing && (existing.timestamp || 0) > (subMsg.timestamp || 0)) continue;
+                    this.liveTopics.set(subTopic, subMsg);
+                    this.historyMessages.push(subMsg);
+                }
+
+                this.historyMessages.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+
+                if (this.historyMessages.length > 0 && !this.selectedMessage) {
+                    this.selectedMessage = this.historyMessages[0];
+                }
+            }
+
+            this.renderTree();
+            this.renderDetailContent();
+            this.renderTableRows();
+            this.highlightSelectedTableRow();
+        } catch (err) {
+            console.error('Failed to re-read from last val archive:', err);
+            ui.toast(`Archive re-read failed: ${err.message || err}`, 'error');
+        } finally {
+            if (icon) icon.classList.remove('spinning');
+            if (this.tableRefreshBtn) this.tableRefreshBtn.disabled = false;
         }
     }
 
