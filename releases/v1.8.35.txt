@@ -1,0 +1,31 @@
+Release v1.8.35
+Built from commit: 61ef687
+Date: 2026-10-23 17:23:13
+
+Changes since v1.8.35-dev:
+---
+61ef687 Add archive refresh to topic browser
+685d392 Replace .bat scripts with PowerShell .ps1 equivalents
+4284ea8 fix(sidebar): place Tag Browser before UNS Modeler in WinCC OA menu
+2deee25 fix(topic-chart): resolve topic browser toggle, lifecycle, and archive sync issues
+537c7b9 feat(ui): unify topic browser component and styles across archive-explorer and topic-chart
+0e6a2ad fix(uns-modelers): replace Direction A/B jargon with clear descriptive terms
+7553d88 fix(redfish): replace invalid icons with supported siemens ix icons
+0b1954b feat(topic-chart): improve field selection modal styling and layout
+b7705a0 feat(archive): add WinCC OA storage option and UI handling (refs vogler75/monster-mq#205)
+1af1f23 feat(ui): default cluster node selection to first entry across all pages
+8f69ed0 feat(sidebar): rename WinCC OA Browser menu item to Tag Browser
+7009209 Merge branch 'feat/kafka-format-hints-run-bat': Kafka payload format hints, run.bat, Windows icon fix
+6fc35a2 fix(dev): serve iX icons from the Vite dev server on Windows
+75e67fb feat(kafka): explain payload formats; add run.bat for Windows
+7fe3e58 Merge remote-tracking branch 'origin/feat/uns-modeler' into feat/uns-modeler
+7ec71ea feat(uns-modeler): publish-as option for one JSON topic per datapoint
+477a6cd feat(winccua): add TAG_WRITE address mapping UI
+4c694b5 fix(uns-modeler): show direction fields, form controls for publishing defaults
+9a5036c feat(uns-modeler): live monitor values and source time for Direction B
+7d0f691 feat(uns-modeler): WinCC OA menu, assistant provider, live capture
+7851a29 feat(uns-modeler): add UNS Modeler and WinCC OA browser pages
+fc0a067 feat(rtsp-camera): accept v4l2:// USB camera URLs
+1f9045c feat(broker-config): allow reordering brokers with move up/down buttons
+573f4d3 fix(topic-browser): include subscribed values in subnode view and remove duplicate toggle
+857243e chore(version): prepare next version 1.8.35-dev
