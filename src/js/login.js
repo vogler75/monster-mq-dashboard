@@ -473,9 +473,19 @@
             var password = this.passwordInput.value;
 
             var isAuthDisabled = this.usernameGroup && this.usernameGroup.style.display === 'none';
-            if (!isAuthDisabled && ((!username && password) || (username && !password))) {
-                this.showAlert('Enter both username and password, or leave both empty if authentication is disabled.');
-                return;
+            if (!isAuthDisabled) {
+                if (!username && password) {
+                    this.showAlert('Username is required.');
+                    return;
+                }
+                if (!username && !password) {
+                    this.showAlert('Enter both username and password, or leave both empty if authentication is disabled.');
+                    return;
+                }
+                if (username && !password && username.toLowerCase() !== 'anonymous') {
+                    this.showAlert('Password is required.');
+                    return;
+                }
             }
 
             this.setLoading(true);
