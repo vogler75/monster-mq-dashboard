@@ -62,8 +62,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Setup Python (make.py)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Build macOS DMG
-        run: ./build.sh --mac
+        run: python3 make.py build --mac
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -87,8 +92,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Setup Python (make.py)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Build Windows setup
-        run: pwsh ./build.ps1 -Win
+        run: python make.py build --win
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 

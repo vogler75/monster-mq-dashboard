@@ -391,7 +391,7 @@ export default defineConfig({
   }],
   server: {
     port: 5173,
-    // run.sh --host sets VITE_EXPOSE=1. Vite otherwise rejects requests whose
+    // `make.py run` (which passes --host) sets VITE_EXPOSE=1. Vite otherwise rejects requests whose
     // Host header it does not recognise (DNS-rebinding protection), so reaching
     // the dev server by hostname fails even with --host.
     allowedHosts: process.env.VITE_EXPOSE === '1' ? true : undefined,

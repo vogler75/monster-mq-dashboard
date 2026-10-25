@@ -16,29 +16,31 @@ npm install
 # Dev server on http://localhost:5173
 npm run dev
 
+# One cross-platform entry point (Windows: py make.py ...); see: python make.py help
 # Expose on all interfaces (or proxy to a specific broker host:port)
-./run.sh
-VITE_LOCAL_GRAPHQL_TARGET=http://localhost:4000 ./run.sh
+python make.py run
+VITE_LOCAL_GRAPHQL_TARGET=http://localhost:4000 python make.py run
 
 # Production web build (outputs to dist/)
 npm run build
-# Or build script:
-./build.sh
-./build.sh --web
+# Or:
+python make.py build --web
 
 # Desktop app packaging (outputs to dist-desktop/)
-./build.sh --all     # Web + all desktop packages
-./build.sh --mac     # macOS DMG
-./build.sh --win     # Windows NSIS setup
-./build.sh --clean   # Clean output folders
+python make.py build --all     # Web + all desktop packages
+python make.py build --mac     # macOS DMG (on macOS)
+python make.py build --win     # Windows NSIS setup
+python make.py build --clean   # Clean output folders
 
-# Release & version management
-./release.sh         # Auto-increment patch version (e.g. 1.8.29 -> 1.8.30)
-./release.sh 1.9.0   # Set explicit version and create tag
+# Release & version management (checks first, one atomic push, rolls back on failure)
+python make.py release         # Finalize X.Y.Z-dev -> X.Y.Z (or bump patch), tag and push
+python make.py release 1.9.0   # Explicit version
+python make.py dev             # Advance to the next -dev version
+python make.py status          # Show version/tag consistency; 'repair' fixes it
 
-# Publish desktop apps to GitHub Releases
-./publish.sh         # Upload desktop packages for current version
-./publish.sh --build # Build and publish
+# Publish desktop apps to GitHub Releases (tag must be on origin at HEAD)
+python make.py publish         # Upload desktop packages for current version
+python make.py publish --build # Build and publish
 ```
 
 ## Architecture & Code Rules

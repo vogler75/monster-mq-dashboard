@@ -37,26 +37,23 @@ npm install
 # Start Vite dev server on http://localhost:5173
 npm run dev
 
-# Or using the run script (listens on all interfaces)
-./run.sh
+# Or listen on all interfaces
+python make.py run
 
 # Proxy GraphQL to a specific broker host:port
-VITE_LOCAL_GRAPHQL_TARGET=http://localhost:4000 ./run.sh
+VITE_LOCAL_GRAPHQL_TARGET=http://localhost:4000 python make.py run
 ```
 
 ---
 
 ## Build Commands
 
-The unified `build.sh` (and `build.ps1` on Windows) script supports building both the web dashboard and desktop applications.
+`make.py` is the single build, release and publish tool. It needs only Python 3.9+ and runs the same on Windows, macOS and Linux (on Windows use `py make.py ...`). `python make.py help` lists all commands, `python make.py <command> --help` their options.
 
 ### Web Dashboard Build
 
 ```bash
-# Build web assets (default)
-./build.sh
-# Or explicitly:
-./build.sh --web
+python make.py build --web
 # Or using npm:
 npm run build
 ```
@@ -69,20 +66,14 @@ Outputs static web assets into `dist/`.
 npm run electron:dev
 
 # Build all desktop packages (macOS DMG & Windows setup)
-./build.sh --all
+python make.py build --all
 
 # Or build for specific platform:
-./build.sh --mac       # macOS DMG
-./build.sh --win       # Windows NSIS setup
+python make.py build --mac       # macOS DMG (only on macOS)
+python make.py build --win       # Windows NSIS setup (zip on Linux without wine)
 
 # Clean build artifacts:
-./build.sh --clean
-```
-
-On Windows:
-```powershell
-.\build.ps1 -All
-.\build.ps1 -Win
+python make.py build --clean
 ```
 
 Desktop packages will be generated in `dist-desktop/`.
@@ -112,35 +103,42 @@ When opening for the first time, macOS may show:
 
 ## Release & Publishing Workflow
 
-### 1. Tag a New Release (`release.sh`)
+### 1. Tag a New Release (`make.py release`)
 
-Automatically bumps version in `version.txt` and `package.json`, generates release notes in `releases/vX.Y.Z.txt` from git commit logs, commits the bump, and creates a local git tag:
+Checks that the working tree is clean and in sync with `origin`, then sets the version in `version.txt`, `package.json` and `package-lock.json`, writes release notes to `releases/vX.Y.Z.txt`, commits, creates the annotated tag `vX.Y.Z` and pushes branch and tag in one atomic push. If anything fails, the local changes are rolled back.
 
 ```bash
-# Auto-increment patch version (e.g. 1.8.29 -> 1.8.30)
-./release.sh
+# Finalize the dev version (1.8.36-dev -> 1.8.36) or bump the patch version
+python make.py release
 
 # Or set explicit version:
-./release.sh 1.9.0
+python make.py release 1.9.0
+
+# Afterwards, advance to the next development version:
+python make.py dev
+
+# Check / fix version and tag consistency:
+python make.py status
+python make.py repair
 ```
 
-### 2. Build & Publish to GitHub (`publish.sh`)
+Pushing the tag starts the GitHub **Release** workflow, which builds the web zip, macOS DMG and Windows setup and publishes the GitHub release.
 
-Upload desktop applications (`.dmg` and `.exe`) to GitHub Releases:
+### 2. Publish Locally Built Packages (`make.py publish`)
+
+Upload desktop applications (`.dmg` and `.exe`) to the GitHub release. The release tag must already exist on `origin` and point at the current commit; publish never creates or moves tags.
 
 ```bash
 # Build desktop packages and upload to GitHub Release
-./publish.sh --build
+python make.py publish --build
 
 # Or upload existing packages in dist-desktop/:
-./publish.sh
+python make.py publish
 
-# Upload specific platform only:
-./publish.sh --mac
-./publish.sh --win
-
-# Push commits and tag to remote repository:
-git push origin HEAD && git push origin --tags
+# Upload specific platform only, or check without uploading:
+python make.py publish --mac
+python make.py publish --win
+python make.py publish --dry-run
 ```
 
 ---
@@ -163,11 +161,8 @@ dashboard/
 │   └── pages/            # View templates loaded by the SPA router
 ├── package.json          # Dependencies & build scripts
 ├── vite.config.js        # Vite bundler configuration & multi-broker dev server
-├── build.sh              # Unified build script (web & desktop)
-├── build.ps1             # Unified build script for Windows (web & desktop)
-├── release.sh            # Version bump, release notes generation & git tagging
-├── publish.sh            # Upload desktop apps to GitHub Releases
-├── run.sh                # Local Vite dev server runner with proxy support
+├── make.py               # Build, run, release & publish tool (python make.py help)
+├── scripts/              # make.py implementation (mmqlib/, tasks/, tests/) & JS check scripts
 └── DESIGN.md             # Design system rules & UI guidelines
 ```
 
