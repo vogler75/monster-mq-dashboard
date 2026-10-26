@@ -1,0 +1,10 @@
+Release v1.8.36
+Built from commit: 02aa47e
+Date: 2026-10-26 14:40:41
+
+Changes since v1.8.35:
+---
+02aa47e chore(version): prepare next version 1.8.36-dev
+918d7a1 Update release.yml
+63f5317 Replace shell/PowerShell scripts with cross-platform make.py
+6cdc601 Allow login without password for Anonymous user
