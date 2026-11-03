@@ -46,7 +46,7 @@ class VirtualTopicTreeDetailManager {
             if (this.isNew) {
                 this.tree = {
                     id: null, schemaVersion: 1, name: '', rootPath: '', description: '',
-                    enabled: false, revision: null, nodes: []
+                    enabled: true, revision: null, nodes: []
                 };
                 this.$('page-title').textContent = 'Add Virtual Topic Tree';
                 this.$('delete-btn').style.display = 'none';
@@ -105,6 +105,11 @@ class VirtualTopicTreeDetailManager {
         on('indent-btn', () => this.indent());
         on('outdent-btn', () => this.outdent());
         on('remove-node-btn', () => this.removeSelected());
+
+        on('tree-name', (e) => { this.tree.name = e.target.value; this.afterRootEdit(); }, 'input');
+        on('tree-root', (e) => { this.tree.rootPath = e.target.value; this.afterRootEdit(); }, 'input');
+        on('tree-desc', (e) => { this.tree.description = e.target.value; ui.markPageDirty(); }, 'input');
+        on('tree-enabled', (e) => { this.tree.enabled = e.target.checked; this.afterRootEdit(); }, 'change');
 
         const tv = this.$('tree-view');
         tv.addEventListener('click', (e) => this.onTreeClick(e));
@@ -290,6 +295,7 @@ class VirtualTopicTreeDetailManager {
     // ------------------------------------------------------------ rendering
 
     renderAll() {
+        this.renderTreeProps();
         this.renderTree();
         this.renderInspector();
         this.updateToolbar();
@@ -478,7 +484,7 @@ class VirtualTopicTreeDetailManager {
                 break;
             case 'F2': {
                 e.preventDefault();
-                const f = this.$('insp-segment') || this.$('insp-name');
+                const f = this.$('insp-segment') || this.$('tree-name');
                 if (f) f.focus();
                 break;
             }
@@ -557,25 +563,9 @@ class VirtualTopicTreeDetailManager {
         const badge = this.$('inspector-badge');
         const n = this.selectedId && this.node(this.selectedId);
         if (!n) {
-            this.$('inspector-title').textContent = 'Tree settings';
+            this.$('inspector-title').textContent = 'Node inspector';
             badge.textContent = ''; badge.className = 'status-badge';
-            box.innerHTML = `
-                <div class="form-grid is-single">
-                    <div class="form-group"><label for="insp-name">Name *</label>
-                        <input type="text" id="insp-name" class="form-control" value="${ui.escapeHtml(this.tree.name)}"></div>
-                    <div class="form-group"><label for="insp-root">Virtual root *</label>
-                        <input type="text" id="insp-root" class="form-control" value="${ui.escapeHtml(this.tree.rootPath)}" placeholder="enterprise">
-                        <small>The namespace this tree reserves. Folders and bindings live below it.</small></div>
-                    <div class="form-group"><label for="insp-desc">Description</label>
-                        <textarea id="insp-desc" class="form-control" rows="2">${ui.escapeHtml(this.tree.description || '')}</textarea></div>
-                    <div class="form-group"><label class="checkbox-group"><input type="checkbox" id="insp-enabled" ${this.tree.enabled ? 'checked' : ''}> Enabled</label>
-                        <small>A disabled tree keeps its root reserved but routes nothing. Virtual publishes are rejected.</small></div>
-                </div>`;
-            const bind = (id, fn, evt = 'input') => { const el = this.$(id); if (el) el.addEventListener(evt, fn); };
-            bind('insp-name', (e) => { this.tree.name = e.target.value; this.afterRootEdit(); });
-            bind('insp-root', (e) => { this.tree.rootPath = e.target.value; this.afterRootEdit(); });
-            bind('insp-desc', (e) => { this.tree.description = e.target.value; ui.markPageDirty(); });
-            bind('insp-enabled', (e) => { this.tree.enabled = e.target.checked; this.afterRootEdit(); }, 'change');
+            box.innerHTML = '<p class="vt-hint">Select a node in the hierarchy to edit it. Tree name, root and enabled state are above.</p>';
             return;
         }
         const info = this.kindInfo(n);
@@ -638,9 +628,22 @@ class VirtualTopicTreeDetailManager {
         if (attempt < 30) setTimeout(() => this.openTopicBrowser(attempt + 1), 100);
     }
 
+    /** Sync the always-visible tree property fields without disturbing a field being typed in. */
+    renderTreeProps() {
+        const set = (id, v) => { const el = this.$(id); if (el && el.value !== v) el.value = v; };
+        set('tree-name', this.tree.name || '');
+        set('tree-root', this.tree.rootPath || '');
+        set('tree-desc', this.tree.description || '');
+        const en = this.$('tree-enabled');
+        if (en) en.checked = !!this.tree.enabled;
+        const b = this.$('tree-status-badge');
+        if (b) { b.textContent = this.tree.enabled ? 'Enabled' : 'Disabled'; b.className = 'status-badge ' + (this.tree.enabled ? 'badge-ok' : 'badge-warn'); }
+    }
+
     afterRootEdit() {
         ui.markPageDirty();
         this.renderTree();
+        this.renderTreeProps();
         this.$('page-subtitle').textContent = this.tree.rootPath ? `Virtual root: ${this.tree.rootPath}` : '';
         this.scheduleValidate();
     }
@@ -778,7 +781,8 @@ class VirtualTopicTreeDetailManager {
 
     async save() {
         if (!this.tree.name.trim() || !this.tree.rootPath.trim()) {
-            this.select(null);
+            const missing = this.$(this.tree.name.trim() ? 'tree-root' : 'tree-name');
+            if (missing) missing.focus();
             ui.error('Name and virtual root are required.');
             return;
         }

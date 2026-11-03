@@ -25,8 +25,13 @@
 
         .vt-tree, .vt-tree ul { list-style: none; margin: 0; padding: 0; }
         /* Explorer-style nesting: a fixed indent per level, no connector lines. */
-        /* Indent = one arrow slot (20px), so a child's arrow sits under its parent's icon. */
-        .vt-tree ul { margin: 0; padding-left: 20px; }
+        /* Nesting: the guide line runs under the parent's arrow (x = 16px: row padding 0.4rem + half the
+           20px arrow slot). Each child gets a short tick; the last child ends the line. */
+        .vt-tree ul { margin: 0 0 0 16px; padding-left: 8px; }
+        .vt-tree ul > li { position: relative; }
+        .vt-tree ul > li::before { content: ''; position: absolute; left: -8px; top: 0; bottom: 0; border-left: 1px solid rgba(211, 236, 248, 0.3); }
+        .vt-tree ul > li:last-child::before { bottom: auto; height: 14px; }
+        .vt-tree ul > li::after { content: ''; position: absolute; left: -8px; top: 14px; width: 8px; border-top: 1px solid rgba(211, 236, 248, 0.3); }
         .vt-row {
             display: flex; align-items: center; gap: 0.35rem;
             padding: 0.3rem 0.4rem; border-radius: var(--r-sm);
@@ -101,6 +106,35 @@
         </div>
 
         <div id="designer" style="display:none;">
+            <!-- Tree properties: always visible, separate from the node inspector -->
+            <div class="section-card" style="margin-bottom:1rem;">
+                <div class="section-header">
+                    <div class="section-title"><h2>Tree properties</h2></div>
+                    <span class="status-badge" id="tree-status-badge">Disabled</span>
+                </div>
+                <div class="section-content">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="tree-name">Name *</label>
+                            <input type="text" id="tree-name" class="form-control" placeholder="Enterprise">
+                        </div>
+                        <div class="form-group">
+                            <label for="tree-root">Virtual root *</label>
+                            <input type="text" id="tree-root" class="form-control" placeholder="enterprise">
+                            <small>The namespace this tree reserves. Folders and bindings live below it.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="tree-desc">Description</label>
+                            <input type="text" id="tree-desc" class="form-control" placeholder="Logical production hierarchy">
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-group"><input type="checkbox" id="tree-enabled"> Enabled</label>
+                            <small>A disabled tree keeps its root reserved but routes nothing, and virtual publishes are rejected.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="vt-workspace">
                 <!-- Virtual hierarchy -->
                 <div class="section-card vt-pane">
