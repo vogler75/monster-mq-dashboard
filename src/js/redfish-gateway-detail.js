@@ -548,10 +548,11 @@ class RedfishDetailManager {
         if (!tree) return;
         tree.innerHTML = '';
         this.treeNodes.clear();
-        this.loadTopicLevel('+', tree, '');
+        this.loadTopicLevel('+', tree, null);
     }
 
-    async loadTopicLevel(pattern, container, parentPath = '') {
+    // parentPath === null means the root level; '' is a real (empty-named) level.
+    async loadTopicLevel(pattern, container, parentPath = null) {
         try {
             const loadingItem = document.createElement('li');
             loadingItem.className = 'tree-node loading-item';
@@ -598,7 +599,7 @@ class RedfishDetailManager {
             }
 
             for (const [levelName, topicData] of groupedTopics) {
-                const fullPath = parentPath ? `${parentPath}/${levelName}` : levelName;
+                const fullPath = parentPath !== null ? `${parentPath}/${levelName}` : levelName;
                 const treeItem = this.createTreeItem(levelName, fullPath, topicData.hasValue, topicData.hasChildren);
                 container.appendChild(treeItem);
             }
@@ -615,7 +616,7 @@ class RedfishDetailManager {
 
     groupTopicsByLevel(topics, parentPath) {
         const grouped = new Map();
-        const parentLevels = parentPath ? parentPath.split('/').length : 0;
+        const parentLevels = parentPath !== null ? parentPath.split('/').length : 0;
 
         for (const topic of topics) {
             const levels = topic.topic.split('/');

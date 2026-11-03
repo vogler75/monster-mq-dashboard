@@ -239,10 +239,11 @@ export class ArchiveTopicBrowser {
     }
 
     createRootNode() {
-        this.loadTopicLevel('+', this.tree, '');
+        this.loadTopicLevel('+', this.tree, null);
     }
 
-    async loadTopicLevel(pattern, container, parentPath = '') {
+    // parentPath === null means the root level; '' is a real (empty-named) level.
+    async loadTopicLevel(pattern, container, parentPath = null) {
         if (!container) return;
         try {
             const loadingItem = this.doc.createElement('li');
@@ -276,7 +277,7 @@ export class ArchiveTopicBrowser {
                 }
 
                 for (const [levelName, topicData] of grouped) {
-                    const fullPath = parentPath ? `${parentPath}/${levelName}` : levelName;
+                    const fullPath = parentPath !== null ? `${parentPath}/${levelName}` : levelName;
                     container.appendChild(this.createTreeItem(levelName, fullPath, topicData.hasValue, topicData.hasChildren));
                 }
             } else {
@@ -295,7 +296,7 @@ export class ArchiveTopicBrowser {
 
     groupTopicsByLevel(topics, parentPath) {
         const grouped = new Map();
-        const parentLevels = parentPath ? parentPath.split('/').length : 0;
+        const parentLevels = parentPath !== null ? parentPath.split('/').length : 0;
 
         for (const topic of topics) {
             const levels = topic.topic.split('/');

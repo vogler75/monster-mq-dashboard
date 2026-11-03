@@ -660,7 +660,7 @@ class TopicExplorer {
         }
 
         try {
-            await this.loadTopicLevel('+', '');
+            await this.loadTopicLevel('+', null);
         } catch (err) {
             console.error('Failed to browse root topics:', err);
             if (this.treeContent) {
@@ -671,7 +671,8 @@ class TopicExplorer {
         }
     }
 
-    async loadTopicLevel(pattern, parentPath = '') {
+    // parentPath === null is the root level; '' is a real, empty-named level (topic "/x").
+    async loadTopicLevel(pattern, parentPath = null) {
         const query = `
             query BrowseTopics($topic: String!, $archiveGroup: String!) {
                 browseTopics(topic: $topic, archiveGroup: $archiveGroup) {
@@ -694,7 +695,7 @@ class TopicExplorer {
 
             const topics = response?.browseTopics || [];
 
-            if (parentPath) {
+            if (parentPath !== null) {
                 const parentNode = this.treeNodes.get(parentPath);
                 if (parentNode) {
                     parentNode.childrenLoaded = true;
@@ -708,7 +709,7 @@ class TopicExplorer {
             topics.forEach(t => {
                 const topicName = t.name;
                 let childFullPath;
-                if (!parentPath) {
+                if (parentPath === null) {
                     childFullPath = topicName.split('/')[0];
                 } else {
                     if (topicName.startsWith(parentPath + '/')) {
@@ -744,7 +745,7 @@ class TopicExplorer {
                     node.canHaveChildren = true;
                 }
 
-                if (parentPath) {
+                if (parentPath !== null) {
                     const parentNode = this.treeNodes.get(parentPath);
                     if (parentNode) {
                         parentNode.children.add(childFullPath);
@@ -758,7 +759,7 @@ class TopicExplorer {
             this.renderTree();
         } catch (err) {
             console.error('Failed to load topic level:', err);
-            if (parentPath) {
+            if (parentPath !== null) {
                 const parentNode = this.treeNodes.get(parentPath);
                 if (parentNode) {
                     parentNode.childrenLoaded = true;
@@ -798,7 +799,7 @@ class TopicExplorer {
                 };
                 this.treeNodes.set(currentPath, node);
 
-                if (prevPath) {
+                if (i > 0) {
                     const parentNode = this.treeNodes.get(prevPath);
                     if (parentNode) {
                         parentNode.children.add(currentPath);
@@ -808,7 +809,7 @@ class TopicExplorer {
                     }
                 }
             } else {
-                if (prevPath) {
+                if (i > 0) {
                     const parentNode = this.treeNodes.get(prevPath);
                     if (parentNode) {
                         if (!parentNode.children.has(currentPath)) {
@@ -981,7 +982,9 @@ class TopicExplorer {
         // Label
         const label = document.createElement('span');
         label.className = 'tree-label';
-        label.textContent = node.name;
+        // Topics such as "//x" have empty-named levels; show a placeholder instead of a blank row.
+        label.textContent = node.name === '' ? '(empty)' : node.name;
+        if (node.name === '') label.style.fontStyle = 'italic';
         row.appendChild(label);
 
         // Source badge (ARC vs SUB)
@@ -1581,7 +1584,7 @@ class TopicExplorer {
                 }
             } else {
                 // No topic selected: re-read root level and fetch all archived current values
-                await this.loadTopicLevel('+', '');
+                await this.loadTopicLevel('+', null);
 
                 this.liveTopics.clear();
                 this.historyMessages = [];
