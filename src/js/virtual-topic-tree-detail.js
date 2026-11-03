@@ -403,9 +403,13 @@ class VirtualTopicTreeDetailManager {
         this.observed.set(path, { loading: true, items: [] });
         try {
             const group = (window.topicBrowserSidePanel && window.topicBrowserSidePanel.selectedArchiveGroup) || 'Default';
-            const res = await this.client.query(
+            const browse = (pattern) => this.client.query(
                 `query BrowseVirtual($topic: String!, $archiveGroup: String!) { browseTopics(topic: $topic, archiveGroup: $archiveGroup) { name } }`,
-                { topic: path + '/+', archiveGroup: group });
+                { topic: pattern, archiveGroup: group });
+            let res = await browse(path + '/+');
+            // Some brokers list nothing for "<mount>/+" but do answer "<mount>/#"; the grouping below
+            // keeps only the next level, so both patterns give the same tree.
+            if (!(res.browseTopics || []).length) res = await browse(path + '/#');
             const levels = path.split('/').length;
             const grouped = new Map();
             (res.browseTopics || []).forEach(t => {
