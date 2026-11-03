@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonsterMQ - Virtual Topic Tree</title>
+    <script type="module" src="/js/ix-init.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/graphql-client.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/log-viewer.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
+    <style>
+        /* Hierarchy designer layout - unique to this page. */
+        .vt-workspace {
+            display: grid;
+            grid-template-columns: minmax(260px, 1.2fr) minmax(280px, 1fr) minmax(240px, 1fr);
+            gap: 1rem;
+            align-items: start;
+        }
+        @media (max-width: 1200px) { .vt-workspace { grid-template-columns: 1fr; } }
+        .vt-pane { min-width: 0; }
+        .vt-pane-body { max-height: 60vh; overflow: auto; padding: 0.5rem; }
+        .vt-toolbar { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.5rem; border-bottom: 1px solid rgba(211, 236, 248, 0.12); }
+
+        .vt-tree, .vt-tree ul { list-style: none; margin: 0; padding: 0; }
+        .vt-tree ul { margin-left: 1.1rem; border-left: 1px dashed rgba(211, 236, 248, 0.15); padding-left: 0.35rem; }
+        .vt-row {
+            display: flex; align-items: center; gap: 0.35rem;
+            padding: 0.3rem 0.4rem; border-radius: var(--r-sm);
+            cursor: pointer; font-size: 0.85rem; user-select: none;
+            border: 1px solid transparent;
+        }
+        .vt-row:hover { background: rgba(124, 58, 237, 0.08); }
+        .vt-row:focus-visible { outline: 2px solid var(--monster-purple); outline-offset: -2px; }
+        .vt-row.is-selected { background: rgba(124, 58, 237, 0.18); border-color: var(--monster-purple); }
+        .vt-row.is-drop { border-color: var(--monster-teal); background: rgba(45, 212, 191, 0.12); }
+        .vt-row.is-observed { font-style: italic; color: var(--text-muted); }
+        .vt-row.has-issue .vt-label { text-decoration: underline wavy var(--monster-red); }
+        .vt-twisty { width: 20px; height: 20px; flex: none; display: inline-flex; align-items: center; justify-content: center; border: none; background: none; color: var(--text-muted); padding: 0; cursor: pointer; }
+        .vt-twisty[hidden] { display: inline-flex; visibility: hidden; }
+        .vt-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .vt-hint { color: var(--text-muted); font-size: 0.78rem; margin-top: 0.25rem; }
+        .vt-hint.is-error { color: var(--monster-red); }
+        .vt-path { font-family: monospace; font-size: 0.8rem; word-break: break-all; }
+        .vt-issues { margin: 0; padding-left: 1.1rem; font-size: 0.85rem; }
+        .vt-issues li.is-error { color: var(--monster-red); }
+        .vt-issues li.is-warn { color: var(--monster-orange, #f59e0b); }
+        .vt-preview-grid { display: grid; grid-template-columns: 160px 1fr auto; gap: 0.5rem; align-items: end; }
+        @media (max-width: 800px) { .vt-preview-grid { grid-template-columns: 1fr; } }
+        .vt-conflict { display: none; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+        .vt-picker-tree { list-style: none; margin: 0; padding: 0; }
+        .vt-picker-tree ul { list-style: none; margin: 0 0 0 1.1rem; padding: 0 0 0 0.35rem; border-left: 1px dashed rgba(211, 236, 248, 0.15); }
+        .vt-move-list { max-height: 14rem; overflow: auto; font-family: monospace; font-size: 0.8rem; margin: 0.5rem 0 0; padding-left: 1.1rem; }
+    </style>
+</head>
+<body>
+    <ix-application force-breakpoint="lg">
+    <ix-menu application-name="MonsterMQ" pinned start-expanded>
+    </ix-menu>
+    <div class="main-content" id="main-content">
+        <div class="container">
+        <div class="page-header">
+            <div class="page-header-content">
+                <div>
+                    <nav class="breadcrumb" aria-label="Breadcrumb">
+                        <a href="/pages/virtual-topic-trees.html">Virtual Topic Trees</a>
+                        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+                        <span class="breadcrumb-current" aria-current="page" id="breadcrumb-name">New tree</span>
+                    </nav>
+                    <h1 class="page-title" id="page-title">Virtual Topic Tree</h1>
+                    <p class="page-subtitle" id="page-subtitle">Design a virtual hierarchy and bind its paths to physical MQTT topics</p>
+                </div>
+                <!-- Destructive first, primary last. -->
+                <div class="page-header-actions">
+                    <button class="btn btn-secondary" id="export-btn" type="button">
+                        <ix-icon name="download" size="16"></ix-icon> Export JSON
+                    </button>
+                    <button class="btn btn-danger" id="delete-btn" type="button" data-requires-auth>
+                        <ix-icon name="trashcan" size="16"></ix-icon> Delete
+                    </button>
+                    <button class="btn btn-primary" id="save-btn" type="button" data-requires-auth>
+                        <ix-icon name="disk" size="16"></ix-icon> Save Tree
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="error-message" class="error-message" style="display:none;">
+            <div class="error-content">
+                <span class="error-icon">&#9888;</span>
+                <span class="error-text"></span>
+            </div>
+        </div>
+
+        <div id="conflict-bar" class="error-message vt-conflict" role="alert">
+            <span class="error-text">This tree was changed by someone else since you opened it. Your unsaved edits cannot be saved over the newer revision.</span>
+            <button class="btn btn-secondary btn-sm" id="reload-btn" type="button">Discard my edits and reload</button>
+        </div>
+
+        <div id="designer" style="display:none;">
+            <div class="vt-workspace">
+                <!-- Virtual hierarchy -->
+                <div class="section-card vt-pane">
+                    <div class="section-header">
+                        <div class="section-title"><h2>Virtual hierarchy</h2></div>
+                    </div>
+                    <div class="vt-toolbar" role="toolbar" aria-label="Hierarchy actions" data-requires-auth>
+                        <button class="btn btn-secondary btn-sm" id="add-folder-btn" type="button" title="Add a structural folder below the selection"><ix-icon name="folder-new" size="16"></ix-icon> Folder</button>
+                        <button class="btn btn-secondary btn-sm" id="add-link-btn" type="button" title="Add an exact link to one physical topic"><ix-icon name="link" size="16"></ix-icon> Link</button>
+                        <button class="btn btn-secondary btn-sm" id="add-mount-btn" type="button" title="Add a subtree mount of a physical prefix"><ix-icon name="hierarchy" size="16"></ix-icon> Mount</button>
+                        <ix-icon-button icon="arrow-up" variant="subtle-tertiary" size="24" id="move-up-btn" title="Move up among siblings"></ix-icon-button>
+                        <ix-icon-button icon="arrow-down" variant="subtle-tertiary" size="24" id="move-down-btn" title="Move down among siblings"></ix-icon-button>
+                        <ix-icon-button icon="chevron-right" variant="subtle-tertiary" size="24" id="indent-btn" title="Indent: move into the previous sibling"></ix-icon-button>
+                        <ix-icon-button icon="chevron-left" variant="subtle-tertiary" size="24" id="outdent-btn" title="Outdent: move up one level"></ix-icon-button>
+                        <ix-icon-button icon="trashcan" variant="subtle-tertiary" size="24" id="remove-node-btn" class="btn-delete" title="Delete selected node"></ix-icon-button>
+                    </div>
+                    <div class="vt-pane-body">
+                        <ul class="vt-tree" id="tree-view" role="tree" aria-label="Virtual hierarchy"></ul>
+                    </div>
+                    <div class="vt-hint" style="padding:0 0.75rem 0.75rem;">
+                        Arrow keys move, Right/Left expand or collapse, Enter selects, Delete removes. Drag nodes to move them, or use the buttons and the Parent field.
+                    </div>
+                </div>
+
+                <!-- Inspector -->
+                <div class="section-card vt-pane">
+                    <div class="section-header">
+                        <div class="section-title"><h2 id="inspector-title">Inspector</h2></div>
+                        <span class="status-badge" id="inspector-badge"></span>
+                    </div>
+                    <div class="section-content" id="inspector"></div>
+                </div>
+
+                <!-- Physical topic picker -->
+                <div class="section-card vt-pane">
+                    <div class="section-header">
+                        <div class="section-title"><h2>Physical topics</h2></div>
+                        <ix-icon-button icon="refresh" variant="subtle-tertiary" id="picker-refresh-btn" title="Reload topics"></ix-icon-button>
+                    </div>
+                    <div class="section-content">
+                        <div class="form-group">
+                            <label for="picker-group">Archive group</label>
+                            <select id="picker-group" class="form-control" data-ignore-dirty></select>
+                        </div>
+                        <div class="vt-pane-body" style="padding:0;">
+                            <ul class="vt-picker-tree" id="picker-tree" aria-label="Physical topics"></ul>
+                        </div>
+                        <div class="vt-hint">Drag a topic onto a node, or use Mount / Link to apply it to the selected node. Discovery is optional: targets can always be typed in the inspector.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Validation + preview -->
+            <div class="section-card" style="margin-top:1rem;">
+                <div class="section-header">
+                    <div class="section-title"><h2>Validation</h2></div>
+                    <span class="status-badge" id="validation-badge">Not checked</span>
+                </div>
+                <div class="section-content">
+                    <ul class="vt-issues" id="validation-list"></ul>
+                </div>
+            </div>
+
+            <div class="section-card" style="margin-top:1rem;">
+                <div class="section-header">
+                    <div class="section-title"><h2>Preview against the unsaved tree</h2></div>
+                </div>
+                <div class="section-content">
+                    <div class="vt-preview-grid">
+                        <div class="form-group">
+                            <label for="preview-op">Operation</label>
+                            <select id="preview-op" class="form-control" data-ignore-dirty>
+                                <option value="PROJECT">Physical publish (project)</option>
+                                <option value="SUBSCRIBE">Virtual subscribe</option>
+                                <option value="PUBLISH">Virtual publish</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="preview-topic" id="preview-topic-label">Physical topic</label>
+                            <input type="text" id="preview-topic" class="form-control" placeholder="plc1/values/v1" data-ignore-dirty>
+                        </div>
+                        <button class="btn btn-secondary" id="preview-btn" type="button"><ix-icon name="play" size="16"></ix-icon> Preview</button>
+                    </div>
+                    <div class="table-responsive" style="margin-top:0.75rem;">
+                        <table>
+                            <thead><tr><th>Virtual path</th><th>Physical path</th><th>Access</th><th>Node</th></tr></thead>
+                            <tbody id="preview-body"></tbody>
+                        </table>
+                    </div>
+                    <ul class="vt-issues" id="preview-errors"></ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading-indicator" class="loading-indicator" style="display:none;">
+            <div class="loading-spinner"></div>
+            <span>Loading virtual topic tree&hellip;</span>
+        </div>
+        </div>
+    </div>
+
+    <script type="module" src="/js/virtual-topic-tree-detail.js"></script>
+    </ix-application>
+</body>
+</html>

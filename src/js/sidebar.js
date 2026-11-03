@@ -232,7 +232,8 @@ class SidebarManager {
                 items: [
                     { href: '/pages/data-catalog.html', icon: 'ontology', text: 'Data Catalog', feature: 'DataCatalog' },
                     { href: '/pages/topic-schema-policies.html', icon: 'shield-check', text: 'Schema Policies', feature: 'SchemaPolicy' },
-                    { href: '/pages/topic-namespaces.html', icon: 'folder', text: 'Topic Namespaces', feature: 'TopicNamespace' }
+                    { href: '/pages/topic-namespaces.html', icon: 'folder', text: 'Topic Namespaces', feature: 'TopicNamespace' },
+                    { href: '/pages/virtual-topic-trees.html', icon: 'hierarchy', text: 'Virtual Topic Trees', feature: 'VirtualTopicTrees' }
                 ]
             },
             {

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonsterMQ - Virtual Topic Trees</title>
+    <script type="module" src="/js/ix-init.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/graphql-client.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/log-viewer.js"></script>
+    <script type="module" src="/js/sidebar.js"></script>
+</head>
+<body>
+    <ix-application force-breakpoint="lg">
+    <ix-menu application-name="MonsterMQ" pinned start-expanded>
+    </ix-menu>
+    <div class="main-content" id="main-content">
+        <div class="container">
+            <div class="page-header">
+                <div class="page-header-content">
+                    <div>
+                        <h1 class="page-title">Virtual Topic Trees</h1>
+                        <p class="page-subtitle">Present physical MQTT topics under a hand-designed virtual hierarchy without copying data</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="error-message" class="error-message" style="display:none;">
+                <div class="error-content">
+                    <span class="error-icon">&#9888;</span>
+                    <span class="error-text"></span>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Trees</span>
+                        <div class="metric-icon"><ix-icon name="hierarchy" size="12"></ix-icon></div>
+                    </div>
+                    <div class="metric-value" id="total-trees">0</div>
+                    <div class="metric-label">Configured Trees</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Enabled</span>
+                        <div class="metric-icon is-ok"><ix-icon name="success" size="12"></ix-icon></div>
+                    </div>
+                    <div class="metric-value" id="enabled-trees">0</div>
+                    <div class="metric-label">Routing Active</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-title">Bindings</span>
+                        <div class="metric-icon is-info"><ix-icon name="link" size="12"></ix-icon></div>
+                    </div>
+                    <div class="metric-value" id="total-bindings">0</div>
+                    <div class="metric-label">Exact Links and Mounts</div>
+                </div>
+            </div>
+
+            <div id="trees-table" class="data-table" data-table-tools>
+                <div class="table-header">
+                    <div class="table-title"><h2>Virtual Topic Trees</h2></div>
+                    <div class="table-actions">
+                        <input type="search" class="form-control table-search" id="tree-search" placeholder="Search trees…" aria-label="Search trees" data-ignore-dirty>
+                        <ix-icon-button icon="refresh" variant="subtle-tertiary" id="refresh-btn" title="Refresh"></ix-icon-button>
+                        <a href="/pages/virtual-topic-tree-detail.html?new=true" class="btn btn-primary" data-requires-auth>
+                            <ix-icon name="add-circle" size="16"></ix-icon> Add Tree
+                        </a>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Virtual Root</th>
+                                <th>Status</th>
+                                <th class="num">Bindings</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trees-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="loading-indicator" class="loading-indicator" style="display:none;">
+                <div class="loading-spinner"></div>
+                <span>Loading virtual topic trees&hellip;</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/js/virtual-topic-trees.js"></script>
+    </ix-application>
+</body>
+</html>
