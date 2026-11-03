@@ -731,7 +731,7 @@ class TopicExplorer {
                         payload: t.value.payload || '',
                         format: t.value.format || 'TEXT',
                         qos: t.value.qos || 0,
-                        retain: true,
+                        retain: false,
                         timestamp: Number(t.value.timestamp) || Date.now(),
                         isNew: false,
                         source: 'archive'
@@ -1223,7 +1223,7 @@ class TopicExplorer {
                             payload: cv.payload || '',
                             format: cv.format || 'TEXT',
                             qos: cv.qos || 0,
-                            retain: true,
+                            retain: false,
                             timestamp: Number(cv.timestamp) || Date.now(),
                             source: 'archive'
                         };
@@ -1311,7 +1311,7 @@ class TopicExplorer {
                     payload: cv.payload || '',
                     format: cv.format || 'TEXT',
                     qos: cv.qos || 0,
-                    retain: true,
+                    retain: false,
                     timestamp: Number(cv.timestamp) || Date.now(),
                     isNew: false,
                     source: 'archive'
@@ -1383,7 +1383,7 @@ class TopicExplorer {
                     payload: cv.payload,
                     format: cv.format,
                     qos: cv.qos || 0,
-                    retain: true,
+                    retain: false,
                     timestamp: Number(cv.timestamp) || Date.now(),
                     source: 'archive'
                 };
@@ -1455,7 +1455,7 @@ class TopicExplorer {
                                 payload: cv.payload || '',
                                 format: cv.format || 'TEXT',
                                 qos: cv.qos || 0,
-                                retain: true,
+                                retain: false,
                                 timestamp: Number(cv.timestamp) || Date.now(),
                                 isNew: true,
                                 source: 'archive'
@@ -1527,7 +1527,7 @@ class TopicExplorer {
                             payload: cv.payload || '',
                             format: cv.format || 'TEXT',
                             qos: cv.qos || 0,
-                            retain: true,
+                            retain: false,
                             timestamp: Number(cv.timestamp) || Date.now(),
                             isNew: true,
                             source: 'archive'
@@ -1607,7 +1607,7 @@ class TopicExplorer {
                         payload: cv.payload || '',
                         format: cv.format || 'TEXT',
                         qos: cv.qos || 0,
-                        retain: true,
+                        retain: false,
                         timestamp: Number(cv.timestamp) || Date.now(),
                         isNew: true,
                         source: 'archive'
