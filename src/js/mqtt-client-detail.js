@@ -111,12 +111,19 @@ class MqttClientDetailManager {
         try {
             // getTypeFields() turns failed introspection into an empty set. Query directly
             // so a failed request cannot be mistaken for an older broker schema.
-            const result = await this.client.query(`
-                query GetMqttClientTlsFields {
+            // One __type per request: the broker's good-faith introspection guard
+            // rejects a query that repeats __type.
+            const configResult = await this.client.query(`
+                query GetMqttClientConfigFields {
                     config: __type(name: "MqttClientConnectionConfig") { fields { name } }
+                }
+            `);
+            const inputResult = await this.client.query(`
+                query GetMqttClientInputFields {
                     input: __type(name: "MqttClientConnectionConfigInput") { inputFields { name } }
                 }
             `);
+            const result = { config: configResult?.config, input: inputResult?.input };
             const configFields = new Set(result?.config?.fields?.map(f => f.name) || []);
             const inputFields = new Set(result?.input?.inputFields?.map(f => f.name) || []);
             if (!configFields.has('brokerUrl') || !inputFields.has('brokerUrl'))
