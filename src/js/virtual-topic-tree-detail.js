@@ -23,8 +23,6 @@ class VirtualTopicTreeDetailManager {
         this.issuesByNode = new Map();
         this.validateTimer = null;
         this.validateSeq = 0;
-        this.pickerGroup = null;
-        this.pickerSeq = 0;
         this.nextId = 1;
         this.init();
     }
@@ -61,7 +59,7 @@ class VirtualTopicTreeDetailManager {
             }
             this.$('designer').style.display = '';
             this.renderAll();
-            await this.loadArchiveGroups();
+            this.openTopicBrowser();
             this.scheduleValidate();
         } catch (e) {
             console.error('Error initializing tree designer', e);
@@ -107,10 +105,6 @@ class VirtualTopicTreeDetailManager {
         on('indent-btn', () => this.indent());
         on('outdent-btn', () => this.outdent());
         on('remove-node-btn', () => this.removeSelected());
-        on('preview-btn', () => this.runPreview());
-        on('preview-op', () => this.updatePreviewLabel(), 'change');
-        on('picker-refresh-btn', () => this.browsePickerRoot());
-        on('picker-group', () => { this.pickerGroup = this.$('picker-group').value; this.browsePickerRoot(); }, 'change');
 
         const tv = this.$('tree-view');
         tv.addEventListener('click', (e) => this.onTreeClick(e));
@@ -119,13 +113,6 @@ class VirtualTopicTreeDetailManager {
         tv.addEventListener('dragover', (e) => this.onNodeDragOver(e));
         tv.addEventListener('dragleave', (e) => this.clearDropMarks());
         tv.addEventListener('drop', (e) => this.onNodeDrop(e));
-        this.$('picker-tree').addEventListener('click', (e) => this.onPickerClick(e));
-        this.$('picker-tree').addEventListener('dragstart', (e) => {
-            const row = e.target.closest('[data-topic]');
-            if (!row) return;
-            e.dataTransfer.setData('application/x-vt-topic', row.dataset.topic);
-            e.dataTransfer.effectAllowed = 'copy';
-        });
     }
 
     // ------------------------------------------------------------ tree model
@@ -257,14 +244,26 @@ class VirtualTopicTreeDetailManager {
         n.parentId = oldParent;
         const oldSegment = n.segment;
 
-        const list = changes.slice(0, 40).map(c =>
-            `<li>${ui.escapeHtml(c.from)} &rarr; ${ui.escapeHtml(c.to)}${c.binding ? ` <em>(${ui.escapeHtml(c.binding.kind === 'SUBTREE' ? 'mount' : 'link')} of ${ui.escapeHtml(c.binding.target || '?')})</em>` : ''}</li>`).join('');
-        const more = changes.length > 40 ? `<li>… and ${changes.length - 40} more</li>` : '';
-        const ok = await ui.confirm({
-            title: 'Move node',
-            message: `<p>These virtual paths change. Subscribers follow the new paths once the tree is saved.</p><ul class="vt-move-list">${list}${more}</ul>`,
-            confirmLabel: 'Move'
+        // The modal takes text or a DOM node, never an HTML string.
+        const body = document.createElement('div');
+        const intro = document.createElement('p');
+        intro.textContent = 'These virtual paths change. Subscribers follow the new paths once the tree is saved.';
+        body.appendChild(intro);
+        const list = document.createElement('ul');
+        list.className = 'vt-move-list';
+        changes.slice(0, 40).forEach(c => {
+            const li = document.createElement('li');
+            li.textContent = `${c.from} → ${c.to}` + (c.binding
+                ? ` (${c.binding.kind === 'SUBTREE' ? 'mount' : 'link'} of ${c.binding.target || '?'})` : '');
+            list.appendChild(li);
         });
+        if (changes.length > 40) {
+            const more = document.createElement('li');
+            more.textContent = `… and ${changes.length - 40} more`;
+            list.appendChild(more);
+        }
+        body.appendChild(list);
+        const ok = await ui.confirm({ title: 'Move node', message: body, confirmLabel: 'Move' });
         if (!ok) return;
         n.parentId = newParentId || null;
         n.segment = oldSegment === n.segment ? this.uniqueSegmentExcluding(n) : n.segment;
@@ -294,7 +293,6 @@ class VirtualTopicTreeDetailManager {
         this.renderTree();
         this.renderInspector();
         this.updateToolbar();
-        this.updatePreviewLabel();
     }
 
     updateToolbar() {
@@ -321,7 +319,7 @@ class VirtualTopicTreeDetailManager {
         const rootSel = this.selectedId === null;
         const rootIssue = (this.issuesByNode.get('') || []).length > 0;
         let html = `<li role="none"><div class="vt-row${rootSel ? ' is-selected' : ''}${rootIssue ? ' has-issue' : ''}" role="treeitem" tabindex="0" data-root="1" aria-selected="${rootSel}" aria-expanded="true">
-            <span class="vt-twisty" hidden></span>
+            <span class="vt-twisty" aria-hidden="true"><ix-icon name="chevron-down-small" size="16"></ix-icon></span>
             <ix-icon name="tree" size="16"></ix-icon>
             <span class="vt-label"><strong>${ui.escapeHtml(t.rootPath || '(root path)')}</strong></span>
             <span class="status-badge ${t.enabled ? 'badge-ok' : 'badge-warn'}">${t.enabled ? 'Enabled' : 'Disabled'}</span>
@@ -344,7 +342,8 @@ class VirtualTopicTreeDetailManager {
         const info = this.kindInfo(n);
         const kids = this.children(n.id);
         const isMount = n.binding && n.binding.kind === 'SUBTREE';
-        const expandable = kids.length > 0 || isMount;
+        // Folders and mounts always get an arrow (they can hold sub nodes); only links are leaves.
+        const expandable = kids.length > 0 || isMount || !n.binding;
         const open = this.expanded.has(n.id);
         const selected = this.selectedId === n.id;
         const issue = (this.issuesByNode.get(n.id) || []).some(i => i.level === 'error');
@@ -363,7 +362,7 @@ class VirtualTopicTreeDetailManager {
         }
         return `<li role="none"><div class="vt-row${selected ? ' is-selected' : ''}${issue ? ' has-issue' : ''}" role="treeitem" tabindex="0" draggable="true"
             data-id="${ui.escapeHtml(n.id)}" aria-selected="${selected}" ${expandable ? `aria-expanded="${open}"` : ''}>
-            <button type="button" class="vt-twisty" data-twisty="1" tabindex="-1" aria-label="${open ? 'Collapse' : 'Expand'}" ${expandable ? '' : 'hidden'}><ix-icon name="${open ? 'chevron-down-small' : 'chevron-right-small'}" size="16"></ix-icon></button>
+            <button type="button" class="vt-twisty${expandable ? '' : ' is-empty'}" data-twisty="1" tabindex="-1" aria-label="${open ? 'Collapse' : 'Expand'}" ${expandable ? '' : 'disabled aria-hidden="true"'}><ix-icon name="${open ? 'chevron-down-small' : 'chevron-right-small'}" size="16"></ix-icon></button>
             <ix-icon name="${info.icon}" size="16"></ix-icon>
             <span class="vt-label">${ui.escapeHtml(n.segment)} ${target}</span>
             ${badges}
@@ -381,7 +380,7 @@ class VirtualTopicTreeDetailManager {
             const key = 'observed:' + item.path;
             const open = this.expanded.has(key);
             return `<li role="none"><div class="vt-row is-observed" role="treeitem" tabindex="0" data-observed="${ui.escapeHtml(item.path)}" ${item.hasChildren ? `aria-expanded="${open}"` : ''}>
-                <button type="button" class="vt-twisty" data-twisty="1" tabindex="-1" aria-label="${open ? 'Collapse' : 'Expand'}" ${item.hasChildren ? '' : 'hidden'}><ix-icon name="${open ? 'chevron-down-small' : 'chevron-right-small'}" size="16"></ix-icon></button>
+                <button type="button" class="vt-twisty${item.hasChildren ? '' : ' is-empty'}" data-twisty="1" tabindex="-1" aria-label="${open ? 'Collapse' : 'Expand'}" ${item.hasChildren ? '' : 'disabled aria-hidden="true"'}><ix-icon name="${open ? 'chevron-down-small' : 'chevron-right-small'}" size="16"></ix-icon></button>
                 <ix-icon name="topic" size="16"></ix-icon>
                 <span class="vt-label">${ui.escapeHtml(item.name)}</span>
                 <span class="status-badge">Observed</span>
@@ -390,14 +389,14 @@ class VirtualTopicTreeDetailManager {
     }
 
     observedRow(text) {
-        return `<ul role="group"><li role="none"><div class="vt-row is-observed"><span class="vt-twisty" hidden></span><span class="vt-label">${ui.escapeHtml(text)}</span></div></li></ul>`;
+        return `<ul role="group"><li role="none"><div class="vt-row is-observed"><span class="vt-twisty is-empty" aria-hidden="true"></span><span class="vt-label">${ui.escapeHtml(text)}</span></div></li></ul>`;
     }
 
     async loadObserved(path) {
         if (this.observed.has(path)) return;
         this.observed.set(path, { loading: true, items: [] });
         try {
-            const group = this.pickerGroup || 'Default';
+            const group = (window.topicBrowserSidePanel && window.topicBrowserSidePanel.selectedArchiveGroup) || 'Default';
             const res = await this.client.query(
                 `query BrowseVirtual($topic: String!, $archiveGroup: String!) { browseTopics(topic: $topic, archiveGroup: $archiveGroup) { name } }`,
                 { topic: path + '/+', archiveGroup: group });
@@ -499,7 +498,7 @@ class VirtualTopicTreeDetailManager {
         const row = e.target.closest('.vt-row');
         if (!row || row.dataset.observed) return;
         const types = [...e.dataTransfer.types];
-        if (!types.includes('application/x-vt-node') && !types.includes('application/x-vt-topic')) return;
+        if (!types.includes('application/x-vt-node') && !types.includes('text/plain')) return;
         e.preventDefault();
         this.clearDropMarks();
         row.classList.add('is-drop');
@@ -509,22 +508,45 @@ class VirtualTopicTreeDetailManager {
         this.$('tree-view').querySelectorAll('.is-drop').forEach(r => r.classList.remove('is-drop'));
     }
 
-    onNodeDrop(e) {
+    /** A topic is a leaf when the broker knows no child topics below it. */
+    async isLeafTopic(topic) {
+        try {
+            const group = (window.topicBrowserSidePanel && window.topicBrowserSidePanel.selectedArchiveGroup) || 'Default';
+            const res = await this.client.query(
+                `query BrowseChildren($topic: String!, $archiveGroup: String!) { browseTopics(topic: $topic, archiveGroup: $archiveGroup) { name } }`,
+                { topic: topic + '/+', archiveGroup: group });
+            return (res.browseTopics || []).length === 0;
+        } catch (e) {
+            return true; // discovery unavailable: treat as a plain topic
+        }
+    }
+
+    async onNodeDrop(e) {
         const row = e.target.closest('.vt-row');
         this.clearDropMarks();
         if (!row || row.dataset.observed) return;
         e.preventDefault();
         const targetId = row.dataset.root ? null : row.dataset.id;
         const nodeId = e.dataTransfer.getData('application/x-vt-node');
-        const topic = e.dataTransfer.getData('application/x-vt-topic');
+        const topic = (e.dataTransfer.getData('text/plain') || '').trim();
+        const shift = e.shiftKey; // read before awaiting; the event is recycled
         if (nodeId) {
             this.moveNode(nodeId, targetId);
-        } else if (topic && targetId) {
-            this.applyBinding(targetId, 'EXACT', topic);
-        } else if (topic) {
-            this.selectedId = null;
-            this.addNode('EXACT', { segment: topic.split('/').pop() || 'topic', target: topic });
+            return;
         }
+        if (!topic) return;
+        const target = targetId && this.node(targetId);
+        // Dropping on a link or a mount rebinds that node and never creates a sub node.
+        if (target && target.binding) {
+            this.applyBinding(targetId, target.binding.kind, topic);
+            return;
+        }
+        // Dropping on a folder (or the tree root) adds a sub node: a leaf topic becomes a
+        // link, a topic with child topics becomes a mount. Shift flips that.
+        const isFolder = !(await this.isLeafTopic(topic));
+        const kind = isFolder !== shift ? 'SUBTREE' : 'EXACT';
+        this.selectedId = targetId;
+        this.addNode(kind, { segment: topic.split('/').pop() || 'topic', target: topic });
     }
 
     // ------------------------------------------------------------- inspector
@@ -607,6 +629,13 @@ class VirtualTopicTreeDetailManager {
         bind('insp-target', (e) => this.editTarget(n, e.target.value));
         bind('insp-access', (e) => { n.binding.access = e.target.value; ui.markPageDirty(); this.renderTree(); this.scheduleValidate(); }, 'change');
         bind('insp-node-desc', (e) => { n.description = e.target.value; ui.markPageDirty(); });
+    }
+
+    /** The shared Topic Browser mounts on its own; wait for it, then show it. */
+    openTopicBrowser(attempt = 0) {
+        const panel = window.topicBrowserSidePanel;
+        if (panel) { panel.open(); return; }
+        if (attempt < 30) setTimeout(() => this.openTopicBrowser(attempt + 1), 100);
     }
 
     afterRootEdit() {
@@ -741,47 +770,6 @@ class VirtualTopicTreeDetailManager {
         if (n && !document.activeElement?.closest?.('#inspector')) this.renderInspector();
     }
 
-    // ------------------------------------------------------------- preview
-
-    updatePreviewLabel() {
-        const op = this.$('preview-op').value;
-        const label = this.$('preview-topic-label');
-        const input = this.$('preview-topic');
-        if (op === 'PROJECT') { label.textContent = 'Physical topic'; input.placeholder = 'plc1/values/v1'; }
-        else if (op === 'SUBSCRIBE') { label.textContent = 'Virtual filter'; input.placeholder = `${this.tree.rootPath || 'enterprise'}/+/#`; }
-        else { label.textContent = 'Virtual topic'; input.placeholder = `${this.tree.rootPath || 'enterprise'}/area/values/v1`; }
-    }
-
-    async runPreview() {
-        const topic = this.$('preview-topic').value.trim();
-        const body = this.$('preview-body');
-        const errs = this.$('preview-errors');
-        errs.innerHTML = '';
-        if (!topic) { body.innerHTML = ui.emptyRow(4, 'Enter a topic or filter to preview'); return; }
-        try {
-            const res = await this.client.query(`
-                query PreviewVirtualTopicTree($input: VirtualTopicTreeInput!, $topic: String!, $op: VirtualTopicPreviewOperation!) {
-                    previewVirtualTopicTree(input: $input, topicOrFilter: $topic, operation: $op) {
-                        routes { nodeId virtualPath canonicalPath access } errors { ${ISSUE_FIELDS} }
-                    }
-                }`, { input: this.toInput(), topic, op: this.$('preview-op').value });
-            const r = res.previewVirtualTopicTree;
-            const routes = r.routes || [];
-            body.innerHTML = routes.length === 0
-                ? ui.emptyRow(4, 'No route', 'The topic does not resolve through this tree.')
-                : routes.map(x => {
-                    const node = x.nodeId ? this.node(x.nodeId) : null;
-                    return `<tr><td class="vt-path">${ui.escapeHtml(x.virtualPath)}</td><td class="vt-path">${ui.escapeHtml(x.canonicalPath)}</td>
-                        <td>${ui.escapeHtml(x.access === 'READ_WRITE' ? 'Read/write' : 'Read-only')}</td>
-                        <td>${node ? ui.escapeHtml(node.segment) : ''}</td></tr>`;
-                }).join('');
-            errs.innerHTML = (r.errors || []).map(i => `<li class="is-error">${i.code ? `<code>${ui.escapeHtml(i.code)}</code> ` : ''}${ui.escapeHtml(i.message)}</li>`).join('');
-        } catch (e) {
-            body.innerHTML = '';
-            errs.innerHTML = `<li class="is-error">Preview failed: ${ui.escapeHtml(e.message)}</li>`;
-        }
-    }
-
     // ---------------------------------------------------------------- save
 
     issueText(errors) {
@@ -885,98 +873,6 @@ class VirtualTopicTreeDetailManager {
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }
-
-    // --------------------------------------------------- physical topic picker
-
-    async loadArchiveGroups() {
-        const sel = this.$('picker-group');
-        try {
-            const res = await this.client.query(`query GetArchiveGroups { archiveGroups(enabled: true) { name } }`);
-            const groups = (res.archiveGroups || []).map(g => g.name);
-            sel.innerHTML = groups.map(g => `<option value="${ui.escapeHtml(g)}">${ui.escapeHtml(g)}</option>`).join('');
-            this.pickerGroup = groups.includes('Default') ? 'Default' : groups[0] || 'Default';
-            sel.value = this.pickerGroup;
-        } catch (e) {
-            sel.innerHTML = '<option value="Default">Default</option>';
-            this.pickerGroup = 'Default';
-        }
-        this.browsePickerRoot();
-    }
-
-    browsePickerRoot() {
-        const tree = this.$('picker-tree');
-        tree.innerHTML = '';
-        this.pickerSeq++;
-        this.loadPickerLevel('+', tree, '');
-    }
-
-    async loadPickerLevel(pattern, container, parentPath) {
-        const seq = this.pickerSeq;
-        const loading = document.createElement('li');
-        loading.className = 'vt-hint';
-        loading.textContent = 'Loading topics…';
-        container.appendChild(loading);
-        try {
-            const res = await this.client.query(
-                `query BrowsePhysical($topic: String!, $archiveGroup: String!) { browseTopics(topic: $topic, archiveGroup: $archiveGroup) { name } }`,
-                { topic: pattern, archiveGroup: this.pickerGroup || 'Default' });
-            if (seq !== this.pickerSeq) return;
-            loading.remove();
-            const levels = parentPath ? parentPath.split('/').length : 0;
-            const grouped = new Map();
-            (res.browseTopics || []).forEach(t => {
-                const parts = t.name.split('/');
-                if (parts.length <= levels) return;
-                const name = parts[levels];
-                const g = grouped.get(name) || { name, leaf: false, deeper: false };
-                if (parts.length === levels + 1) g.leaf = true; else g.deeper = true;
-                grouped.set(name, g);
-            });
-            if (grouped.size === 0) {
-                const empty = document.createElement('li');
-                empty.className = 'vt-hint';
-                empty.textContent = 'No topics found';
-                container.appendChild(empty);
-                return;
-            }
-            [...grouped.values()].sort((a, b) => a.name.localeCompare(b.name)).forEach(g => {
-                const full = parentPath ? `${parentPath}/${g.name}` : g.name;
-                const li = document.createElement('li');
-                li.innerHTML = `<div class="vt-row" draggable="true" data-topic="${ui.escapeHtml(full)}">
-                    <button type="button" class="vt-twisty" data-picker-twisty="1" aria-label="Expand ${ui.escapeHtml(full)}" ${g.deeper ? '' : 'hidden'}><ix-icon name="chevron-right-small" size="16"></ix-icon></button>
-                    <ix-icon name="${g.deeper ? 'folder' : 'topic'}" size="16"></ix-icon>
-                    <span class="vt-label">${ui.escapeHtml(g.name)}</span>
-                    <button type="button" class="btn btn-secondary btn-sm" data-pick="SUBTREE" title="Mount ${ui.escapeHtml(full)}/# on the selected node" data-requires-auth>Mount</button>
-                    <button type="button" class="btn btn-secondary btn-sm" data-pick="EXACT" title="Link ${ui.escapeHtml(full)} to the selected node" data-requires-auth>Link</button>
-                </div>`;
-                container.appendChild(li);
-            });
-        } catch (e) {
-            if (seq !== this.pickerSeq) return;
-            loading.textContent = 'Topic discovery unavailable. Type the target in the inspector instead.';
-        }
-    }
-
-    onPickerClick(e) {
-        const row = e.target.closest('[data-topic]');
-        if (!row) return;
-        const topic = row.dataset.topic;
-        const pick = e.target.closest('[data-pick]');
-        if (pick) {
-            if (this.selectedId) this.applyBinding(this.selectedId, pick.dataset.pick, topic);
-            else this.addNode(pick.dataset.pick, { segment: topic.split('/').pop(), target: topic });
-            return;
-        }
-        const tw = e.target.closest('[data-picker-twisty]');
-        if (!tw) return;
-        const li = row.parentElement;
-        const existing = li.querySelector(':scope > ul');
-        if (existing) { existing.remove(); tw.querySelector('ix-icon').setAttribute('name', 'chevron-right-small'); return; }
-        tw.querySelector('ix-icon').setAttribute('name', 'chevron-down-small');
-        const ul = document.createElement('ul');
-        li.appendChild(ul);
-        this.loadPickerLevel(topic + '/+', ul, topic);
     }
 }
 

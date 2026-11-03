@@ -14,17 +14,19 @@
         /* Hierarchy designer layout - unique to this page. */
         .vt-workspace {
             display: grid;
-            grid-template-columns: minmax(260px, 1.2fr) minmax(280px, 1fr) minmax(240px, 1fr);
+            grid-template-columns: minmax(280px, 1.2fr) minmax(300px, 1fr);
             gap: 1rem;
             align-items: start;
         }
-        @media (max-width: 1200px) { .vt-workspace { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) { .vt-workspace { grid-template-columns: 1fr; } }
         .vt-pane { min-width: 0; }
         .vt-pane-body { max-height: 60vh; overflow: auto; padding: 0.5rem; }
         .vt-toolbar { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.5rem; border-bottom: 1px solid rgba(211, 236, 248, 0.12); }
 
         .vt-tree, .vt-tree ul { list-style: none; margin: 0; padding: 0; }
-        .vt-tree ul { margin-left: 1.1rem; border-left: 1px dashed rgba(211, 236, 248, 0.15); padding-left: 0.35rem; }
+        /* Explorer-style nesting: a fixed indent per level, no connector lines. */
+        /* Indent = one arrow slot (20px), so a child's arrow sits under its parent's icon. */
+        .vt-tree ul { margin: 0; padding-left: 20px; }
         .vt-row {
             display: flex; align-items: center; gap: 0.35rem;
             padding: 0.3rem 0.4rem; border-radius: var(--r-sm);
@@ -37,8 +39,9 @@
         .vt-row.is-drop { border-color: var(--monster-teal); background: rgba(45, 212, 191, 0.12); }
         .vt-row.is-observed { font-style: italic; color: var(--text-muted); }
         .vt-row.has-issue .vt-label { text-decoration: underline wavy var(--monster-red); }
-        .vt-twisty { width: 20px; height: 20px; flex: none; display: inline-flex; align-items: center; justify-content: center; border: none; background: none; color: var(--text-muted); padding: 0; cursor: pointer; }
-        .vt-twisty[hidden] { display: inline-flex; visibility: hidden; }
+        .vt-twisty { box-sizing: border-box; width: 20px; min-width: 20px; height: 20px; flex: none; display: inline-flex; align-items: center; justify-content: center; border: none; background: none; color: var(--text-muted); padding: 0; cursor: pointer; }
+        /* Rows without children keep the arrow's slot so every icon lines up. */
+        .vt-twisty.is-empty { visibility: hidden; pointer-events: none; }
         .vt-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .vt-hint { color: var(--text-muted); font-size: 0.78rem; margin-top: 0.25rem; }
         .vt-hint.is-error { color: var(--monster-red); }
@@ -46,11 +49,7 @@
         .vt-issues { margin: 0; padding-left: 1.1rem; font-size: 0.85rem; }
         .vt-issues li.is-error { color: var(--monster-red); }
         .vt-issues li.is-warn { color: var(--monster-orange, #f59e0b); }
-        .vt-preview-grid { display: grid; grid-template-columns: 160px 1fr auto; gap: 0.5rem; align-items: end; }
-        @media (max-width: 800px) { .vt-preview-grid { grid-template-columns: 1fr; } }
         .vt-conflict { display: none; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
-        .vt-picker-tree { list-style: none; margin: 0; padding: 0; }
-        .vt-picker-tree ul { list-style: none; margin: 0 0 0 1.1rem; padding: 0 0 0 0.35rem; border-left: 1px dashed rgba(211, 236, 248, 0.15); }
         .vt-move-list { max-height: 14rem; overflow: auto; font-family: monospace; font-size: 0.8rem; margin: 0.5rem 0 0; padding-left: 1.1rem; }
     </style>
 </head>
@@ -73,6 +72,9 @@
                 </div>
                 <!-- Destructive first, primary last. -->
                 <div class="page-header-actions">
+                    <button class="btn btn-secondary" id="topic-browser-floating-toggle" type="button" aria-expanded="false" onclick="TopicBrowserSidePanel.toggle()">
+                        <ix-icon name="folder-open" size="16"></ix-icon> Browse topics
+                    </button>
                     <button class="btn btn-secondary" id="export-btn" type="button">
                         <ix-icon name="download" size="16"></ix-icon> Export JSON
                     </button>
@@ -119,7 +121,7 @@
                         <ul class="vt-tree" id="tree-view" role="tree" aria-label="Virtual hierarchy"></ul>
                     </div>
                     <div class="vt-hint" style="padding:0 0.75rem 0.75rem;">
-                        Arrow keys move, Right/Left expand or collapse, Enter selects, Delete removes. Drag nodes to move them, or use the buttons and the Parent field.
+                        Arrow keys move, Right/Left expand or collapse, Enter selects, Delete removes. Drag nodes to move them, or use the buttons and the Parent field. Drag a topic from the Topic Browser onto a node: dropping on a link or a mount rebinds that node; dropping on a folder adds a sub node, a leaf topic as a link and a topic with child topics as a mount (hold Shift to flip that).
                     </div>
                 </div>
 
@@ -130,24 +132,6 @@
                         <span class="status-badge" id="inspector-badge"></span>
                     </div>
                     <div class="section-content" id="inspector"></div>
-                </div>
-
-                <!-- Physical topic picker -->
-                <div class="section-card vt-pane">
-                    <div class="section-header">
-                        <div class="section-title"><h2>Physical topics</h2></div>
-                        <ix-icon-button icon="refresh" variant="subtle-tertiary" id="picker-refresh-btn" title="Reload topics"></ix-icon-button>
-                    </div>
-                    <div class="section-content">
-                        <div class="form-group">
-                            <label for="picker-group">Archive group</label>
-                            <select id="picker-group" class="form-control" data-ignore-dirty></select>
-                        </div>
-                        <div class="vt-pane-body" style="padding:0;">
-                            <ul class="vt-picker-tree" id="picker-tree" aria-label="Physical topics"></ul>
-                        </div>
-                        <div class="vt-hint">Drag a topic onto a node, or use Mount / Link to apply it to the selected node. Discovery is optional: targets can always be typed in the inspector.</div>
-                    </div>
                 </div>
             </div>
 
@@ -161,36 +145,6 @@
                     <ul class="vt-issues" id="validation-list"></ul>
                 </div>
             </div>
-
-            <div class="section-card" style="margin-top:1rem;">
-                <div class="section-header">
-                    <div class="section-title"><h2>Preview against the unsaved tree</h2></div>
-                </div>
-                <div class="section-content">
-                    <div class="vt-preview-grid">
-                        <div class="form-group">
-                            <label for="preview-op">Operation</label>
-                            <select id="preview-op" class="form-control" data-ignore-dirty>
-                                <option value="PROJECT">Physical publish (project)</option>
-                                <option value="SUBSCRIBE">Virtual subscribe</option>
-                                <option value="PUBLISH">Virtual publish</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="preview-topic" id="preview-topic-label">Physical topic</label>
-                            <input type="text" id="preview-topic" class="form-control" placeholder="plc1/values/v1" data-ignore-dirty>
-                        </div>
-                        <button class="btn btn-secondary" id="preview-btn" type="button"><ix-icon name="play" size="16"></ix-icon> Preview</button>
-                    </div>
-                    <div class="table-responsive" style="margin-top:0.75rem;">
-                        <table>
-                            <thead><tr><th>Virtual path</th><th>Physical path</th><th>Access</th><th>Node</th></tr></thead>
-                            <tbody id="preview-body"></tbody>
-                        </table>
-                    </div>
-                    <ul class="vt-issues" id="preview-errors"></ul>
-                </div>
-            </div>
         </div>
 
         <div id="loading-indicator" class="loading-indicator" style="display:none;">
@@ -200,7 +154,36 @@
         </div>
     </div>
 
+    <!-- Topic Browser Side Panel -->
+    <div class="topic-browser-side-panel" id="topic-browser-panel" data-drag-prefixes="true">
+        <div class="topic-panel-resize-handle" id="topic-panel-resize-handle"></div>
+        <div class="topic-panel-header">
+            <h3 class="topic-panel-title">Topic Browser</h3>
+            <button class="topic-panel-close" type="button" aria-label="Close topic browser" onclick="TopicBrowserSidePanel.close()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="topic-panel-archive-select">
+            <label for="topic-panel-archive-group">Archive:</label>
+            <select id="topic-panel-archive-group">
+                <option value="">Loading&hellip;</option>
+            </select>
+        </div>
+        <div class="topic-panel-tree">
+            <ul id="topic-panel-tree-root" class="tree-node">
+            </ul>
+        </div>
+        <div class="topic-panel-data-resize" id="topic-panel-data-resize"></div>
+        <div class="topic-panel-data empty" id="topic-panel-data">
+            <div class="topic-panel-data-content" id="topic-panel-data-content"></div>
+        </div>
+    </div>
+
     <script type="module" src="/js/virtual-topic-tree-detail.js"></script>
+    <script type="module" src="/js/topic-browser-side-panel.js"></script>
     </ix-application>
 </body>
 </html>

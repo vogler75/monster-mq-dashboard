@@ -285,10 +285,11 @@ class TopicBrowserSidePanel {
 
     createRootNode() {
         // Load the root level topics directly (don't create a synthetic root)
-        this.loadTopicLevel('+', this.tree, '');
+        this.loadTopicLevel('+', this.tree, null);
     }
 
-    async loadTopicLevel(pattern, container, parentPath = '') {
+    // parentPath === null means the root level; '' is a real (empty-named) level.
+    async loadTopicLevel(pattern, container, parentPath = null) {
         try {
             // Show loading state
             const loadingItem = this.createLoadingItem();
@@ -331,7 +332,7 @@ class TopicBrowserSidePanel {
                 }
 
                 for (const [levelName, topicData] of groupedTopics) {
-                    const fullPath = parentPath ? `${parentPath}/${levelName}` : levelName;
+                    const fullPath = parentPath !== null ? `${parentPath}/${levelName}` : levelName;
                     const treeItem = this.createTreeItem(levelName, fullPath, topicData.hasValue, topicData.hasChildren);
                     container.appendChild(treeItem);
                 }
@@ -352,7 +353,7 @@ class TopicBrowserSidePanel {
 
     groupTopicsByLevel(topics, parentPath) {
         const grouped = new Map();
-        const parentLevels = parentPath ? parentPath.split('/').length : 0;
+        const parentLevels = parentPath !== null ? parentPath.split('/').length : 0;
 
         for (const topic of topics) {
             const levels = topic.topic.split('/');
@@ -407,8 +408,13 @@ class TopicBrowserSidePanel {
 
         const item = document.createElement('div');
         item.className = 'tree-item';
+        // Pages that bind whole prefixes (virtual topic trees) opt in to dragging folders too.
+        const dragPrefixes = this.panel.dataset.dragPrefixes === 'true';
+        const canDrag = hasValue || (dragPrefixes && hasChildren);
         if (hasValue) {
             item.classList.add('has-data');
+        }
+        if (canDrag) {
             item.classList.add('draggable');
         }
 
@@ -460,7 +466,7 @@ class TopicBrowserSidePanel {
         }
 
         // Make draggable if it has value
-        if (hasValue) {
+        if (canDrag) {
             item.draggable = true;
             item.addEventListener('dragstart', (e) => {
                 console.log('Drag started for topic:', fullPath);
@@ -504,6 +510,7 @@ class TopicBrowserSidePanel {
                 this.selectTopic(fullPath);
                 this.loadTopicData(fullPath);
             } else if (hasChildren) {
+                if (dragPrefixes) this.selectTopic(fullPath);
                 this.toggleNode(fullPath);
             }
         });
@@ -533,7 +540,7 @@ class TopicBrowserSidePanel {
 
                 // Load children
                 const pattern = fullPath === 'root' ? '+' : `${fullPath}/+`;
-                await this.loadTopicLevel(pattern, childContainer, fullPath === 'root' ? '' : fullPath);
+                await this.loadTopicLevel(pattern, childContainer, fullPath === 'root' ? null : fullPath);
             }
 
             childContainer.classList.remove('collapsed');
