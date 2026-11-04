@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { renameType, renameDatapoint, setExcluded, assignments, typeColors, topicMatches, readablePayload } from '../src/js/uns-onboarding.js';
+import { OnboardingView, renameType, renameDatapoint, setExcluded, assignments, typeColors, topicMatches, readablePayload } from '../src/js/uns-onboarding.js';
 
 function doc() {
     return {
@@ -46,4 +46,40 @@ test('topics are coloured by the type of their datapoint', () => {
     assert.ok(!topicMatches('plant/+', 'plant/p1/flow'));
     assert.equal(readablePayload(Buffer.from('ON').toString('base64'), 'BINARY'), 'ON');
     assert.equal(readablePayload('{"a":1}', 'JSON'), '{"a":1}');
+});
+
+test('AI polling exposes Stop while running and preserves the draft on cancellation', async () => {
+    const elements = new Map(['b-ai-btn', 'b-ai-stop-btn', 'b-ai-state', 'b-ai-panel'].map(id => [id, { style: {} }]));
+    const errors = [], notices = [];
+    let status = 'RUNNING';
+    const view = new OnboardingView({
+        document: { getElementById: id => elements.get(id) },
+        gql: { query: async () => ({ unsModelers: [{ draft: '{"unexpected":"replacement"}', aiRun: { status } }] }) },
+        clearTimeout: () => {}, setTimeout: () => 1,
+        renderAiInto: () => {},
+        ui: { error: message => errors.push(message), success: message => notices.push(message) }
+    });
+    view.doc = doc();
+    const before = JSON.stringify(view.doc);
+    await view.pollAi();
+    assert.equal(elements.get('b-ai-btn').disabled, true);
+    assert.equal(elements.get('b-ai-stop-btn').style.display, '');
+    status = 'CANCELLED';
+    await view.pollAi();
+    assert.equal(elements.get('b-ai-btn').disabled, false);
+    assert.equal(elements.get('b-ai-stop-btn').style.display, 'none');
+    assert.equal(JSON.stringify(view.doc), before);
+    assert.deepEqual(errors, []);
+    assert.deepEqual(notices, ['AI analysis stopped']);
+});
+
+test('archive tags are hidden when device archiving is disabled', () => {
+    const view = new OnboardingView({ esc: s => String(s) });
+    const elem = { path: 'Value', unit: 'W', archive: { enabled: true, group: 'G1' } };
+    view.dev = { config: { oaArchiveEnabled: false } };
+    assert.equal(view.archiveBadge(elem, 'type', 'T', 0), '');
+    assert.equal(view.metaText(elem), 'unit W');
+    view.dev = { config: { oaArchiveEnabled: true, oaArchiveGroup: 'G0' } };
+    assert.match(view.archiveBadge(elem, 'type', 'T', 0), /archive \(G1\)/);
+    assert.equal(view.metaText(elem), 'unit W · _archive G1');
 });

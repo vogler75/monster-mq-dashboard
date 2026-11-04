@@ -65,6 +65,7 @@ class UnsModelerDetail {
         document.getElementById('apply-btn').addEventListener('click', () => this.apply());
         document.getElementById('raw-apply-btn').addEventListener('click', () => this.loadRaw());
         document.getElementById('ai-btn').addEventListener('click', () => this.aiPropose());
+        document.getElementById('ai-stop-btn').addEventListener('click', e => this.cancelAiRun(e.currentTarget));
         document.querySelectorAll('.um-tab[data-tab]').forEach(t => t.addEventListener('click', () => this.showTab(t.dataset.tab)));
         const rootDrop = document.getElementById('root-drop');
         this.makeDropTarget(rootDrop, null);
@@ -151,7 +152,8 @@ class UnsModelerDetail {
             } else if (!this.onboarding) {
                 this.onboarding = new OnboardingView({
                     document, window, ui, esc, setTimeout, clearTimeout, WebSocket, gql: this.gql, name: this.name,
-                    prompt: (t, l, v, o) => this.prompt(t, l, v, o), genAi: this.genAi, sevTag: s => this.sevTag(s), renderAiInto: (el, run) => this.renderAiInto(el, run)
+                    prompt: (t, l, v, o) => this.prompt(t, l, v, o), genAi: this.genAi, sevTag: s => this.sevTag(s), renderAiInto: (el, run) => this.renderAiInto(el, run),
+                    cancelAiRun: button => this.cancelAiRun(button)
                 });
                 await this.onboarding.init(dev);
                 this.loadAiRuns();
@@ -460,6 +462,7 @@ class UnsModelerDetail {
                 if (!res.success) { ui.error('AI run not started: ' + res.errors.join(', ')); return; }
                 close();
                 ui.success('AI run started');
+                this.aiRunning = true;
                 this.showTab('ai');
                 this.pollAi();
             } catch (e) { ui.error('AI run not started: ' + e.message); }
@@ -470,6 +473,17 @@ class UnsModelerDetail {
         ] });
     }
 
+    async cancelAiRun(button) {
+        button.disabled = true;
+        try {
+            const r = await this.gql.query('mutation($n: String!) { unsModeler { cancelAiRun(name: $n) { success errors } } }', { n: this.name });
+            const res = r.unsModeler.cancelAiRun;
+            if (!res.success) { ui.error('AI run not stopped: ' + res.errors.join(', ')); return; }
+            ui.success('AI cancellation requested');
+        } catch (e) { ui.error('AI run not stopped: ' + e.message); }
+        finally { button.disabled = false; }
+    }
+
     async pollAi(once) {
         clearTimeout(this.aiTimer);
         try {
@@ -477,6 +491,8 @@ class UnsModelerDetail {
             const run = r.unsModelers[0] && r.unsModelers[0].aiRun;
             const wasRunning = this.aiRunning;
             this.aiRunning = !!run && run.status === 'RUNNING';
+            document.getElementById('ai-btn').disabled = this.aiRunning;
+            document.getElementById('ai-stop-btn').style.display = this.aiRunning ? '' : 'none';
             this.renderAi(run);
             if (this.aiRunning) { this.aiTimer = setTimeout(() => this.pollAi(), 2000); return; }
             if (wasRunning && run) {
@@ -484,6 +500,8 @@ class UnsModelerDetail {
                     ui.success(run.applied ? 'AI proposal applied' : 'AI proposal loaded into the editor; review and apply it');
                     ui.markPageSaved();
                     await this.load();
+                } else if (run.status === 'CANCELLED') {
+                    ui.success('AI analysis stopped');
                 } else {
                     ui.error('AI run failed: ' + (run.error || 'unknown error'));
                 }

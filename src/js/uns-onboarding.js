@@ -111,6 +111,7 @@ export class OnboardingView {
         await this.loadArchiveGroups();
         this.$('b-ai-btn').style.display = this.h.genAi ? '' : 'none';
         this.$('b-ai-btn').addEventListener('click', () => this.aiRun());
+        this.$('b-ai-stop-btn').addEventListener('click', e => this.h.cancelAiRun(e.currentTarget));
         this.$('b-import-btn').addEventListener('click', () => this.importJson());
         this.$('b-save-btn').addEventListener('click', () => this.save());
         this.$('b-create-btn').addEventListener('click', () => this.create());
@@ -376,18 +377,23 @@ export class OnboardingView {
         if (e.pvRange) parts.push(`_pv_range ${e.pvRange.min}..${e.pvRange.max}`);
         if (e.alert) parts.push(e.alert.kind === 'binary' ? `_alert_hdl binary (${e.alert.class})` :
             `_alert_hdl ${e.alert.limits.map(l => (l.when === 'above' ? '>' : '<') + l.limit + ' ' + l.class).join(', ')}`);
-        if (e.archive) {
-            if (e.archive.enabled === false) parts.push(`_archive off`);
+        if (this.archivingEnabled()) {
+            if (!e.archive) {
+                const devGroup = this.dev.config.oaArchiveGroup;
+                parts.push(devGroup ? `_archive ${devGroup}` : `_archive default`);
+            } else if (e.archive.enabled === false) parts.push(`_archive off`);
             else if (e.archive.group) parts.push(`_archive ${e.archive.group}`);
             else parts.push(`_archive on`);
-        } else if (this.dev && this.dev.config && this.dev.config.oaArchiveEnabled) {
-            const devGroup = this.dev.config.oaArchiveGroup;
-            parts.push(devGroup ? `_archive ${devGroup}` : `_archive default`);
         }
         return parts.join(' · ');
     }
 
+    archivingEnabled() {
+        return !!(this.dev && this.dev.config && this.dev.config.oaArchiveEnabled);
+    }
+
     archiveBadge(e, kind, parentName, elemIdx) {
+        if (!this.archivingEnabled()) return '';
         const esc = this.h.esc;
         const a = e.archive;
         if (!a) {
@@ -607,6 +613,7 @@ export class OnboardingView {
             const res = r.unsModeler.startAiRun;
             if (!res.success) { this.h.ui.error('AI run not started: ' + res.errors.join(', ')); return; }
             this.h.ui.success('AI analysis started');
+            this.running = true;
             this.showTab('ai');
             this.pollAi();
         } catch (e) { this.h.ui.error('AI run not started: ' + e.message); }
@@ -620,6 +627,8 @@ export class OnboardingView {
             const run = dev && dev.aiRun;
             const was = this.running;
             this.running = !!run && run.status === 'RUNNING';
+            this.$('b-ai-btn').disabled = this.running;
+            this.$('b-ai-stop-btn').style.display = this.running ? '' : 'none';
             if (run) {
                 this.$('b-ai-state').textContent = `(${run.status.toLowerCase()})`;
                 this.h.renderAiInto(this.$('b-ai-panel'), run);
@@ -631,7 +640,8 @@ export class OnboardingView {
                     this.saved = dev.draft;
                     this.h.ui.success(run.applied ? 'AI proposal created in WinCC OA' : 'AI proposal loaded; review, rename or exclude, then create it');
                     this.validate();
-                } else this.h.ui.error('AI run failed: ' + (run.error || ''));
+                } else if (run.status === 'CANCELLED') this.h.ui.success('AI analysis stopped');
+                else this.h.ui.error('AI run failed: ' + (run.error || ''));
             }
         } catch (e) { if (!once) this.at = this.h.setTimeout(() => this.pollAi(), 5000); }
     }

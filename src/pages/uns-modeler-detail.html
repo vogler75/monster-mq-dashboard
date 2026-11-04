@@ -233,7 +233,7 @@
                             <div class="form-group">
                                 <label for="dev-maxsteps">Max Steps</label>
                                 <input type="number" id="dev-maxsteps" class="form-control" min="1">
-                                <span class="form-hint">Tool calls per run.</span>
+                                <span class="form-hint">Tool calls per run. Validation allows at most 3 correction retries.</span>
                             </div>
                             <div class="form-group">
                                 <label for="dev-timeout">Timeout (s)</label>
@@ -265,6 +265,7 @@
                 </div>
                 <div class="section-header-actions">
                     <button class="btn btn-secondary btn-sm" id="ai-btn" style="display:none;" data-requires-auth><ix-icon name="ai" size="16"></ix-icon> Propose UNS for Selection</button>
+                    <button class="btn btn-secondary btn-sm" id="ai-stop-btn" style="display:none;" data-requires-auth><ix-icon name="stop" size="16"></ix-icon> Stop AI</button>
                     <button class="btn btn-secondary btn-sm" id="add-root-btn" data-requires-auth><ix-icon name="add-circle" size="16"></ix-icon> Add Node</button>
                     <button class="btn btn-secondary btn-sm" id="discard-btn" data-requires-auth>Discard Changes</button>
                     <button class="btn btn-secondary btn-sm" id="save-draft-btn" data-requires-auth><ix-icon name="disk" size="16"></ix-icon> Save Draft</button>
@@ -315,6 +316,7 @@
                 </div>
                 <div class="section-header-actions">
                     <button class="btn btn-secondary btn-sm" id="b-ai-btn" style="display:none;" data-requires-auth><ix-icon name="ai" size="16"></ix-icon> Analyse with AI</button>
+                    <button class="btn btn-secondary btn-sm" id="b-ai-stop-btn" style="display:none;" data-requires-auth><ix-icon name="stop" size="16"></ix-icon> Stop AI</button>
                     <button class="btn btn-secondary btn-sm" id="b-import-btn" data-requires-auth><ix-icon name="upload" size="16"></ix-icon> Import JSON</button>
                     <button class="btn btn-secondary btn-sm" id="b-save-btn" data-requires-auth><ix-icon name="disk" size="16"></ix-icon> Save Draft</button>
                     <button class="btn btn-primary btn-sm" id="b-create-btn" data-requires-auth><ix-icon name="add-circle" size="16"></ix-icon> Create in WinCC OA</button>
