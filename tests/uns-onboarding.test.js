@@ -73,13 +73,20 @@ test('AI polling exposes Stop while running and preserves the draft on cancellat
     assert.deepEqual(notices, ['AI analysis stopped']);
 });
 
-test('archive tags are hidden when device archiving is disabled', () => {
+test('archive badge shows the effective archive group or archive off', () => {
     const view = new OnboardingView({ esc: s => String(s) });
-    const elem = { path: 'Value', unit: 'W', archive: { enabled: true, group: 'G1' } };
+    view.doc = {
+        types: [{ name: 'T', elements: [{ path: 'a', archive: { enabled: true, group: 'FAST' } }, { path: 'b' }, { path: 'c', archive: { enabled: false } }] }],
+        datapoints: [{ name: 'D', type: 'T', elements: [{ path: 'a' }, { path: 'b', archive: { enabled: true, group: 'SLOW' } }] }]
+    };
+    const [a, b, c] = view.doc.types[0].elements;
     view.dev = { config: { oaArchiveEnabled: false } };
-    assert.equal(view.archiveBadge(elem, 'type', 'T', 0), '');
-    assert.equal(view.metaText(elem), 'unit W');
-    view.dev = { config: { oaArchiveEnabled: true, oaArchiveGroup: 'G0' } };
-    assert.match(view.archiveBadge(elem, 'type', 'T', 0), /archive \(G1\)/);
-    assert.equal(view.metaText(elem), 'unit W · _archive G1');
+    assert.match(view.archiveBadge(a, 'type', 'T', 0), /um-tag new.*archive \(FAST\)/);
+    assert.match(view.archiveBadge(b, 'type', 'T', 1), />archive off</);
+    assert.match(view.archiveBadge(view.doc.datapoints[0].elements[0], 'datapoint', 'D', 0), /archive \(FAST\)/);
+    assert.match(view.archiveBadge(view.doc.datapoints[0].elements[1], 'datapoint', 'D', 1), /archive \(SLOW\)/);
+    view.dev = { config: { oaArchiveEnabled: true, oaArchiveGroup: 'EVENT' } };
+    assert.match(view.archiveBadge(b, 'type', 'T', 1), /archive \(EVENT\)/);
+    assert.match(view.archiveBadge(c, 'type', 'T', 2), />archive off</);
+    assert.equal(view.metaText({ path: 'a', unit: 'W', archive: { enabled: true, group: 'FAST' } }), 'unit W');
 });

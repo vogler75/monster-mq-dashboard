@@ -153,7 +153,7 @@ class UnsModelerDetail {
                 this.onboarding = new OnboardingView({
                     document, window, ui, esc, setTimeout, clearTimeout, WebSocket, gql: this.gql, name: this.name,
                     prompt: (t, l, v, o) => this.prompt(t, l, v, o), genAi: this.genAi, sevTag: s => this.sevTag(s), renderAiInto: (el, run) => this.renderAiInto(el, run),
-                    cancelAiRun: button => this.cancelAiRun(button)
+                    cancelAiRun: button => this.cancelAiRun(button), archiveGroups: () => this.archiveGroups
                 });
                 await this.onboarding.init(dev);
                 this.loadAiRuns();
@@ -849,12 +849,15 @@ class UnsModelerDetail {
     }
 
     // opts.multiline: a textarea; Enter adds a line, Ctrl+Enter confirms.
+    // opts.options: a select of [{ value, label }].
     prompt(title, label, value, opts = {}) {
         return new Promise(resolve => {
             const body = document.createElement('div');
-            const field = opts.multiline
-                ? `<textarea id="um-prompt-input" class="form-control" rows="6">${esc(value)}</textarea>`
-                : `<input id="um-prompt-input" class="form-control" value="${esc(value)}">`;
+            const field = opts.options
+                ? `<select id="um-prompt-input" class="form-control">${opts.options.map(o => `<option value="${esc(o.value)}"${o.value === value ? ' selected' : ''}>${esc(o.label)}</option>`).join('')}</select>`
+                : opts.multiline
+                    ? `<textarea id="um-prompt-input" class="form-control" rows="6">${esc(value)}</textarea>`
+                    : `<input id="um-prompt-input" class="form-control" value="${esc(value)}">`;
             body.innerHTML = `<div class="form-group"><label for="um-prompt-input">${esc(label)}</label>${field}</div>`;
             let done = false;
             const finish = (v, close) => { if (done) return; done = true; if (close) close(); resolve(v); };

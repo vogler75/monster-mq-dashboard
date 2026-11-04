@@ -377,39 +377,37 @@ export class OnboardingView {
         if (e.pvRange) parts.push(`_pv_range ${e.pvRange.min}..${e.pvRange.max}`);
         if (e.alert) parts.push(e.alert.kind === 'binary' ? `_alert_hdl binary (${e.alert.class})` :
             `_alert_hdl ${e.alert.limits.map(l => (l.when === 'above' ? '>' : '<') + l.limit + ' ' + l.class).join(', ')}`);
-        if (this.archivingEnabled()) {
-            if (!e.archive) {
-                const devGroup = this.dev.config.oaArchiveGroup;
-                parts.push(devGroup ? `_archive ${devGroup}` : `_archive default`);
-            } else if (e.archive.enabled === false) parts.push(`_archive off`);
-            else if (e.archive.group) parts.push(`_archive ${e.archive.group}`);
-            else parts.push(`_archive on`);
-        }
         return parts.join(' · ');
     }
 
-    archivingEnabled() {
-        return !!(this.dev && this.dev.config && this.dev.config.oaArchiveEnabled);
+    // Archive setting an element inherits: the type element (for datapoint
+    // elements), then the device default.
+    inheritedArchive(kind, parentName, path) {
+        if (kind === 'datapoint') {
+            const d = (this.doc.datapoints || []).find(x => x.name === parentName);
+            const t = d && (this.doc.types || []).find(x => x.name === d.type);
+            const te = t && (t.elements || []).find(x => x.path === path);
+            if (te) return this.effectiveArchive(te, 'type', t.name);
+        }
+        const c = (this.dev && this.dev.config) || {};
+        return c.oaArchiveEnabled && c.oaArchiveGroup ? c.oaArchiveGroup : '';
+    }
+
+    // The archive group an element is archived in, or '' when it is not archived.
+    effectiveArchive(e, kind, parentName) {
+        const inherited = this.inheritedArchive(kind, parentName, e.path);
+        if (!e.archive) return inherited;
+        if (e.archive.enabled === false) return '';
+        return e.archive.group || inherited;
     }
 
     archiveBadge(e, kind, parentName, elemIdx) {
-        if (!this.archivingEnabled()) return '';
         const esc = this.h.esc;
-        const a = e.archive;
-        if (!a) {
-            const devArch = this.dev && this.dev.config && this.dev.config.oaArchiveEnabled;
-            const devGroup = this.dev && this.dev.config && this.dev.config.oaArchiveGroup;
-            if (devArch) {
-                const grp = devGroup ? ` (${esc(devGroup)})` : '';
-                return `<span class="um-tag info" data-arch-toggle="${esc(kind)}:${esc(parentName)}:${elemIdx}" title="Archiving inherited from device default (${esc(devGroup || 'default')}); click to override" style="cursor:pointer;">archive${grp}</span>`;
-            }
-            return `<span class="um-tag" data-arch-toggle="${esc(kind)}:${esc(parentName)}:${elemIdx}" title="Click to configure archiving" style="cursor:pointer;">+ archive</span>`;
-        }
-        if (a.enabled === false) {
-            return `<span class="um-tag warn" data-arch-toggle="${esc(kind)}:${esc(parentName)}:${elemIdx}" title="Archiving disabled; click to edit" style="cursor:pointer;">archive off</span>`;
-        }
-        const grp = a.group ? ` (${esc(a.group)})` : '';
-        return `<span class="um-tag info" data-arch-toggle="${esc(kind)}:${esc(parentName)}:${elemIdx}" title="Archiving enabled; click to edit" style="cursor:pointer;">archive${grp}</span>`;
+        const group = this.effectiveArchive(e, kind, parentName);
+        const attr = `data-arch-toggle="${esc(kind)}:${esc(parentName)}:${elemIdx}" style="cursor:pointer;"`;
+        if (!group) return `<span class="um-tag" ${attr} title="Not archived; click to configure archiving">archive off</span>`;
+        const how = e.archive ? 'set on this element' : 'inherited';
+        return `<span class="um-tag new" ${attr} title="Archived in ${esc(group)} (${how}); click to change">archive (${esc(group)})</span>`;
     }
 
     render() {
@@ -465,22 +463,18 @@ export class OnboardingView {
             const item = (list || []).find(x => x.name === parentName);
             if (!item || !item.elements || !item.elements[elemIdx]) return;
             const elem = item.elements[elemIdx];
-            const curArch = elem.archive || {};
-            const curGroup = curArch.group || '';
-            const curVal = curArch.enabled === false ? 'off' : curGroup;
+            const inherited = this.inheritedArchive(kind, parentName, elem.path);
+            const current = this.effectiveArchive(elem, kind, parentName);
+            const groups = (this.h.archiveGroups && this.h.archiveGroups()) || [];
+            const options = [{ value: '', label: 'Off (not archived)' },
+                ...groups.map(g => ({ value: g.name, label: g.displayName && g.displayName !== g.name ? `${g.displayName} (${g.name})` : g.name }))];
+            if (current && !options.some(o => o.value === current)) options.push({ value: current, label: current });
 
-            const res = await this.h.prompt(`Archive settings for ${elem.path || parentName}`,
-                'Archive group (leave empty to inherit device/type default, or type "off" to disable archiving)',
-                curVal);
+            const res = await this.h.prompt(`Archive settings for ${elem.path || parentName}`, 'Archive group', current, { options });
             if (res === null) return;
-            const val = res.trim();
-            if (val.toLowerCase() === 'off' || val.toLowerCase() === 'none' || val.toLowerCase() === 'false') {
-                elem.archive = { enabled: false };
-            } else if (val === '' || val.toLowerCase() === 'inherit' || val.toLowerCase() === 'default') {
-                delete elem.archive;
-            } else {
-                elem.archive = { enabled: true, group: val };
-            }
+            if (res === inherited) delete elem.archive;
+            else if (res === '') elem.archive = { enabled: false };
+            else elem.archive = { enabled: true, group: res };
             this.changed();
         });
     }
