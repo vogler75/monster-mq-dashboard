@@ -11,10 +11,10 @@
     <script src="/js/log-viewer.js"></script>
     <script type="module" src="/js/sidebar.js"></script>
     <style>
-        .um-browse-layout { display: grid; grid-template-columns: minmax(320px, 1.3fr) minmax(280px, 1fr); gap: 0.75rem; }
+        .um-browse-layout { display: grid; grid-template-columns: minmax(320px, 1.3fr) minmax(280px, 1fr); gap: 0.75rem; height: calc(100vh - 230px); min-height: 420px; }
         .um-pane { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--dark-border, #334155); border-radius: 8px; background: var(--dark-surface, #1e293b); overflow: hidden; }
         .um-pane-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--dark-border, #334155); font-size: 0.8rem; font-weight: 600; color: var(--text-secondary, #cbd5e1); }
-        .um-pane-body { flex: 1; overflow: auto; padding: 0.5rem; max-height: 640px; }
+        .um-pane-body { flex: 1; min-height: 0; overflow: auto; padding: 0.5rem; }
         .um-browser-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; margin-bottom: 0.35rem; }
         .um-browser-selection { display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem; color: var(--text-muted, #94a3b8); margin-bottom: 0.35rem; }
         .um-browser-selection span { flex: 1; }
