@@ -171,6 +171,8 @@ class SidebarManager {
     }
 
     injectFavicons() {
+        // Favicons follow the active brand pack (js/branding.js).
+        if (window.branding) { window.branding.apply(); return; }
         const favicons = [
             { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
             { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' },
@@ -433,13 +435,19 @@ class SidebarManager {
 
         const runtime = window.isElectron ? 'Desktop App (Electron)' : 'Web Browser';
 
+        const brand = window.branding || {
+            productName: 'MonsterMQ', dashboardName: 'MonsterMQ Dashboard',
+            tagline: 'Industrial IoT & MQTT 5.0 Gateway Platform', logo: '/assets/logo.png'
+        };
+        const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
         const body = document.createElement('div');
         body.innerHTML = `
             <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
-                <img src="/assets/logo.png" alt="MonsterMQ" style="width:48px;height:48px;border-radius:8px;">
+                <img src="${esc(brand.logo)}" alt="${esc(brand.productName)}" data-brand-src="logo" style="width:48px;height:48px;border-radius:8px;">
                 <div>
-                    <h3 style="margin:0;font-size:1.25rem;color:var(--text-primary);">MonsterMQ Dashboard</h3>
-                    <div style="color:var(--text-secondary);font-size:0.875rem;">Industrial IoT & MQTT 5.0 Gateway Platform</div>
+                    <h3 style="margin:0;font-size:1.25rem;color:var(--text-primary);">${esc(brand.dashboardName)}</h3>
+                    <div style="color:var(--text-secondary);font-size:0.875rem;">${esc(brand.tagline)}</div>
                 </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:10px;">
@@ -460,7 +468,7 @@ class SidebarManager {
 
         if (window.ui && window.ui.modal) {
             window.ui.modal({
-                title: 'About MonsterMQ',
+                title: 'About ' + brand.productName,
                 body: body,
                 size: 'sm',
                 footer: [
@@ -710,7 +718,7 @@ class SidebarManager {
 
             // Update title
             const newTitle = doc.querySelector('title');
-            if (newTitle) document.title = newTitle.textContent;
+            if (newTitle) document.title = window.branding ? window.branding.text(newTitle.textContent) : newTitle.textContent;
 
             // Body classes declared by the page fragment. Only index.html's
             // <body> exists at runtime, so without this a page's own class never

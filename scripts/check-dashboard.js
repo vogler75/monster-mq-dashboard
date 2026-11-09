@@ -45,7 +45,7 @@ for (const name of pages) {
     if (/<ix-icon-button[^>]*\bghost\b/.test(text)) failures.push(`${file}: obsolete icon button ghost attribute`);
     for (const [, src] of text.matchAll(/<script[^>]*src="(\/[^"?]+)"/g)) {
         if (!src.startsWith('/js/vendor/') && !existsSync('src' + src)) failures.push(`${file}: missing script ${src}`);
-        const shared = new Set(['ix-init', 'storage', 'graphql-client', 'ui', 'sidebar', 'log-viewer', 'broker-manager', 'login', 'broker-config-entry']);
+        const shared = new Set(['ix-init', 'storage', 'graphql-client', 'ui', 'sidebar', 'log-viewer', 'broker-manager', 'login', 'broker-config-entry', 'branding']);
         const stem = src.split('/').pop().replace('.js', '');
         if (!shared.has(stem) && !src.startsWith('/js/vendor/') && existsSync('src' + src)) {
             const moduleSource = readFileSync('src' + src, 'utf8');

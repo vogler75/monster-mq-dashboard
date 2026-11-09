@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/assets/monster-theme.css">
     <link rel="stylesheet" href="/assets/components.css">
     <link rel="stylesheet" href="/assets/ix-app.css">
+    <script src="/js/branding.js"></script>
     <script src="/js/storage.js"></script>
     <script src="/js/broker-manager.js"></script>
     <script src="/js/graphql-client.js"></script>
@@ -20,7 +21,7 @@
 <body>
     <ix-application force-breakpoint="lg">
         <ix-application-header name="MonsterMQ" slot="application-header">
-            <img src="/assets/logo.png" alt="MonsterMQ" slot="logo"
+            <img src="/assets/logo.png" alt="MonsterMQ" slot="logo" data-brand-src="logo"
                  style="height:32px;width:32px;border-radius:4px;">
             <div id="auth-status-indicator" class="auth-status-indicator" hidden></div>
         </ix-application-header>
