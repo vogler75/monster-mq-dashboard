@@ -276,7 +276,7 @@
 
                 if (!userManagementEnabled) {
                     this.setAuthFieldsVisible(false);
-                    this.showAlert('Authentication is disabled on this broker. Click below to continue.', 'success', false);
+                    this.showAlert('Authentication is disabled on this broker.', 'success', false);
                 } else {
                     this.setAuthFieldsVisible(true);
                     if (anonymousEnabled) {
@@ -442,6 +442,7 @@
             alert.className = 'alert alert-' + type;
             alert.setAttribute('role', type === 'error' ? 'alert' : 'status');
             alert.textContent = message;
+            alert.style.whiteSpace = 'pre-line';
             this.alertContainer.appendChild(alert);
 
             if (autoDismiss) {

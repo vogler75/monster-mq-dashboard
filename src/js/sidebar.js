@@ -1011,7 +1011,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // SPA mode (index.html): check auth, then init full SPA with navigation
         if (!window.isLoggedIn || !window.isLoggedIn()) {
             if (window.redirectToLogin) {
-                window.redirectToLogin('No valid dashboard session was found. Please sign in.');
+                window.redirectToLogin();
             } else {
                 window.location.href = '/pages/login.html';
             }
