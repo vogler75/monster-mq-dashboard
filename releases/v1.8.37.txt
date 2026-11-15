@@ -1,0 +1,21 @@
+Release v1.8.37
+Built from commit: f7a31e2
+Date: 2026-11-15 14:09:22
+
+Changes since v1.8.36:
+---
+f7a31e2 fix: fix archive chart timeframe init and Windows preview server paths
+2cd192e deps: update package-lock.json
+b59f677 fix(login): drop redundant login messages
+6259173 feat(branding): rebrand product name and icons via /config/branding.json
+592353d fix(ui): stretch WinCC OA browser panes to the available height
+43752fa feat(uns-modeler): clearer archive badges with archive group dropdown
+442bfb1 feat(uns-modeler): Stop AI button and hide archive tags when archiving is disabled
+a99c67a fix(ui): load observed mount topics when <mount>/+ returns nothing
+a81b460 feat(ui): always-visible tree properties and tree guide lines
+ab67a03 feat(ui): use shared Topic Browser in the virtual tree designer
+cada793 fix(topic-browser): handle topics with empty levels (e.g. //x)
+93140e7 feat(ui): virtual topic tree designer (monster-mq#217)
+a99063c fix(mqtt): split TLS introspection into one __type per request
+e9263aa Fix retained flag on Explorer archive messages
+3a4787d chore(version): prepare next version 1.8.37-dev
