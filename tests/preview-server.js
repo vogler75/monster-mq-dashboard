@@ -2,7 +2,7 @@
 // Run npm run build first, then node tests/preview-server.js.
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { resolve, extname } from 'node:path';
+import { resolve, extname, sep, basename } from 'node:path';
 // DASHBOARD_FIXTURE_DEV=1 exercises Vite HTML injection and module transforms too.
 const dev = process.env.DASHBOARD_FIXTURE_DEV === '1';
 const vite = dev ? await (await import('vite')).createServer({ server: { middlewareMode: true }, appType: 'custom' }) : null;
@@ -71,10 +71,10 @@ http.createServer(async (req, res) => {
     const document = req.headers['sec-fetch-dest'] === 'document' && path !== '/pages/broker-config.html';
     if (dev && !document && path !== '/' && !path.endsWith('.html')) return vite.middlewares(req, res, () => res.writeHead(404).end());
     const file = resolve(root, '.' + (document || path === '/' ? '/index.html' : path));
-    if (!file.startsWith(root + '/')) { res.writeHead(403).end(); return; }
+    if (!file.startsWith(root + sep)) { res.writeHead(403).end(); return; }
     try {
         let data = await readFile(file);
-        if (file.endsWith('/index.html')) {
+        if (basename(file) === 'index.html') {
             data = data.toString().replace('<head>', `<head><script>sessionStorage.setItem('monstermq_token','null'); sessionStorage.setItem('monstermq_userManagementEnabled','false');</script>`);
         }
         if (dev && file.endsWith('.html')) data = await vite.transformIndexHtml(req.url, data.toString());

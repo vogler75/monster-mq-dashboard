@@ -736,6 +736,7 @@ class DashboardManager {
         this.archiveGroupsChart.data.labels = [];
         this.archiveGroupsChart.data.datasets = [];
         const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#14B8A6', '#06B6D4', '#F97316', '#EC4899', '#6366F1'];
+        const timeframe = this.archiveCurrentTimeframe || this.currentTimeframe;
 
         // Build dataset shells for enabled groups with any history
         const enabledWithHistory = archiveGroups.filter(g => g.enabled && g.metricsHistory && g.metricsHistory.length > 0);
@@ -761,7 +762,6 @@ class DashboardManager {
         enabledWithHistory.forEach(group => group.metricsHistory.forEach(m => timestampSet.add(m.timestamp)));
         const sortedTimestamps = Array.from(timestampSet).sort((a, b) => new Date(a) - new Date(b));
 
-        const timeframe = this.archiveCurrentTimeframe || this.currentTimeframe;
         this.archiveGroupsChart.data.labels = sortedTimestamps.map(ts => this.formatTimestampFor(timeframe, ts));
 
         // Map each group's history by timestamp for quick lookup
