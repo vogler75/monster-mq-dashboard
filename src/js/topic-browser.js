@@ -1923,7 +1923,7 @@ class TopicExplorer {
                 break;
             }
             case 'hex': {
-                this.detailBody.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; word-break: break-all; color: #94a3b8; font-family: monospace;">${this.payloadToHex(payloadStr)}</pre>`;
+                this.detailBody.innerHTML = `<pre style="margin: 0; white-space: pre-wrap; word-break: break-all; color: var(--bx-muted, #94a3b8); font-family: monospace;">${this.payloadToHex(payloadStr)}</pre>`;
                 break;
             }
             case 'pic': {
@@ -2184,7 +2184,7 @@ class TopicExplorer {
 
         // Render user message
         const userMsg = document.createElement('div');
-        userMsg.style.cssText = 'background: rgba(124, 58, 237, 0.2); padding: 0.4rem 0.6rem; border-radius: 6px; margin-bottom: 0.5rem; color: #fff;';
+        userMsg.style.cssText = 'background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.2); padding: 0.4rem 0.6rem; border-radius: 6px; margin-bottom: 0.5rem; color: #fff;';
         userMsg.textContent = question;
         this.aiChatHistory.appendChild(userMsg);
         this.aiQuestion.value = '';
@@ -2306,8 +2306,8 @@ class TopicExplorer {
     updateSubscriptionActiveButton() {
         if (!this.subModalToggleActive) return;
         this.subModalToggleActive.textContent = this.subEnabled ? 'Pause Subscriptions' : 'Resume Subscriptions';
-        this.subModalToggleActive.style.background = this.subEnabled ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)';
-        this.subModalToggleActive.style.color = this.subEnabled ? '#ef4444' : '#10b981';
+        this.subModalToggleActive.style.background = this.subEnabled ? 'rgba(var(--bx-err-rgb, 239, 68, 68), 0.2)' : 'rgba(var(--bx-ok-rgb, 16, 185, 129), 0.2)';
+        this.subModalToggleActive.style.color = this.subEnabled ? 'var(--bx-err, #ef4444)' : 'var(--bx-ok, #10b981)';
     }
 
     toggleLiveSubscriptions() {
@@ -2459,7 +2459,7 @@ class TopicExplorer {
                 : `Subscribe to wildcard (${multiFilter})`;
         }
         if (this.treeCtxSubMulti) {
-            this.treeCtxSubMulti.style.color = isMultiSubbed ? '#f87171' : '#38bdf8';
+            this.treeCtxSubMulti.style.color = isMultiSubbed ? 'var(--bx-err, #f87171)' : 'var(--bx-accent, #38bdf8)';
         }
 
         if (this.treeCtxSubSingleText) {
@@ -2468,7 +2468,7 @@ class TopicExplorer {
                 : `Subscribe to single-level (${singleFilter})`;
         }
         if (this.treeCtxSubSingle) {
-            this.treeCtxSubSingle.style.color = isSingleSubbed ? '#f87171' : '#38bdf8';
+            this.treeCtxSubSingle.style.color = isSingleSubbed ? 'var(--bx-err, #f87171)' : 'var(--bx-accent, #38bdf8)';
         }
 
         this.treeContextMenu.style.display = 'block';
@@ -2513,7 +2513,7 @@ class TopicExplorer {
 
         this.subscriptions.forEach((filter, idx) => {
             const chip = document.createElement('div');
-            chip.style.cssText = 'display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.15rem 0.5rem; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 4px; color: #38bdf8; font-family: monospace; font-size: 0.75rem;';
+            chip.style.cssText = 'display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.15rem 0.5rem; background: rgba(var(--bx-accent-rgb, 56, 189, 248), 0.15); border: 1px solid rgba(var(--bx-accent-rgb, 56, 189, 248), 0.3); border-radius: 4px; color: var(--bx-accent, #38bdf8); font-family: monospace; font-size: 0.75rem;';
             chip.textContent = filter;
 
             const removeBtn = document.createElement('span');

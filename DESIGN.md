@@ -174,6 +174,21 @@ the two button systems line up. Tint one with the same class hooks the
 `.btn-icon` variants use — `btn-delete`, `btn-edit`, `btn-view`, `btn-play`,
 `btn-pause`, `btn-cert`.
 
+## Colour scheme
+
+The built-in MonsterMQ look is the iX classic-dark theme with the tokens in
+`assets/monster-theme.css`. A brand pack can restyle it
+(`brands/<id>/brand.css`, see `js/branding.js`); the `nexusmq` pack applies the
+petrol/deep-blue scheme from `color-scheme.md`.
+
+So that page-local colours follow a brand, never write a bare colour literal:
+use a token (`--c-*`, `--dark-*`, `--text-*`), or wrap the literal as
+`var(--bx-<role>, #literal)` / `rgba(var(--bx-<role>-rgb, r, g, b), a)`. In
+canvas and Chart.js code, where `var()` does not work, use
+`brandColor('#literal')`, `brandPalette([...])` and `brandAlpha(color, a)`.
+Without a brand these return the literal unchanged. The roles are listed in
+`brands/nexusmq/brand.css` and the literal-to-role table in `js/branding.js`.
+
 ## Status colours
 
 Four semantic states, defined once. Any `enabled` / `connected` / `online` /

@@ -151,7 +151,7 @@ async function loadScriptsList() {
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" style="text-align: center; color: #ef4444; padding: 3rem;">
+                    <td colspan="8" style="text-align: center; color: var(--bx-err, #ef4444); padding: 3rem;">
                         Failed to load scripts: ${escapeHtml(e.message)}
                     </td>
                 </tr>
@@ -222,8 +222,8 @@ function renderScriptsTable() {
             : `<span class="badge badge-topic">✉ ${escapeHtml(r.triggerDetails)}</span>`;
 
         const statusBadge = r.enabled 
-            ? `<span style="color: #10b981; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; background: #10b981; border-radius: 50%;"></span>Active</span>`
-            : `<span style="color: #ef4444; font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></span>Inactive</span>`;
+            ? `<span style="color: var(--bx-ok, #10b981); font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; background: var(--bx-ok, #10b981); border-radius: 50%;"></span>Active</span>`
+            : `<span style="color: var(--bx-err, #ef4444); font-weight: 500; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; background: var(--bx-err, #ef4444); border-radius: 50%;"></span>Inactive</span>`;
 
         // "Play/Run" button triggers a manual run by publishing an empty message to the trigger topic
         const runManualBtn = r.triggerType === 'MQTT' && r.topics.length > 0
@@ -247,11 +247,11 @@ function renderScriptsTable() {
                     ${statusBadge}
                 </td>
                 <td style="text-align: right; font-weight: 500; color: var(--text-primary);">${r.executionCount}</td>
-                <td style="text-align: right; font-weight: 500; color: ${r.errorCount > 0 ? '#ef4444' : 'var(--text-secondary)'};">${r.errorCount}</td>
+                <td style="text-align: right; font-weight: 500; color: ${r.errorCount > 0 ? 'var(--bx-err, #ef4444)' : 'var(--text-secondary)'};">${r.errorCount}</td>
                 <td>
                     <div title="${r.lastError ? 'Last error: ' + escapeHtml(r.lastError) : ''}">
                         ${r.lastExecution ? formatDateTime(r.lastExecution) : '<span style="color: var(--text-muted); font-style: italic;">Never</span>'}
-                        ${r.errorCount > 0 && r.lastError ? ' <span style="color: #ef4444;" title="' + escapeHtml(r.lastError) + '">⚠️</span>' : ''}
+                        ${r.errorCount > 0 && r.lastError ? ' <span style="color: var(--bx-err, #ef4444);" title="' + escapeHtml(r.lastError) + '">⚠️</span>' : ''}
                     </div>
                 </td>
                 <td>

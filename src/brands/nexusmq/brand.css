@@ -1,6 +1,410 @@
 /* NexusMQ brand pack — loaded by js/branding.js only when this pack is active.
-   Mirrors the NexusMQ styling of the homepage (monster-mq-homepage/styles.css,
-   .brand-nexusmq .logo-img). Logo only; colors stay on the iX theme. */
+
+   Logo glow mirrors the NexusMQ homepage (monster-mq-homepage/styles.css,
+   .brand-nexusmq .logo-img).
+
+   Colours follow color-scheme.md (the winccoa.ai scheme): dark Siemens deep
+   blue with a single petrol accent, no light variant. The dashboard is shown
+   inside a workspace panel of the same palette, so every surface is one of the
+   blues below — never black or grey.
+
+   How it applies:
+     1. Tokens on html[data-brand="nexusmq"] — the dashboard tokens
+        (--monster-*, --dark-*, --text-*, --c-*) and the --bx-* roles. Page
+        styles wrap their hard-coded colours as var(--bx-<role>, <literal>), and
+        chart code resolves literals through brandColor()/brandPalette() in
+        js/branding.js, so both pick up the roles defined here.
+     2. iX theme variables on <body>, outranking iX's own body selectors.
+     3. Component overrides, prefixed with html[data-brand="nexusmq"] so they
+        beat components.css and hoisted page styles. */
+
 img[data-brand-src="logo"] {
-    filter: drop-shadow(0 2px 10px rgba(6, 182, 212, 0.5));
+    filter: drop-shadow(0 2px 10px rgba(0, 204, 204, 0.5));
+}
+
+/* ------------------------------------------------------------ 1. Tokens */
+
+html[data-brand="nexusmq"] {
+    /* Roles for hard-coded page colours: var(--bx-<role>, <literal>) */
+    --bx-accent: #00cccc;
+    --bx-accent-2: #00bedc;
+    --bx-accent-3: #66e0e0;
+    --bx-ok: #00d7a0;
+    --bx-err: #ef4a5c;
+    --bx-err-text: #ffd0d6;
+    --bx-warn: #ffd732;
+    --bx-warn-text: #ffe680;
+    --bx-ok-tint: rgba(0, 215, 160, 0.12);
+    --bx-err-tint: rgba(239, 74, 92, 0.12);
+    --bx-bg: #000028;
+    --bx-surface: #000033;
+    --bx-raised: #0f2f5f;
+    --bx-track: #3a4462;
+    --bx-border-input: #4a5577;
+    --bx-weak: #6d7a9c;
+    --bx-muted: #9aa0b4;
+    --bx-body: #ccccd4;
+    --bx-heading: #ffffff;
+    --bx-on-accent: #000028;   /* text on accent and solid status colours */
+
+    /* The same roles as bare r, g, b for rgba(var(--bx-*-rgb, …), alpha) */
+    --bx-accent-rgb: 0, 204, 204;
+    --bx-accent-2-rgb: 0, 190, 220;
+    --bx-accent-3-rgb: 102, 224, 224;
+    --bx-ok-rgb: 0, 215, 160;
+    --bx-err-rgb: 239, 74, 92;
+    --bx-warn-rgb: 255, 215, 50;
+    --bx-bg-rgb: 0, 0, 40;
+    --bx-surface-rgb: 0, 0, 51;
+    --bx-raised-rgb: 15, 47, 95;
+    --bx-border-input-rgb: 74, 85, 119;
+    --bx-muted-rgb: 154, 160, 180;
+    --bx-line-rgb: 255, 255, 255;
+
+    /* Chart series: the scheme's order, then lighter steps for >5 series */
+    --bx-series: #00cccc #00d7a0 #ffd732 #00bedc #ef4a5c #66e0e0 #80ebd0 #ffe680 #9aa0b4 #ffd0d6;
+
+    /* Scheme surfaces and lines */
+    --bx-header: #00183c;
+    --bx-field: #00113a;
+    --bx-hover-bg: #0a1f44;
+    --bx-border-strong: #6d7a9c;
+    --bx-accent-hover: #00d7a0;
+    --bx-accent-active: #00bedc;
+    --bx-accent-ghost: rgba(0, 204, 204, 0.12);
+    --bx-accent-pressed: rgba(0, 204, 204, 0.2);
+    --bx-line-faint: rgba(255, 255, 255, 0.08);
+    --bx-line-weak: rgba(255, 255, 255, 0.12);
+    --bx-line-soft: rgba(255, 255, 255, 0.16);
+    --bx-font: "Siemens Sans", "Segoe UI", Arial, sans-serif;
+
+    /* Dashboard tokens (monster-theme.css) */
+    --monster-purple: #00cccc;
+    --monster-dark: #00bedc;
+    --monster-light: #00cccc;
+    --monster-green: #00d7a0;
+    --monster-teal: #00bedc;
+    --monster-red: #ef4a5c;
+    --monster-orange: #ffd732;
+    --accent-blue: #00cccc;
+    --dark-bg: #000028;
+    --dark-surface: #000033;
+    --dark-surface-2: #0f2f5f;
+    --dark-border: rgba(255, 255, 255, 0.16);
+    --text-primary: #ffffff;
+    --text-secondary: #9aa0b4;
+    --text-muted: #9aa0b4;
+    --gradient-primary: linear-gradient(#00d7a0, #00bedc);
+    --gradient-secondary: linear-gradient(90deg, #00bedc, #00d7a0);
+    --card-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+
+    /* Component tokens (components.css) */
+    --r-lg: 8px;
+    --shadow-md: 0 6px 10px rgba(0, 0, 0, 0.2);
+    --c-ok: #00d7a0;
+    --c-warn: #ffd732;
+    --c-err: #ef4a5c;
+    --c-info: #00cccc;
+    --c-accent: #00cccc;
+    --c-ok-bg: rgba(0, 215, 160, 0.12);
+    --c-ok-bd: rgba(0, 215, 160, 0.35);
+    --c-warn-bg: rgba(255, 215, 50, 0.10);
+    --c-warn-bd: rgba(255, 215, 50, 0.35);
+    --c-err-bg: rgba(239, 74, 92, 0.12);
+    --c-err-bd: rgba(239, 74, 92, 0.35);
+    --c-info-bg: rgba(0, 204, 204, 0.12);
+    --c-info-bd: rgba(0, 204, 204, 0.35);
+    --c-accent-bg: rgba(0, 204, 204, 0.15);
+    --c-accent-bd: rgba(0, 204, 204, 0.35);
+}
+
+/* ------------------------------------------------- 2. iX theme variables
+   iX declares its theme and component variables on <body> with selectors up
+   to (0,2,1); this selector is (0,2,2). */
+
+html[data-brand="nexusmq"] body[class*=theme-classic-dark],
+html[data-brand="nexusmq"] body[data-ix-theme] {
+    --theme-color-1: #000028;
+    --theme-color-1--hover: #0a1f44;
+    --theme-color-1--active: #0f2f5f;
+    --theme-color-2: #000033;
+    --theme-color-3: #0f2f5f;
+    --theme-color-4: #1b3a6b;
+    --theme-color-5: #2a4677;
+    --theme-color-6: #3a4462;
+    --theme-color-7: #4a5577;
+    --theme-color-8: #6d7a9c;
+
+    --theme-color-primary: #00cccc;
+    --theme-color-primary--hover: #00d7a0;
+    --theme-color-primary--active: #00bedc;
+    --theme-color-primary--contrast: #000028;
+    --theme-color-primary--disabled: rgba(0, 204, 204, 0.45);
+    --theme-color-dynamic: #00cccc;
+    --theme-color-dynamic--hover: #00d7a0;
+    --theme-color-dynamic--active: #00bedc;
+
+    --theme-color-std-text: #ffffff;
+    --theme-color-soft-text: #9aa0b4;
+    --theme-color-weak-text: #6d7a9c;
+    --theme-color-inv-std-text: #000028;
+    --theme-color-inv-contrast-text: #000028;
+
+    --theme-color-std-bdr: #6d7a9c;
+    --theme-color-soft-bdr: rgba(255, 255, 255, 0.16);
+    --theme-color-weak-bdr: rgba(255, 255, 255, 0.12);
+    --theme-color-x-weak-bdr: rgba(255, 255, 255, 0.08);
+    --theme-color-focus-bdr: #00cccc;
+
+    --theme-color-ghost: transparent;
+    --theme-color-ghost--hover: rgba(0, 204, 204, 0.12);
+    --theme-color-ghost--active: rgba(0, 204, 204, 0.2);
+    --theme-color-ghost--selected: rgba(0, 204, 204, 0.15);
+    --theme-color-ghost--selected-hover: rgba(0, 204, 204, 0.2);
+    --theme-color-ghost--selected-active: rgba(0, 204, 204, 0.2);
+    --theme-color-ghost-primary--hover: rgba(0, 204, 204, 0.12);
+    --theme-color-ghost-primary--active: rgba(0, 204, 204, 0.2);
+    --theme-color-component-1: rgba(109, 122, 156, 0.25);
+
+    --theme-color-success: #00d7a0;
+    --theme-color-success--contrast: #000028;
+    --theme-color-warning: #ffd732;
+    --theme-color-warning--contrast: #000028;
+    --theme-color-alarm: #ef4a5c;
+    --theme-color-alarm--contrast: #000028;
+    --theme-color-info: #00cccc;
+    --theme-color-info--contrast: #000028;
+    --theme-color-neutral: #6d7a9c;
+    --theme-color-backdrop: rgba(0, 0, 0, 0.5);
+
+    --theme-input--background: #00113a;
+    --theme-input--border-color: #4a5577;
+    --theme-app-header--background: #00183c;
+    --theme-app-header--border-color: rgba(255, 255, 255, 0.08);
+    --theme-nav--background: #00183c;
+    --theme-nav-item-primary--background--selected: #0f2f5f;
+    --theme-nav-item-secondary--background--selected: #0f2f5f;
+    --theme-btn--border-radius: 0;
+    --theme-btn-subtle-primary--background: transparent;
+    --theme-btn-subtle-primary--background--hover: rgba(0, 204, 204, 0.12);
+    --theme-btn-subtle-primary--color: #00cccc;
+
+    background: #000028;
+    font-family: var(--bx-font);
+}
+
+/* ------------------------------------------------- 3. Component overrides */
+
+/* Cards and panels: faint borders, 8px corners */
+html[data-brand="nexusmq"] :is(.card, .section-card, .metric-card, .chart-container, .data-table, .modal-content, .toast) {
+    border-color: var(--bx-line-faint);
+}
+html[data-brand="nexusmq"] .toast {
+    border-left-width: 3px;
+}
+html[data-brand="nexusmq"] :is(.section-header, .table-header, .modal-header) {
+    border-bottom-color: var(--bx-line-faint);
+}
+html[data-brand="nexusmq"] .modal-footer {
+    border-top-color: var(--bx-line-faint);
+}
+html[data-brand="nexusmq"] .metric-card:hover {
+    box-shadow: 0 10px 30px rgba(0, 204, 204, 0.15);
+}
+html[data-brand="nexusmq"] .info-item {
+    background: var(--bx-field);
+    border-color: var(--bx-line-faint);
+}
+html[data-brand="nexusmq"] .modal {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: none;
+}
+
+/* Tables: bold muted header, accent tint on row hover */
+html[data-brand="nexusmq"] :is(.data-table th, .section-content > table th, .section-content > .table-responsive > table th, table.addresses-table th) {
+    font-weight: 700;
+}
+html[data-brand="nexusmq"] :is(.data-table tbody tr, .section-content > table tbody tr, .section-content > .table-responsive > table tbody tr, table.addresses-table tbody tr):hover {
+    background: var(--bx-accent-ghost);
+}
+
+/* Inputs: field blue, square, accent focus border without glow */
+html[data-brand="nexusmq"] :is(.form-control, input:not([type]), input[type="text"], input[type="password"], input[type="number"], input[type="email"], input[type="search"], input[type="url"], input[type="date"], input[type="datetime-local"], input[type="time"], select, textarea) {
+    background-color: var(--bx-field);
+    border-color: var(--bx-border-input);
+    border-radius: 0;
+}
+html[data-brand="nexusmq"] :is(.form-control, input, select, textarea):hover:not(:disabled):not(:focus) {
+    border-color: var(--bx-border-strong);
+}
+html[data-brand="nexusmq"] :is(.form-control, input, select, textarea):focus {
+    border-color: var(--bx-accent);
+    box-shadow: none;
+}
+html[data-brand="nexusmq"] :is(.form-control, input, textarea)::placeholder {
+    color: var(--bx-weak);
+    opacity: 1;
+}
+
+/* Buttons: square, weight 600 */
+html[data-brand="nexusmq"] :is(.btn, .btn-icon, .btn-action, .chart-controls button) {
+    border-radius: 0;
+}
+html[data-brand="nexusmq"] ix-icon-button {
+    --ix-icon-button-color: var(--bx-accent);
+    --ix-button-border-radius-left: 0;
+    --ix-button-border-radius-right: 0;
+}
+
+/* Primary: petrol with dark text; hover turns green */
+html[data-brand="nexusmq"] .btn-primary {
+    background: var(--bx-accent);
+    border-color: var(--bx-accent);
+    color: var(--bx-on-accent) !important;
+}
+html[data-brand="nexusmq"] :is(.btn-primary:visited, .btn-primary ix-icon, .btn-primary svg) {
+    color: var(--bx-on-accent) !important;
+}
+html[data-brand="nexusmq"] .btn-primary:hover:not(:disabled) {
+    background: var(--bx-accent-hover);
+    border-color: var(--bx-accent-hover);
+}
+html[data-brand="nexusmq"] .btn-primary:active:not(:disabled) {
+    background: var(--bx-accent-active);
+    border-color: var(--bx-accent-active);
+}
+html[data-brand="nexusmq"] .btn-primary:focus-visible {
+    outline-color: var(--bx-accent);
+}
+
+/* Secondary: accent outline, fills on hover */
+html[data-brand="nexusmq"] .btn-secondary {
+    background: transparent;
+    border-color: var(--bx-accent);
+    color: var(--bx-accent);
+}
+html[data-brand="nexusmq"] .btn-secondary:hover:not(:disabled),
+html[data-brand="nexusmq"] .btn-secondary:hover:not(:disabled) ix-icon {
+    background: var(--bx-accent);
+    color: var(--bx-on-accent);
+}
+
+/* Ghost / subtle: accent text, tinted hover */
+html[data-brand="nexusmq"] .btn-ghost {
+    color: var(--bx-accent);
+}
+html[data-brand="nexusmq"] :is(.btn-ghost, .btn-icon):hover:not(:disabled) {
+    background: var(--bx-accent-ghost);
+}
+html[data-brand="nexusmq"] .btn-ghost:active:not(:disabled) {
+    background: var(--bx-accent-pressed);
+}
+
+/* Solid status buttons carry dark text */
+html[data-brand="nexusmq"] :is(.btn-danger-solid, .btn-success, .btn-warning, .chart-controls button.active) {
+    color: var(--bx-on-accent);
+}
+html[data-brand="nexusmq"] .btn-icon.btn-delete:hover {
+    color: var(--bx-err);
+}
+html[data-brand="nexusmq"] .btn:disabled,
+html[data-brand="nexusmq"] .btn[disabled] {
+    opacity: 0.45;
+}
+
+/* Pills and badges: 12px radius; warning text on its tint */
+html[data-brand="nexusmq"] :is(.status-badge, .mode-badge, .protocol-badge, .qos-badge, .sub-option-badge, .badge, .status-indicator) {
+    border-radius: 12px;
+}
+html[data-brand="nexusmq"] :is(.status-pending, .status-warning, .status-paused, .badge-warn) {
+    color: var(--bx-warn-text);
+}
+html[data-brand="nexusmq"] :is(.protocol-badge, .protocol-v5, .sub-rap) {
+    color: var(--bx-accent);
+}
+html[data-brand="nexusmq"] .protocol-v3 {
+    background: var(--dark-surface-2);
+    border-color: var(--dark-border);
+    color: var(--bx-body);
+}
+html[data-brand="nexusmq"] .sub-no-local { color: var(--bx-err-text); }
+html[data-brand="nexusmq"] .sub-retain-handling { color: var(--bx-accent); }
+
+/* Message boxes: status tint with a 3px left border, no full border, square */
+html[data-brand="nexusmq"] :is(.error-message, .alert, .deprecation-banner) {
+    border: none;
+    border-left: 3px solid transparent;
+    border-radius: 0;
+}
+html[data-brand="nexusmq"] :is(.error-message, .alert-error) {
+    border-left-color: var(--bx-err);
+    color: var(--bx-err-text);
+}
+html[data-brand="nexusmq"] .alert-success {
+    border-left-color: var(--bx-ok);
+    color: var(--bx-ok);
+}
+html[data-brand="nexusmq"] :is(.alert-warning, .deprecation-banner) {
+    border-left-color: var(--bx-warn);
+    color: var(--bx-warn-text);
+}
+html[data-brand="nexusmq"] .alert-info {
+    border-left-color: var(--bx-accent);
+    color: var(--bx-accent);
+}
+
+/* Topic browser side panel: solid surface, no glass blur */
+html[data-brand="nexusmq"] .topic-browser-side-panel {
+    background: var(--bx-surface);
+    border-left-color: var(--bx-line-faint);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+html[data-brand="nexusmq"] .topic-panel-header {
+    background: var(--bx-header);
+    border-bottom-color: var(--bx-line-faint);
+}
+
+/* Auth indicator in the header */
+html[data-brand="nexusmq"] .auth-status-readonly {
+    color: var(--bx-warn-text);
+    background: rgba(255, 215, 50, 0.10);
+    border-color: rgba(255, 215, 50, 0.45);
+}
+html[data-brand="nexusmq"] .auth-status-logged-in {
+    color: var(--bx-ok);
+    background: rgba(0, 215, 160, 0.12);
+    border-color: rgba(0, 215, 160, 0.4);
+}
+html[data-brand="nexusmq"] .auth-status-disabled {
+    color: var(--bx-muted);
+    background: rgba(154, 160, 180, 0.12);
+    border-color: var(--bx-line-weak);
+}
+
+/* Login page (standalone, monster-theme.css only) */
+html[data-brand="nexusmq"] .login-container {
+    background: var(--bx-bg);
+}
+html[data-brand="nexusmq"] .login-submit {
+    border-radius: 0;
+}
+
+/* Scrollbars */
+html[data-brand="nexusmq"] ::-webkit-scrollbar-track {
+    background: var(--bx-surface);
+}
+html[data-brand="nexusmq"] ::-webkit-scrollbar-thumb {
+    background: var(--bx-track);
+    border-color: var(--bx-surface);
+}
+html[data-brand="nexusmq"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--bx-border-input);
+}
+html[data-brand="nexusmq"] ::-webkit-scrollbar-thumb:active {
+    background: var(--bx-border-strong);
+}
+html[data-brand="nexusmq"],
+html[data-brand="nexusmq"] * {
+    scrollbar-color: var(--bx-track) var(--bx-surface);
 }

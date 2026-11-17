@@ -151,7 +151,7 @@ function renderSubscriptions() {
 
     if (subscriptions.length === 0) {
         container.innerHTML = `
-            <div style="background: rgba(124, 58, 237, 0.1); border: 1px solid rgba(124, 58, 237, 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+            <div style="background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.1); border: 1px solid rgba(var(--bx-accent-rgb, 124, 58, 237), 0.3); border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
                 <p style="color: var(--text-primary); margin: 0; display: flex; align-items: start; gap: 0.5rem;">
                     <ix-icon name="info" size="16"></ix-icon>
                     <span><strong>No subscriptions configured.</strong> The decoder will subscribe to ALL nodes and devices using wildcards. Add specific subscriptions below to filter which messages are received.</span>

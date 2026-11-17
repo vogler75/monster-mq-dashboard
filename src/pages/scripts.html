@@ -30,7 +30,7 @@
         }
         .search-input:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+            box-shadow: 0 0 0 2px rgba(var(--bx-accent-rgb, 124, 58, 237), 0.2);
         }
         .section-container {
             background: var(--dark-surface);
@@ -44,22 +44,22 @@
             overflow-x: auto;
         }
         .badge-topic {
-            background: rgba(59, 130, 246, 0.15);
-            color: #60a5fa;
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: rgba(var(--bx-accent-rgb, 59, 130, 246), 0.15);
+            color: var(--bx-accent, #60a5fa);
+            border: 1px solid rgba(var(--bx-accent-rgb, 59, 130, 246), 0.3);
         }
         .badge-timer {
-            background: rgba(245, 158, 11, 0.15);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.3);
+            background: rgba(var(--bx-warn-rgb, 245, 158, 11), 0.15);
+            color: var(--bx-warn, #fbbf24);
+            border: 1px solid rgba(var(--bx-warn-rgb, 245, 158, 11), 0.3);
         }
         .badge-success {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
+            background: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.15);
+            color: var(--bx-ok, #34d399);
         }
         .badge-error {
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
+            background: rgba(var(--bx-err-rgb, 239, 68, 68), 0.15);
+            color: var(--bx-err, #f87171);
         }</style>
 </head>
 <body>

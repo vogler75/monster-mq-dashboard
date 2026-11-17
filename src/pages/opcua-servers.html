@@ -13,15 +13,15 @@
     <style>
 
         .status-stopped {
-            background-color: rgba(239, 68, 68, 0.1);
-            color: rgb(239, 68, 68);
-            border: 1px solid rgba(239, 68, 68, 0.2);
+            background-color: rgba(var(--bx-err-rgb, 239, 68, 68), 0.1);
+            color: rgb(var(--bx-err-rgb, 239, 68, 68));
+            border: 1px solid rgba(var(--bx-err-rgb, 239, 68, 68), 0.2);
         }
 
         .status-starting {
-            background-color: rgba(251, 191, 36, 0.1);
-            color: rgb(251, 191, 36);
-            border: 1px solid rgba(251, 191, 36, 0.2);
+            background-color: rgba(var(--bx-warn-rgb, 251, 191, 36), 0.1);
+            color: rgb(var(--bx-warn-rgb, 251, 191, 36));
+            border: 1px solid rgba(var(--bx-warn-rgb, 251, 191, 36), 0.2);
         }@media (max-width: 768px) {
 }
 
@@ -160,9 +160,9 @@
         }
 
         .btn-delete-address:hover {
-            background: rgba(239, 68, 68, 0.1);
+            background: rgba(var(--bx-err-rgb, 239, 68, 68), 0.1);
             border-color: var(--monster-red);
-            color: #f87171;
+            color: var(--bx-err, #f87171);
         }</style>
 </head>
 <body>

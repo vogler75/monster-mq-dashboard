@@ -1,3 +1,5 @@
+// Brand colour helpers from js/branding.js; identity fallbacks outside the shell (tests).
+const { brandColor = c => c, brandPalette = p => p.slice() } = globalThis;
 // Mounted by the SPA router; resources and handler bindings belong to this visit.
 export function mount(page) {
 const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
@@ -177,8 +179,8 @@ class SessionManager {
     setupChart() {
         const ctx = document.getElementById('sessionDistributionChart').getContext('2d');
 
-        Chart.defaults.color = '#CBD5E1';
-        Chart.defaults.borderColor = '#475569';
+        Chart.defaults.color = brandColor('#CBD5E1');
+        Chart.defaults.borderColor = brandColor('#475569');
 
         this.distributionChart = new Chart(ctx, {
             type: 'doughnut',
@@ -186,15 +188,15 @@ class SessionManager {
                 labels: [],
                 datasets: [{
                     data: [],
-                    backgroundColor: [
+                    backgroundColor: brandPalette([
                         '#7C3AED',
                         '#10B981',
                         '#14B8A6',
                         '#F97316',
                         '#EF4444',
                         '#8B5CF6'
-                    ],
-                    borderColor: '#334155',
+                    ]),
+                    borderColor: brandColor('#334155'),
                     borderWidth: 2
                 }]
             },
@@ -500,7 +502,7 @@ class SessionManager {
                                 <tr>
                                     <td style="font-family: monospace;">${this.escapeHtml(sub.topicFilter)}</td>
                                     <td>
-                                        <span style="padding: 0.25rem 0.5rem; background: var(--monster-purple); color: white; border-radius: 4px; font-size: 0.75rem;">
+                                        <span style="padding: 0.25rem 0.5rem; background: var(--monster-purple); color: var(--bx-on-accent, white); border-radius: 4px; font-size: 0.75rem;">
                                             QoS ${sub.qos}
                                         </span>
                                     </td>
@@ -630,13 +632,13 @@ class SessionManager {
 
     getProtocolBadge(protocolVersion, clientId) {
         if (clientId && clientId.startsWith('nats-')) {
-            return '<span class="protocol-badge protocol-nats" style="background: #3B82F6; color: white;">NATS</span>';
+            return '<span class="protocol-badge protocol-nats" style="background: var(--bx-accent, #3B82F6); color: white;">NATS</span>';
         }
         if (clientId && clientId.startsWith('mcp-')) {
-            return '<span class="protocol-badge protocol-mcp" style="background: #EC4899; color: white;">MCP</span>';
+            return '<span class="protocol-badge protocol-mcp" style="background: var(--bx-accent-3, #EC4899); color: white;">MCP</span>';
         }
         if (clientId && clientId.startsWith('redis-')) {
-            return '<span class="protocol-badge protocol-redis" style="background: #EF4444; color: white;">REDIS</span>';
+            return '<span class="protocol-badge protocol-redis" style="background: var(--bx-err, #EF4444); color: white;">REDIS</span>';
         }
         if (protocolVersion === 5) {
             return '<span class="protocol-badge protocol-v5">MQTT v5.0</span>';

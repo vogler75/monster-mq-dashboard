@@ -44,7 +44,7 @@
             cursor: pointer;
         }
         .trigger-panel {
-            background: rgba(71, 85, 105, 0.1);
+            background: rgba(var(--bx-border-input-rgb, 71, 85, 105), 0.1);
             border: 1px dashed var(--dark-border);
             border-radius: 8px;
             padding: 1.25rem;
@@ -68,7 +68,7 @@
             gap: 1rem;
         }
         .database-node-card {
-            background: rgba(15, 23, 42, 0.45);
+            background: rgba(var(--bx-bg-rgb, 15, 23, 42), 0.45);
             border: 1px solid var(--dark-border);
             border-radius: 8px;
             overflow: hidden;
@@ -79,7 +79,7 @@
             align-items: center;
             gap: 1rem;
             padding: 0.85rem 1rem;
-            background: rgba(71, 85, 105, 0.15);
+            background: rgba(var(--bx-border-input-rgb, 71, 85, 105), 0.15);
             border-bottom: 1px solid var(--dark-border);
         }
         .database-node-title {
@@ -102,7 +102,7 @@
             padding: 1rem;
             border: 1px dashed var(--dark-border);
             border-radius: 8px;
-            background: rgba(71, 85, 105, 0.08);
+            background: rgba(var(--bx-border-input-rgb, 71, 85, 105), 0.08);
         }
         .code-actions-bar {
             display: flex;
@@ -117,9 +117,9 @@
         textarea.code-editor {
             width: 100%;
             height: 350px;
-            background: #0f172a;
+            background: var(--bx-bg, #0f172a);
             border: 1px solid var(--dark-border);
-            color: #cbd5e1;
+            color: var(--bx-body, #cbd5e1);
             font-family: 'Fira Code', 'Courier New', Courier, monospace;
             font-size: 0.875rem;
             line-height: 1.5;
@@ -140,25 +140,25 @@
             display: none;
         }
         .script-editor-validation.success {
-            background: rgba(16, 185, 129, 0.12);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.25);
+            background: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.12);
+            color: var(--bx-ok, #34d399);
+            border: 1px solid rgba(var(--bx-ok-rgb, 16, 185, 129), 0.25);
         }
         .script-editor-validation.error {
-            background: rgba(239, 68, 68, 0.12);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.25);
+            background: rgba(var(--bx-err-rgb, 239, 68, 68), 0.12);
+            color: var(--bx-err, #f87171);
+            border: 1px solid rgba(var(--bx-err-rgb, 239, 68, 68), 0.25);
         }
         .script-editor-validation.warning {
-            background: rgba(245, 158, 11, 0.12);
-            color: #fbbf24;
-            border: 1px solid rgba(245, 158, 11, 0.25);
+            background: rgba(var(--bx-warn-rgb, 245, 158, 11), 0.12);
+            color: var(--bx-warn, #fbbf24);
+            border: 1px solid rgba(var(--bx-warn-rgb, 245, 158, 11), 0.25);
         }
         
         
         .ai-assistant-card {
-            background: rgba(124, 58, 237, 0.05);
-            border: 1px solid rgba(124, 58, 237, 0.2);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.05);
+            border: 1px solid rgba(var(--bx-accent-rgb, 124, 58, 237), 0.2);
             border-radius: 12px;
             padding: 1.25rem;
             margin-top: 1.5rem;
@@ -167,7 +167,7 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            color: #a78bfa;
+            color: var(--bx-accent, #a78bfa);
             font-weight: 600;
             font-size: 0.95rem;
             margin-bottom: 0.75rem;
@@ -179,7 +179,7 @@
         .ai-input {
             flex: 1;
             background: var(--dark-bg);
-            border: 1px solid rgba(124, 58, 237, 0.3);
+            border: 1px solid rgba(var(--bx-accent-rgb, 124, 58, 237), 0.3);
             color: var(--text-primary);
             border-radius: 8px;
             padding: 0.6rem 1rem;
@@ -188,11 +188,11 @@
         }
         .ai-input:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25);
+            box-shadow: 0 0 0 2px rgba(var(--bx-accent-rgb, 124, 58, 237), 0.25);
         }
         .ai-btn-generate {
             background: var(--primary-color);
-            color: white;
+            color: var(--bx-on-accent, white);
             border: none;
             border-radius: 8px;
             padding: 0 1.25rem;
@@ -208,7 +208,7 @@
             background: var(--primary-hover);
         }
         .ai-btn-generate:disabled {
-            background: rgba(124, 58, 237, 0.4);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.4);
             color: rgba(255,255,255,0.6);
             cursor: not-allowed;
         }
@@ -217,22 +217,22 @@
             padding: 0.75rem 1rem;
             border-radius: 6px;
             font-size: 0.85rem;
-            background: rgba(124, 58, 237, 0.1);
-            border: 1px solid rgba(124, 58, 237, 0.15);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.1);
+            border: 1px solid rgba(var(--bx-accent-rgb, 124, 58, 237), 0.15);
             display: none;
         }
         .ai-feedback-box.loading {
             color: var(--text-secondary);
         }
         .ai-feedback-box.success {
-            background: rgba(16, 185, 129, 0.08);
-            border-color: rgba(16, 185, 129, 0.2);
-            color: #34d399;
+            background: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.08);
+            border-color: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.2);
+            color: var(--bx-ok, #34d399);
         }
         .ai-feedback-box.error {
-            background: rgba(239, 68, 68, 0.08);
-            border-color: rgba(239, 68, 68, 0.2);
-            color: #f87171;
+            background: rgba(var(--bx-err-rgb, 239, 68, 68), 0.08);
+            border-color: rgba(var(--bx-err-rgb, 239, 68, 68), 0.2);
+            color: var(--bx-err, #f87171);
         }
         
         
@@ -243,59 +243,59 @@
         }
         .script-editor-overlay.active { display: flex; }
         .script-editor-modal {
-            background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+            background: var(--bx-surface, #1e293b); border: 1px solid var(--bx-track, #334155); border-radius: 12px;
             width: 1400px; max-width: 95vw; height: 85vh; max-height: 90vh;
             display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             overflow: hidden;
         }
         .script-editor-header {
-            padding: 1rem 1.5rem; background: #0f172a; border-bottom: 1px solid #334155;
+            padding: 1rem 1.5rem; background: var(--bx-bg, #0f172a); border-bottom: 1px solid var(--bx-track, #334155);
             display: flex; justify-content: space-between; align-items: center;
         }
-        .script-editor-title { color: #f8fafc; font-size: 1.15rem; font-weight: 600; margin: 0; }
-        .script-editor-subtitle { color: #94a3b8; font-size: 0.8rem; margin-top: 2px; }
+        .script-editor-title { color: var(--bx-heading, #f8fafc); font-size: 1.15rem; font-weight: 600; margin: 0; }
+        .script-editor-subtitle { color: var(--bx-muted, #94a3b8); font-size: 0.8rem; margin-top: 2px; }
         .script-editor-actions { display: flex; gap: 0.5rem; }
         .script-editor-btn {
-            background: #334155; border: 1px solid #475569; color: #cbd5e1;
+            background: var(--bx-track, #334155); border: 1px solid var(--bx-border-input, #475569); color: var(--bx-body, #cbd5e1);
             padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer;
             display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s;
         }
-        .script-editor-btn:hover { background: #475569; color: #f8fafc; }
-        .script-editor-btn-save { background: var(--primary-color); border-color: var(--primary-color); color: white; }
+        .script-editor-btn:hover { background: var(--bx-border-input, #475569); color: var(--bx-heading, #f8fafc); }
+        .script-editor-btn-save { background: var(--primary-color); border-color: var(--primary-color); color: var(--bx-on-accent, white); }
         .script-editor-btn-save:hover { background: var(--primary-hover); }
         .script-editor-body { flex: 1; display: flex; flex-direction: column; position: relative; }
         .script-editor-textarea {
-            flex: 1; width: 100%; background: #0f172a; border: none; color: #e2e8f0;
+            flex: 1; width: 100%; background: var(--bx-bg, #0f172a); border: none; color: var(--bx-body, #e2e8f0);
             font-family: 'Fira Code', 'Courier New', Courier, monospace; font-size: 0.9rem;
             padding: 1.5rem; resize: none; outline: none; box-sizing: border-box;
         }
         .script-editor-validation {
             position: absolute; bottom: 0; left: 0; width: 100%; box-sizing: border-box;
-            background: #0f172a; border-top: 1px solid #334155;
+            background: var(--bx-bg, #0f172a); border-top: 1px solid var(--bx-track, #334155);
         }
         .script-editor-ai-panel {
-            padding: 1rem 1.5rem; background: #0f172a; border-top: 1px solid #334155;
+            padding: 1rem 1.5rem; background: var(--bx-bg, #0f172a); border-top: 1px solid var(--bx-track, #334155);
             display: flex; flex-direction: column; gap: 0.5rem;
         }
-        .script-editor-ai-header { display: flex; align-items: center; gap: 0.4rem; color: #a78bfa; font-size: 0.8rem; font-weight: 600; }
+        .script-editor-ai-header { display: flex; align-items: center; gap: 0.4rem; color: var(--bx-accent, #a78bfa); font-size: 0.8rem; font-weight: 600; }
         .script-editor-ai-input-area { display: flex; gap: 0.5rem; }
         .script-editor-ai-input {
-            flex: 1; background: #1e293b; border: 1px solid #334155; color: #f8fafc;
+            flex: 1; background: var(--bx-surface, #1e293b); border: 1px solid var(--bx-track, #334155); color: var(--bx-heading, #f8fafc);
             border-radius: 6px; padding: 0.4rem 0.8rem; font-size: 0.8rem; outline: none;
         }
         .script-editor-ai-input:focus { border-color: var(--primary-color); }
         .script-editor-ai-send {
             background: var(--primary-color); border: none; border-radius: 6px;
-            color: white; width: 32px; height: 32px; cursor: pointer;
+            color: var(--bx-on-accent, white); width: 32px; height: 32px; cursor: pointer;
             display: flex; align-items: center; justify-content: center; transition: all 0.15s;
         }
         .script-editor-ai-send:hover { background: var(--primary-hover); }
-        .script-editor-ai-send:disabled { background: #3b2c5c; cursor: not-allowed; }
+        .script-editor-ai-send:disabled { background: var(--bx-raised, #3b2c5c); cursor: not-allowed; }
         .script-editor-ai-feedback { padding: 0.5rem 0; font-size: 0.75rem; }
-        .script-editor-ai-feedback.loading { color: #94a3b8; }
-        .script-editor-ai-feedback.success { color: #34d399; }
-        .script-editor-ai-feedback.error { color: #f87171; }
-        .ai-explanation { margin-top: 4px; color: #94a3b8; font-style: italic; white-space: pre-line; }</style>
+        .script-editor-ai-feedback.loading { color: var(--bx-muted, #94a3b8); }
+        .script-editor-ai-feedback.success { color: var(--bx-ok, #34d399); }
+        .script-editor-ai-feedback.error { color: var(--bx-err, #f87171); }
+        .ai-explanation { margin-top: 4px; color: var(--bx-muted, #94a3b8); font-style: italic; white-space: pre-line; }</style>
 </head>
 <body>
     <ix-application force-breakpoint="lg">

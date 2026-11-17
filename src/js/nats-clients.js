@@ -71,7 +71,7 @@ class NatsClientManager {
             const statusClass = c.enabled ? 'status-enabled' : 'status-disabled';
             const statusText = c.enabled ? 'Enabled' : 'Disabled';
             const nodeIndicator = c.isOnCurrentNode ? '<span class="status-badge badge-info">this node</span> ' : '';
-            const jetStreamBadge = cfg.useJetStream ? ' <span style="font-size:0.65rem;background:rgba(16,185,129,0.15);color:var(--monster-green);padding:0.1rem 0.4rem;border-radius:8px;border:1px solid rgba(16,185,129,0.3);">JS</span>' : '';
+            const jetStreamBadge = cfg.useJetStream ? ' <span style="font-size:0.65rem;background:rgba(var(--bx-ok-rgb, 16, 185, 129),0.15);color:var(--monster-green);padding:0.1rem 0.4rem;border-radius:8px;border:1px solid rgba(var(--bx-ok-rgb, 16, 185, 129),0.3);">JS</span>' : '';
             const metricsIn  = (c.metrics && c.metrics.length > 0) ? Math.round(c.metrics[0].messagesIn)  : 0;
             const metricsOut = (c.metrics && c.metrics.length > 0) ? Math.round(c.metrics[0].messagesOut) : 0;
             row.innerHTML = `

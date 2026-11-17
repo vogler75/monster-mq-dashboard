@@ -36,15 +36,15 @@
             gap: 0.5rem;
             margin-bottom: 0.75rem;
             padding: 0.5rem 0.75rem;
-            background: var(--dark-bg, #0b0f19);
-            border: 1px solid var(--dark-border, #1f2937);
+            background: var(--dark-bg, var(--bx-bg, #0b0f19));
+            border: 1px solid var(--dark-border, var(--bx-surface, #1f2937));
             border-radius: var(--r-md, 8px);
         }
 
         .snippet-btn {
             background: transparent;
-            border: 1px solid var(--dark-border, #374151);
-            color: var(--text-secondary, #9ca3af);
+            border: 1px solid var(--dark-border, var(--bx-track, #374151));
+            color: var(--text-secondary, var(--bx-muted, #9ca3af));
             padding: 0.25rem 0.6rem;
             border-radius: 4px;
             font-size: 0.75rem;
@@ -55,15 +55,15 @@
 
         .snippet-btn:hover {
             background: rgba(255, 255, 255, 0.05);
-            color: var(--text-primary, #f9fafb);
-            border-color: var(--primary-color, #7c3aed);
+            color: var(--text-primary, var(--bx-heading, #f9fafb));
+            border-color: var(--primary-color, var(--bx-accent, #7c3aed));
         }
 
         .code-editor-wrapper {
             position: relative;
             display: flex;
-            background: #0f172a;
-            border: 1px solid var(--dark-border, #1f2937);
+            background: var(--bx-bg, #0f172a);
+            border: 1px solid var(--dark-border, var(--bx-surface, #1f2937));
             border-radius: var(--r-md, 8px) var(--r-md, 8px) 0 0;
             overflow: hidden;
             height: 380px;
@@ -72,8 +72,8 @@
         }
 
         .code-editor-wrapper:focus-within {
-            border-color: var(--primary-color, #7c3aed);
-            box-shadow: 0 0 0 1px var(--primary-color, #7c3aed);
+            border-color: var(--primary-color, var(--bx-accent, #7c3aed));
+            box-shadow: 0 0 0 1px var(--primary-color, var(--bx-accent, #7c3aed));
         }
 
         .code-editor-gutter {
@@ -81,8 +81,8 @@
             max-width: 80px;
             height: 100%;
             min-height: 0;
-            background: #090d16;
-            border-right: 1px solid var(--dark-border, #1f2937);
+            background: var(--bx-bg, #090d16);
+            border-right: 1px solid var(--dark-border, var(--bx-surface, #1f2937));
             padding: 1rem 0.6rem 1rem 0.5rem;
             box-sizing: border-box;
             user-select: none;
@@ -95,7 +95,7 @@
             font-family: 'Fira Code', 'Courier New', Courier, monospace;
             font-size: 0.875rem;
             line-height: 1.5;
-            color: #4b5563;
+            color: var(--bx-border-input, #4b5563);
             text-align: right;
             white-space: pre;
             margin: 0;
@@ -114,7 +114,7 @@
             border-radius: 0 !important;
             box-shadow: none !important;
             outline: none !important;
-            color: #f1f5f9;
+            color: var(--bx-heading, #f1f5f9);
             font-family: 'Fira Code', 'Courier New', Courier, monospace;
             font-size: 0.875rem;
             line-height: 1.5;
@@ -131,24 +131,24 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #090d16;
-            border: 1px solid var(--dark-border, #1f2937);
+            background: var(--bx-bg, #090d16);
+            border: 1px solid var(--dark-border, var(--bx-surface, #1f2937));
             border-top: none;
             border-radius: 0 0 var(--r-md, 8px) var(--r-md, 8px);
             padding: 0.35rem 0.85rem;
             font-family: 'Fira Code', 'Courier New', Courier, monospace;
             font-size: 0.75rem;
-            color: var(--text-muted, #9ca3af);
+            color: var(--text-muted, var(--bx-muted, #9ca3af));
             user-select: none;
         }
 
         .code-editor-wrapper:focus-within + .code-editor-statusbar {
-            border-color: var(--primary-color, #7c3aed);
+            border-color: var(--primary-color, var(--bx-accent, #7c3aed));
         }
 
         .ai-panel {
-            background: rgba(124, 58, 237, 0.04);
-            border: 1px solid rgba(124, 58, 237, 0.2);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.04);
+            border: 1px solid rgba(var(--bx-accent-rgb, 124, 58, 237), 0.2);
             border-radius: var(--r-md, 8px);
             padding: 1.25rem;
             margin-top: 1rem;
@@ -167,7 +167,7 @@
             gap: 0.5rem;
             font-size: 0.9rem;
             font-weight: 600;
-            color: #c4b5fd;
+            color: var(--bx-accent, #c4b5fd);
         }
 
         .ai-quick-prompts {
@@ -178,9 +178,9 @@
         }
 
         .ai-chip {
-            background: rgba(124, 58, 237, 0.12);
-            border: 1px solid rgba(124, 58, 237, 0.25);
-            color: #ddd6fe;
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.12);
+            border: 1px solid rgba(var(--bx-accent-rgb, 124, 58, 237), 0.25);
+            color: var(--bx-accent, #ddd6fe);
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
             font-size: 0.75rem;
@@ -189,7 +189,7 @@
         }
 
         .ai-chip:hover {
-            background: rgba(124, 58, 237, 0.25);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.25);
             color: #fff;
         }
 
@@ -202,8 +202,8 @@
 
         .timer-preset-chip {
             background: rgba(255, 255, 255, 0.06);
-            border: 1px solid var(--dark-border, #374151);
-            color: var(--text-secondary, #9ca3af);
+            border: 1px solid var(--dark-border, var(--bx-track, #374151));
+            color: var(--text-secondary, var(--bx-muted, #9ca3af));
             padding: 0.2rem 0.55rem;
             border-radius: 12px;
             font-size: 0.72rem;
@@ -213,14 +213,14 @@
         }
 
         .timer-preset-chip:hover {
-            background: rgba(124, 58, 237, 0.18);
-            border-color: rgba(124, 58, 237, 0.4);
-            color: #ddd6fe;
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.18);
+            border-color: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.4);
+            color: var(--bx-accent, #ddd6fe);
         }
 
         .timer-preset-chip.active {
-            background: rgba(124, 58, 237, 0.28);
-            border-color: var(--primary-color, #7c3aed);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.28);
+            border-color: var(--primary-color, var(--bx-accent, #7c3aed));
             color: #fff;
             font-weight: 500;
         }
@@ -246,16 +246,16 @@
 
         .ai-feedback.success {
             display: block;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            color: #6ee7b7;
+            background: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.1);
+            border: 1px solid rgba(var(--bx-ok-rgb, 16, 185, 129), 0.3);
+            color: var(--bx-ok, #6ee7b7);
         }
 
         .ai-feedback.error {
             display: block;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
+            background: rgba(var(--bx-err-rgb, 239, 68, 68), 0.1);
+            border: 1px solid rgba(var(--bx-err-rgb, 239, 68, 68), 0.3);
+            color: var(--bx-err-text, #fca5a5);
         }
 
         .test-sandbox-grid {
@@ -266,8 +266,8 @@
         }
 
         .test-output-box {
-            background: #0b0f19;
-            border: 1px solid var(--dark-border, #1f2937);
+            background: var(--bx-bg, #0b0f19);
+            border: 1px solid var(--dark-border, var(--bx-surface, #1f2937));
             border-radius: 6px;
             padding: 1rem;
             font-family: monospace;
@@ -275,7 +275,7 @@
             max-height: 240px;
             overflow-y: auto;
             white-space: pre-wrap;
-            color: #cbd5e1;
+            color: var(--bx-body, #cbd5e1);
         }
 
         .log-line {
@@ -484,7 +484,7 @@
                             <div class="ai-panel">
                                 <div class="ai-header">
                                     <div class="ai-title">
-                                        <ix-icon name="code-ai" size="18" style="color: #a78bfa;"></ix-icon>
+                                        <ix-icon name="code-ai" size="18" style="color: var(--bx-accent, #a78bfa);"></ix-icon>
                                         AI Script Assistant (<span id="ai-lang-indicator">Starlark</span>)
                                     </div>
                                 </div>
@@ -510,7 +510,7 @@
                     <div class="section-card">
                         <div class="section-header">
                             <h2 class="section-title">Interactive Test Sandbox (Dry-Run)</h2>
-                            <span class="status-badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">Isolated execution</span>
+                            <span class="status-badge" style="background: rgba(var(--bx-accent-rgb, 59, 130, 246), 0.15); color: var(--bx-accent, #60a5fa);">Isolated execution</span>
                         </div>
                         <div class="section-content">
                             <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0;">

@@ -106,7 +106,7 @@ class KafkaGroupsManager {
         const activityEl = document.getElementById('recent-activity');
         activityEl.textContent = mostRecentStr;
         if (maxTime > 0) {
-            activityEl.style.color = 'var(--monster-green, #10B981)';
+            activityEl.style.color = 'var(--monster-green, var(--bx-ok, #10B981))';
         } else {
             activityEl.style.color = 'var(--text-muted)';
         }
@@ -149,7 +149,7 @@ class KafkaGroupsManager {
                 </td>
                 <td>${chipsHtml}</td>
                 <td style="text-align:center;">
-                    <span class="badge" style="font-weight:600; padding:0.25rem 0.5rem; border-radius:6px; background:${group.lag > 0 ? 'rgba(249, 115, 22, 0.15)' : 'rgba(16, 185, 129, 0.15)'}; color:${group.lag > 0 ? 'var(--monster-orange, #F97316)' : 'var(--monster-green, #10B981)'};">
+                    <span class="badge" style="font-weight:600; padding:0.25rem 0.5rem; border-radius:6px; background:${group.lag > 0 ? 'rgba(var(--bx-warn-rgb, 249, 115, 22), 0.15)' : 'rgba(var(--bx-ok-rgb, 16, 185, 129), 0.15)'}; color:${group.lag > 0 ? 'var(--monster-orange, var(--bx-warn, #F97316))' : 'var(--monster-green, var(--bx-ok, #10B981))'};">
                         ${this.formatNumber(group.lag)}
                     </span>
                 </td>

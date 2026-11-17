@@ -13,10 +13,10 @@
     <style>
         .logger-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
         .json-schema-section { grid-row: span 2; }
-        .section-icon { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: var(--gradient-primary); color: white; }
+        .section-icon { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: var(--gradient-primary); color: var(--bx-on-accent, white); }
         .info-list { display: flex; flex-direction: column; gap: 1rem; }
         input[type="text"], input[type="password"], input[type="number"], select, textarea { width: 100%; padding: 0.75rem 1rem; background: var(--dark-bg); border: 1px solid var(--dark-border); border-radius: 8px; color: var(--text-primary); font-size: 0.875rem; transition: all 0.2s ease; box-sizing: border-box; font-family: inherit; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--monster-purple); box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1); }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--monster-purple); box-shadow: 0 0 0 3px rgba(var(--bx-accent-rgb, 124, 58, 237), 0.1); }
         input::placeholder, textarea::placeholder { color: var(--text-muted); }
         input:disabled, select:disabled, textarea:disabled { opacity: 0.5; cursor: not-allowed; }
         input[type="checkbox"] { width: auto; accent-color: var(--monster-purple); transform: scale(1.2); }
@@ -44,17 +44,17 @@
         .help-table th, .help-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--dark-border); }
         .help-table th { color: var(--text-primary); font-weight: 600; background: var(--dark-bg); }
         .help-table td { color: var(--text-muted); }
-        .help-example { background: rgba(124, 58, 237, 0.1); border-left: 3px solid var(--monster-purple); padding: 1rem; margin: 0.75rem 0; }
+        .help-example { background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.1); border-left: 3px solid var(--monster-purple); padding: 1rem; margin: 0.75rem 0; }
         .help-example-title { color: var(--monster-purple); font-weight: 600; margin-bottom: 0.5rem; }
 
         
-        .ai-schema-generator { margin-top: 1.5rem; padding: 1.25rem; background: rgba(124, 58, 237, 0.05); border: 1px solid rgba(124, 58, 237, 0.2); border-radius: 10px; }
+        .ai-schema-generator { margin-top: 1.5rem; padding: 1.25rem; background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.05); border: 1px solid rgba(var(--bx-accent-rgb, 124, 58, 237), 0.2); border-radius: 10px; }
         .ai-generator-header { margin-bottom: 0.75rem; }
         .ai-generator-title { display: flex; align-items: center; gap: 0.5rem; color: var(--monster-purple); font-weight: 600; font-size: 0.875rem; }
         .ai-schema-generator textarea { min-height: 120px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; margin-bottom: 0.75rem; }
         .ai-generator-actions { display: flex; align-items: center; gap: 1rem; }
-        .btn-ai { background: var(--gradient-primary); color: white; display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s ease; font-size: 0.8rem; }
-        .btn-ai:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3); }
+        .btn-ai { background: var(--gradient-primary); color: var(--bx-on-accent, white); display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s ease; font-size: 0.8rem; }
+        .btn-ai:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(var(--bx-accent-rgb, 124, 58, 237), 0.3); }
         .btn-ai:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
         .ai-schema-status { font-size: 0.8rem; color: var(--text-muted); }
         .ai-schema-status.success { color: var(--monster-green); }

@@ -158,7 +158,7 @@ class Plc4xClientManager {
                     </div>
                 </td>
                 <td>
-                    <span style="color: #06B6D4;">${messagesInRate}</span>
+                    <span style="color: var(--bx-accent, #06B6D4);">${messagesInRate}</span>
                 </td>
                 <td>
                     <div class="action-buttons">

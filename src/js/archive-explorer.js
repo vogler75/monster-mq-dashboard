@@ -357,7 +357,7 @@ var ArchiveExplorerManager = class ArchiveExplorerManager {
             <div class="detail-field">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <div class="detail-field-label" style="margin-bottom: 0;">Payload</div>
-                    <button class="btn-nav" id="btn-copy-payload" onclick="window.archiveExplorer.copyPayloadToClipboard()" style="padding: 0.25rem 0.6rem; font-size: 0.72rem; border-radius: 6px; background: rgba(34, 50, 64, 0.8); gap: 0.25rem; min-height: auto; height: 26px;">
+                    <button class="btn-nav" id="btn-copy-payload" onclick="window.archiveExplorer.copyPayloadToClipboard()" style="padding: 0.25rem 0.6rem; font-size: 0.72rem; border-radius: 6px; background: rgba(var(--bx-raised-rgb, 34, 50, 64), 0.8); gap: 0.25rem; min-height: auto; height: 26px;">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -419,7 +419,7 @@ var ArchiveExplorerManager = class ArchiveExplorerManager {
                     </svg>
                     <span style="color: var(--monster-green)">Copied!</span>
                 `;
-                btn.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+                btn.style.borderColor = 'rgba(var(--bx-ok-rgb, 16, 185, 129), 0.4)';
                 setTimeout(() => {
                     btn.innerHTML = `
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: inline-block; vertical-align: middle;">

@@ -236,16 +236,16 @@
             <div class="graph-wrapper">
                 <div id="agent-graph"></div>
                 <div class="graph-legend">
-                    <span class="legend-item"><span class="legend-dot" style="background:#10B981"></span> Running</span>
-                    <span class="legend-item"><span class="legend-dot" style="background:#3B82F6"></span> Ready</span>
-                    <span class="legend-item"><span class="legend-dot" style="background:#EF4444"></span> Stopped</span>
-                    <span class="legend-item"><span class="legend-dot" style="background:#617d91"></span> Unknown</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:var(--bx-ok, #10B981)"></span> Running</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:var(--bx-accent, #3B82F6)"></span> Ready</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:var(--bx-err, #EF4444)"></span> Stopped</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:var(--bx-weak, #617d91)"></span> Unknown</span>
                     <span style="margin-left:0.5rem; border-left:1px solid var(--dark-border); padding-left:1rem;">
                         <span class="legend-item"><span class="legend-border-solid"></span> Internal</span>
                         <span class="legend-item"><span class="legend-border-dashed"></span> External</span>
                     </span>
                     <span style="margin-left:0.5rem; border-left:1px solid var(--dark-border); padding-left:1rem;">
-                        <span class="legend-item"><span class="legend-line" style="background:rgba(124,58,237,0.6)"></span> Agent call</span>
+                        <span class="legend-item"><span class="legend-line" style="background:rgba(var(--bx-accent-rgb, 124, 58, 237),0.6)"></span> Agent call</span>
                     </span>
                 </div>
             </div>

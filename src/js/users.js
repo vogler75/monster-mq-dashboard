@@ -215,7 +215,7 @@ class UserManager {
                     </td>
                     <td>
                         ${permissions.map(p => `
-                            <span style="padding: 0.125rem 0.5rem; background: var(--monster-purple); color: white; border-radius: 12px; font-size: 0.75rem; margin-right: 0.25rem;">
+                            <span style="padding: 0.125rem 0.5rem; background: var(--monster-purple); color: var(--bx-on-accent, white); border-radius: 12px; font-size: 0.75rem; margin-right: 0.25rem;">
                                 ${p}
                             </span>
                         `).join('')}
@@ -489,7 +489,7 @@ class UserManager {
         } else {
             aclContent.innerHTML = `
                 <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center;">
-                    <button id="delete-selected-acl-btn" class="btn" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; background: var(--monster-red); border: 1px solid var(--monster-red); color: #fff; opacity: 0.5; cursor: not-allowed;" disabled>
+                    <button id="delete-selected-acl-btn" class="btn" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; background: var(--monster-red); border: 1px solid var(--monster-red); color: var(--bx-on-accent, #fff); opacity: 0.5; cursor: not-allowed;" disabled>
                         Delete Selected (<span id="selected-count">0</span>)
                     </button>
                     <button id="select-all-acl-btn" class="btn btn-secondary" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
@@ -535,7 +535,7 @@ class UserManager {
                                         <td style="font-size: 0.75rem;">${rule.createdAt ? new Date(rule.createdAt).toLocaleDateString() : 'N/A'}</td>
                                         <td style="text-align: center;">
                                             <button class="btn delete-acl-btn" data-id="${rule.id}" data-username="${this.escapeHtml(this.currentAclUsername)}"
-                                                    style="padding: 0.25rem 0.4rem; font-size: 0.75rem; background: var(--monster-red); border: 1px solid var(--monster-red); color: #fff; min-width: 0;"
+                                                    style="padding: 0.25rem 0.4rem; font-size: 0.75rem; background: var(--monster-red); border: 1px solid var(--monster-red); color: var(--bx-on-accent, #fff); min-width: 0;"
                                                     title="Delete this rule">✕</button>
                                         </td>
                                     </tr>

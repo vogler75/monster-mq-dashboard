@@ -70,7 +70,7 @@
         .time-controls .btn-nav:hover {
             background: var(--monster-purple);
             border-color: var(--monster-purple);
-            color: white;
+            color: var(--bx-on-accent, white);
         }
 
         .time-controls .btn-nav:disabled {
@@ -228,8 +228,8 @@
         }
 
         .topic-remove:hover {
-            background: rgba(239, 68, 68, 0.1);
-            color: #EF4444;
+            background: rgba(var(--bx-err-rgb, 239, 68, 68), 0.1);
+            color: var(--bx-err, #EF4444);
         }
 
 
@@ -327,8 +327,8 @@
             align-items: flex-start;
             gap: 0.65rem;
             padding: 0.75rem 0.85rem;
-            background: rgba(59, 130, 246, 0.08);
-            border: 1px solid rgba(59, 130, 246, 0.25);
+            background: rgba(var(--bx-accent-rgb, 59, 130, 246), 0.08);
+            border: 1px solid rgba(var(--bx-accent-rgb, 59, 130, 246), 0.25);
             border-radius: var(--r-sm);
             font-size: 0.82rem;
             line-height: 1.45;
@@ -336,8 +336,8 @@
         }
 
         .modal-info-banner.success {
-            background: rgba(16, 185, 129, 0.08);
-            border-color: rgba(16, 185, 129, 0.25);
+            background: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.08);
+            border-color: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.25);
         }
 
         .modal-info-icon {
@@ -384,7 +384,7 @@
         }
 
         .json-line.clickable:hover {
-            background: rgba(124, 58, 237, 0.18);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.18);
         }
 
         .json-line.clickable::after {
@@ -395,8 +395,8 @@
             transform: translateY(-50%);
             font-size: 0.68rem;
             padding: 1px 6px;
-            background: rgba(124, 58, 237, 0.2);
-            color: #c4b5fd;
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.2);
+            color: var(--bx-accent, #c4b5fd);
             border-radius: 3px;
             opacity: 0;
             pointer-events: none;
@@ -408,35 +408,35 @@
         }
 
         .json-line.selected {
-            background: rgba(124, 58, 237, 0.35);
-            outline: 1px solid rgba(167, 139, 250, 0.6);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.35);
+            outline: 1px solid rgba(var(--bx-accent-rgb, 167, 139, 250), 0.6);
         }
 
         .json-line.selected::after {
             content: 'Selected';
             opacity: 1;
-            background: #7c3aed;
-            color: #ffffff;
+            background: var(--bx-accent, #7c3aed);
+            color: var(--bx-on-accent, #ffffff);
         }
 
         .json-key {
-            color: #9CA3AF;
+            color: var(--bx-muted, #9CA3AF);
         }
 
         .json-string {
-            color: #34D399;
+            color: var(--bx-ok, #34D399);
         }
 
         .json-number {
-            color: #60A5FA;
+            color: var(--bx-accent, #60A5FA);
         }
 
         .json-boolean {
-            color: #F472B6;
+            color: var(--bx-accent-3, #F472B6);
         }
 
         .json-null {
-            color: #F472B6;
+            color: var(--bx-accent-3, #F472B6);
         }
 
         .field-selection {
@@ -458,10 +458,10 @@
             color: var(--monster-light);
             font-weight: 600;
             font-family: 'Fira Code', 'JetBrains Mono', monospace;
-            background: rgba(124, 58, 237, 0.15);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.15);
             padding: 0.15rem 0.5rem;
             border-radius: 4px;
-            border: 1px solid rgba(124, 58, 237, 0.3);
+            border: 1px solid rgba(var(--bx-accent-rgb, 124, 58, 237), 0.3);
         }
 
         .modal-footer {

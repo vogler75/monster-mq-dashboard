@@ -153,8 +153,8 @@ class OpcUaDeviceManager {
                     </div>
                 </td>
                 <td>
-                    <span style="color: #06B6D4;">${(device.metrics && device.metrics.length>0 ? Math.round(device.metrics[0].messagesIn) : 0)}</span> /
-                    <span style="color: #9333EA;">${(device.metrics && device.metrics.length>0 ? Math.round(device.metrics[0].messagesOut) : 0)}</span>
+                    <span style="color: var(--bx-accent, #06B6D4);">${(device.metrics && device.metrics.length>0 ? Math.round(device.metrics[0].messagesIn) : 0)}</span> /
+                    <span style="color: var(--bx-accent, #9333EA);">${(device.metrics && device.metrics.length>0 ? Math.round(device.metrics[0].messagesOut) : 0)}</span>
                 </td>
                 <td>
                     <div class="action-buttons">

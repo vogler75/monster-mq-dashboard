@@ -1,3 +1,5 @@
+// Brand colour helpers from js/branding.js; identity fallbacks outside the shell (tests).
+const { brandColor = c => c } = globalThis;
 // Mounted by the SPA router; resources and handler bindings belong to this visit.
 export function mount(page) {
 const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
@@ -25,10 +27,10 @@ class AgentOnlineGraphManager {
         this.selectedSite = '';
 
         this.STATUS_COLORS = {
-            running: '#10B981',
-            ready: '#3B82F6',
-            stopped: '#EF4444',
-            unknown: '#617d91'
+            running: brandColor('#10B981'),
+            ready: brandColor('#3B82F6'),
+            stopped: brandColor('#EF4444'),
+            unknown: brandColor('#617d91')
         };
 
         this.init();
@@ -364,14 +366,14 @@ class AgentOnlineGraphManager {
                     show: true,
                     position: 'bottom',
                     fontSize: 11,
-                    color: '#f0f6fc',
+                    color: brandColor('#f0f6fc'),
                     formatter: '{b}'
                 },
                 edgeLabel: {
                     show: false
                 },
                 lineStyle: {
-                    color: 'rgba(124, 58, 237, 0.5)',
+                    color: brandColor('rgba(124, 58, 237, 0.5)'),
                     curveness: 0.15
                 },
                 emphasis: {
@@ -421,7 +423,7 @@ class AgentOnlineGraphManager {
                     shadowBlur: status === 'running' ? 12 : 0,
                     shadowColor: status === 'running' ? color : 'transparent'
                 },
-                label: { color: '#f0f6fc' }
+                label: { color: brandColor('#f0f6fc') }
             });
         });
 
@@ -462,11 +464,11 @@ class AgentOnlineGraphManager {
                 callCount: edge.count,
                 lineStyle: {
                     width: width,
-                    color: isActive ? 'rgba(124, 58, 237, 0.8)' : 'rgba(124, 58, 237, 0.35)',
+                    color: isActive ? brandColor('rgba(124, 58, 237, 0.8)') : brandColor('rgba(124, 58, 237, 0.35)'),
                     type: isActive ? 'solid' : 'dashed'
                 },
                 effect: isActive ? {
-                    show: true, period: 3, trailLength: 0.3, symbolSize: 4, color: '#A78BFA'
+                    show: true, period: 3, trailLength: 0.3, symbolSize: 4, color: brandColor('#A78BFA')
                 } : undefined
             });
         });

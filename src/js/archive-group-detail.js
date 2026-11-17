@@ -1,3 +1,5 @@
+// Brand colour helpers from js/branding.js; identity fallbacks outside the shell (tests).
+const { brandColor = c => c } = globalThis;
 // Mounted by the SPA router; resources and handler bindings belong to this visit.
 export function mount(page) {
 const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
@@ -730,9 +732,9 @@ class ArchiveGroupDetailManager {
         if (this.chart) {
             this.chart.showLoading({
                 text: 'Calculating Statistics...',
-                color: '#7c3aed',
-                textColor: '#8b8ba7',
-                maskColor: 'rgba(23, 23, 37, 0.8)',
+                color: brandColor('#7c3aed'),
+                textColor: brandColor('#8b8ba7'),
+                maskColor: brandColor('rgba(23, 23, 37, 0.8)'),
                 zlevel: 0
             });
         } else {
@@ -816,7 +818,7 @@ class ArchiveGroupDetailManager {
                     left: 'center',
                     top: 'center',
                     textStyle: {
-                        color: '#617d91',
+                        color: brandColor('#617d91'),
                         fontSize: 14,
                         fontWeight: 'normal'
                     }
@@ -837,17 +839,17 @@ class ArchiveGroupDetailManager {
                 axisPointer: {
                     type: 'shadow'
                 },
-                backgroundColor: 'rgba(23, 23, 37, 0.95)',
-                borderColor: '#2e2e4f',
+                backgroundColor: brandColor('rgba(23, 23, 37, 0.95)'),
+                borderColor: brandColor('#2e2e4f'),
                 borderWidth: 1,
                 textStyle: {
-                    color: '#f0f6fc',
+                    color: brandColor('#f0f6fc'),
                     fontSize: 12
                 },
                 formatter: (params) => {
                     const item = params[0];
                     return `<span style="color: var(--text-muted); font-size: 0.75rem;">${item.name}</span><br/>` +
-                           `<span style="color: #a78bfa; font-weight: bold;">${Number(item.value).toLocaleString()}</span> messages`;
+                           `<span style="color: var(--bx-accent, #a78bfa); font-weight: bold;">${Number(item.value).toLocaleString()}</span> messages`;
                 }
             },
             grid: {
@@ -862,11 +864,11 @@ class ArchiveGroupDetailManager {
                 data: dates,
                 axisLine: {
                     lineStyle: {
-                        color: '#2e2e4f'
+                        color: brandColor('#2e2e4f')
                     }
                 },
                 axisLabel: {
-                    color: '#8b8ba7',
+                    color: brandColor('#8b8ba7'),
                     fontSize: 10,
                     margin: 12
                 },
@@ -878,7 +880,7 @@ class ArchiveGroupDetailManager {
                 type: 'value',
                 splitLine: {
                     lineStyle: {
-                        color: 'rgba(46, 46, 79, 0.3)',
+                        color: brandColor('rgba(46, 46, 79, 0.3)'),
                         type: 'dashed'
                     }
                 },
@@ -886,7 +888,7 @@ class ArchiveGroupDetailManager {
                     show: false
                 },
                 axisLabel: {
-                    color: '#8b8ba7',
+                    color: brandColor('#8b8ba7'),
                     fontSize: 10
                 }
             },
@@ -897,7 +899,7 @@ class ArchiveGroupDetailManager {
                 data: counts,
                 itemStyle: {
                     color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: '#7c3aed' },
+                        { offset: 0, color: brandColor('#7c3aed') },
                         { offset: 1, color: '#0d9488' }
                     ]),
                     borderRadius: [4, 4, 0, 0]
@@ -905,8 +907,8 @@ class ArchiveGroupDetailManager {
                 emphasis: {
                     itemStyle: {
                         color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                            { offset: 0, color: '#a78bfa' },
-                            { offset: 1, color: '#14b8a6' }
+                            { offset: 0, color: brandColor('#a78bfa') },
+                            { offset: 1, color: brandColor('#14b8a6') }
                         ])
                     }
                 }

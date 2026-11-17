@@ -60,7 +60,7 @@
         }
 
         .topic-panel-resize-handle:hover {
-            background: rgba(124, 58, 237, 0.3);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.3);
         }
 
         
@@ -70,7 +70,7 @@
             top: 50%;
             transform: translateY(-50%) rotate(-90deg);
             background: var(--monster-purple);
-            color: white;
+            color: var(--bx-on-accent, white);
             border: none;
             padding: 0.75rem 1.5rem;
             border-radius: 8px 8px 0 0;
@@ -170,11 +170,11 @@
         }
 
         .topic-panel-tree .tree-item:hover {
-            background: rgba(124, 58, 237, 0.1);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.1);
         }
 
         .topic-panel-tree .tree-item.selected {
-            background: rgba(124, 58, 237, 0.2);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.2);
             color: var(--monster-light);
         }
 
@@ -247,7 +247,7 @@
         }
 
         .danger {
-            color: #ff4757;
+            color: var(--bx-err, #ff4757);
         }</style>
 </head>
 <body>

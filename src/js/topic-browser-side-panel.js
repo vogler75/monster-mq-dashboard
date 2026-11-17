@@ -149,7 +149,7 @@ class TopicBrowserSidePanel {
                         input.dispatchEvent(inputEvent);
                         
                         // Visual feedback
-                        input.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
+                        input.style.backgroundColor = 'rgba(var(--bx-ok-rgb, 34, 197, 94), 0.1)';
                         setTimeout(() => {
                             input.style.backgroundColor = '';
                         }, 500);
@@ -482,7 +482,7 @@ class TopicBrowserSidePanel {
                     position: absolute;
                     top: -1000px;
                     background: var(--monster-purple);
-                    color: white;
+                    color: var(--bx-on-accent, white);
                     padding: 0.5rem;
                     border-radius: 4px;
                     font-size: 0.875rem;

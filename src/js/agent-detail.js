@@ -439,7 +439,7 @@ class AgentDetailManager {
                 const lines = topicsTextarea.value.trim() ? topicsTextarea.value.trim().split('\n').map(l => l.trim()).filter(l => l) : [];
                 if (!lines.includes(topic)) lines.push(topic);
                 topicsTextarea.value = lines.join('\n');
-                topicsTextarea.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
+                topicsTextarea.style.backgroundColor = 'rgba(var(--bx-ok-rgb, 34, 197, 94), 0.1)';
                 setTimeout(() => { topicsTextarea.style.backgroundColor = ''; }, 500);
             }
         });
@@ -1161,7 +1161,7 @@ function setupContextDropZones() {
     }
 
     function flashGreen(el) {
-        el.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
+        el.style.backgroundColor = 'rgba(var(--bx-ok-rgb, 34, 197, 94), 0.1)';
         setTimeout(() => { el.style.backgroundColor = ''; }, 500);
     }
 

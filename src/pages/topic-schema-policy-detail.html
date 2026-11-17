@@ -12,7 +12,7 @@
     <script type="module" src="/js/sidebar.js"></script>
     <style>
         .policy-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem; }
-        .section-icon { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: var(--gradient-primary); color: white; }
+        .section-icon { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 8px; background: var(--gradient-primary); color: var(--bx-on-accent, white); }
         .section-body { padding: 1.5rem; }
 
         .form-row {
@@ -55,15 +55,15 @@
 
         .test-results.valid {
             display: block;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.1);
+            border: 1px solid rgba(var(--bx-ok-rgb, 16, 185, 129), 0.3);
             color: var(--monster-green);
         }
 
         .test-results.invalid {
             display: block;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: rgba(var(--bx-err-rgb, 239, 68, 68), 0.1);
+            border: 1px solid rgba(var(--bx-err-rgb, 239, 68, 68), 0.3);
             color: var(--monster-red);
         }
 

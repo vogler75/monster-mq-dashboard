@@ -29,7 +29,7 @@
             height: 36px;
             border-radius: 8px;
             background: var(--gradient-primary);
-            color: white;
+            color: var(--bx-on-accent, white);
         }
 
         .section-actions {
@@ -70,7 +70,7 @@
         select:focus {
             outline: none;
             border-color: var(--monster-purple);
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+            box-shadow: 0 0 0 3px rgba(var(--bx-accent-rgb, 124, 58, 237), 0.1);
         }
 
         input::placeholder {

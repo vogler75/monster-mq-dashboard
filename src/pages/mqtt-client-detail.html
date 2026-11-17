@@ -59,7 +59,7 @@
             padding: 0.75rem 0.9rem;
             border: 1px solid var(--dark-border);
             border-radius: 8px;
-            background: rgba(15, 22, 25, 0.78);
+            background: rgba(var(--bx-bg-rgb, 15, 22, 25), 0.78);
             color: var(--text-primary);
             cursor: pointer;
             transition: border-color 0.2s ease, background 0.2s ease;
@@ -84,7 +84,7 @@
         }
         .buffer-option:has(input:checked) {
             border-color: var(--monster-teal);
-            background: rgba(20, 184, 166, 0.12);
+            background: rgba(var(--bx-accent-2-rgb, 20, 184, 166), 0.12);
         }
         .buffer-option:has(input:focus-visible) {
             outline: 2px solid var(--monster-purple);

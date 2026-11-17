@@ -164,7 +164,7 @@ function renderInstancesTable(){
     const { key, dir } = sortState.instances; rows.sort((a,b)=>compareValues(a,b,key,dir));
     if(rows.length===0){
         const msg = selectedFlowClassName ? 'No flow instances for this class' : 'Select a flow class to view instances';
-        tbody.innerHTML=`<tr><td colspan="9" style="text-align:center; color:#6c757d;">${msg}</td></tr>`;
+        tbody.innerHTML=`<tr><td colspan="9" style="text-align:center; color:var(--bx-muted, #6c757d);">${msg}</td></tr>`;
         return;
     }
     tbody.innerHTML = rows.map(r=>{
@@ -178,7 +178,7 @@ function renderInstancesTable(){
         <td>${escapeHtml(r.nodeId||'')}</td>
         <td style="text-align:right;">${r.inputMappings.length}</td>
         <td style="text-align:right;">${r.outputMappings.length}</td>
-        <td>${r.enabled?'<span style="color:#2ed573;">Yes</span>':'<span style="color:#ff4757;">No</span>'}</td>
+        <td>${r.enabled?'<span style="color:var(--bx-ok, #2ed573);">Yes</span>':'<span style="color:var(--bx-err, #ff4757);">No</span>'}</td>
         <td>${formatDateTime(r.updatedAt)}</td>
     <td><div class="action-buttons">
         ${startStopBtn}

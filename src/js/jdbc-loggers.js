@@ -120,7 +120,7 @@ class JDBCLoggersManager {
                 `<span class="topic-filter-tag">${this.escapeHtml(filter)}</span>`
             ).join('')}
                         ${logger.config.topicFilters.length > 2 ?
-                    `<span class="topic-filter-tag" style="background: var(--accent-blue); color: white;">+${logger.config.topicFilters.length - 2} more</span>` :
+                    `<span class="topic-filter-tag" style="background: var(--accent-blue); color: var(--bx-on-accent, white);">+${logger.config.topicFilters.length - 2} more</span>` :
                     ''
                 }
                     </div>
@@ -131,7 +131,7 @@ class JDBCLoggersManager {
                     ${logger.isOnCurrentNode ? '<br><small style="color: var(--monster-green);">● Current</small>' : ''}
                 </td>
                 <td><span class="status-badge ${logger.enabled ? 'status-enabled' : 'status-disabled'}"><span class="status-indicator"></span>${logger.enabled ? 'Enabled' : 'Disabled'}</span></td>
-                <td style="color: #9333EA; white-space: nowrap;">
+                <td style="color: var(--bx-accent, #9333EA); white-space: nowrap;">
                     ${messagesIn} / ${messagesOut}
                 </td>
                 <td>

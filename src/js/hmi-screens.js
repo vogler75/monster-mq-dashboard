@@ -128,7 +128,7 @@ class HmiScreensManager {
                     </td>
                     <td><code style="font-size: 0.8rem; background: var(--dark-bg); padding: 2px 6px; border-radius: 4px;">${this.escapeHtml(hmi.nodeId || 'local')}</code></td>
                     <td>
-                        ${isMain ? '<span class="status-badge badge-primary">Main Screen</span>' : '<span class="status-badge" style="background: rgba(148, 163, 184, 0.12); color: var(--text-muted);">Standard</span>'}
+                        ${isMain ? '<span class="status-badge badge-primary">Main Screen</span>' : '<span class="status-badge" style="background: rgba(var(--bx-muted-rgb, 148, 163, 184), 0.12); color: var(--text-muted);">Standard</span>'}
                     </td>
                     <td>
                         <span class="status-badge ${!hmi.enabled ? 'badge-danger' : isMissingDir ? 'badge-warn' : 'badge-success'}">

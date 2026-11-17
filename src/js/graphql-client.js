@@ -126,7 +126,7 @@ class GraphQLDashboardClient {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: #ff9800;
+            background: var(--bx-warn, #ff9800);
             color: white;
             padding: 16px 24px;
             border-radius: 8px;
@@ -273,7 +273,7 @@ class GraphQLDashboardClient {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: #7C3AED;
+            background: var(--bx-accent, #7C3AED);
             color: white;
             padding: 14px 20px;
             border-radius: 8px;
@@ -290,7 +290,7 @@ class GraphQLDashboardClient {
             <span style="font-size:20px;">🔒</span>
             <div>
                 <div style="font-weight:600;margin-bottom:2px;">Login required</div>
-                <div style="opacity:0.9;">${message} <a href="/pages/login.html" style="color:#A78BFA;text-decoration:underline;">Sign in</a></div>
+                <div style="opacity:0.9;">${message} <a href="/pages/login.html" style="color:var(--bx-accent, #A78BFA);text-decoration:underline;">Sign in</a></div>
             </div>
             <button onclick="this.parentElement.remove()" style="background:none;border:none;color:white;cursor:pointer;margin-left:auto;font-size:18px;line-height:1;">&times;</button>
         `;

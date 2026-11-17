@@ -65,7 +65,7 @@ class GenAiProviderManager {
 
             const isDecision = (p.type || '').includes('decision');
             const typeBadge = isDecision
-                ? `<span class="type-badge" style="background: rgba(16, 185, 129, 0.15); color: #34D399; border-color: rgba(16, 185, 129, 0.3);">${p.type.replace('-decision', '')} · Decision</span>`
+                ? `<span class="type-badge" style="background: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.15); color: var(--bx-ok, #34D399); border-color: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.3);">${p.type.replace('-decision', '')} · Decision</span>`
                 : `<span class="type-badge">${p.type}</span>`;
 
             const tr = document.createElement('tr');

@@ -16,24 +16,24 @@
    ========================================================================== */
 
 :root {
-    --monster-purple: #7C3AED;
-    --monster-dark: #5B21B6;
-    --monster-light: #A78BFA;
-    --monster-green: #10B981;
-    --monster-teal: #14B8A6;
-    --monster-red: #EF4444;
-    --monster-orange: #F97316;
-    --accent-blue: #3B82F6;
+    --monster-purple: var(--bx-accent, #7C3AED);
+    --monster-dark: var(--bx-accent-2, #5B21B6);
+    --monster-light: var(--bx-accent, #A78BFA);
+    --monster-green: var(--bx-ok, #10B981);
+    --monster-teal: var(--bx-accent-2, #14B8A6);
+    --monster-red: var(--bx-err, #EF4444);
+    --monster-orange: var(--bx-warn, #F97316);
+    --accent-blue: var(--bx-accent, #3B82F6);
     /* Map to iX classic-dark theme variables */
-    --dark-bg: var(--theme-color-1, #0f1619);
-    --dark-surface: var(--theme-color-2, #18262d);
-    --dark-surface-2: var(--theme-color-3, #223240);
-    --dark-border: var(--theme-color-soft-bdr, rgba(211, 236, 248, 0.4));
-    --text-primary: var(--theme-color-std-text, #f0f6fc);
-    --text-secondary: var(--theme-color-soft-text, #97bdd4);
-    --text-muted: var(--theme-color-weak-text, #617d91);
-    --gradient-primary: linear-gradient(135deg, #7C3AED 0%, #10B981 100%);
-    --gradient-secondary: linear-gradient(135deg, #5B21B6 0%, #14B8A6 100%);
+    --dark-bg: var(--theme-color-1, var(--bx-bg, #0f1619));
+    --dark-surface: var(--theme-color-2, var(--bx-surface, #18262d));
+    --dark-surface-2: var(--theme-color-3, var(--bx-raised, #223240));
+    --dark-border: var(--theme-color-soft-bdr, rgba(var(--bx-line-rgb, 211, 236, 248), 0.4));
+    --text-primary: var(--theme-color-std-text, var(--bx-heading, #f0f6fc));
+    --text-secondary: var(--theme-color-soft-text, var(--bx-muted, #97bdd4));
+    --text-muted: var(--theme-color-weak-text, var(--bx-weak, #617d91));
+    --gradient-primary: linear-gradient(135deg, var(--bx-accent, #7C3AED) 0%, var(--bx-ok, #10B981) 100%);
+    --gradient-secondary: linear-gradient(135deg, var(--bx-accent-2, #5B21B6) 0%, var(--bx-accent-2, #14B8A6) 100%);
     --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
 }
 
@@ -75,21 +75,21 @@ body {
 }
 
 .auth-status-readonly {
-    color: #fbbf24;
-    background: rgba(245, 158, 11, 0.16);
-    border: 1px solid rgba(245, 158, 11, 0.5);
+    color: var(--bx-warn, #fbbf24);
+    background: rgba(var(--bx-warn-rgb, 245, 158, 11), 0.16);
+    border: 1px solid rgba(var(--bx-warn-rgb, 245, 158, 11), 0.5);
 }
 
 .auth-status-logged-in {
-    color: #34d399;
-    background: rgba(16, 185, 129, 0.14);
-    border: 1px solid rgba(16, 185, 129, 0.45);
+    color: var(--bx-ok, #34d399);
+    background: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.14);
+    border: 1px solid rgba(var(--bx-ok-rgb, 16, 185, 129), 0.45);
 }
 
 .auth-status-disabled {
-    color: var(--theme-color-soft-text, #97bdd4);
-    background: rgba(151, 189, 212, 0.12);
-    border: 1px solid rgba(151, 189, 212, 0.35);
+    color: var(--theme-color-soft-text, var(--bx-muted, #97bdd4));
+    background: rgba(var(--bx-muted-rgb, 151, 189, 212), 0.12);
+    border: 1px solid rgba(var(--bx-muted-rgb, 151, 189, 212), 0.35);
 }
 
 @media (max-width: 720px) {
@@ -110,7 +110,7 @@ body {
     height: 100vh;
     padding: 2rem;
     box-sizing: border-box;
-    background: linear-gradient(180deg, rgba(124, 58, 237, 0.1) 0%, transparent 100%);
+    background: linear-gradient(180deg, rgba(var(--bx-accent-rgb, 124, 58, 237), 0.1) 0%, transparent 100%);
 }
 
 .login-card {
@@ -181,7 +181,7 @@ body {
 .form-control:focus {
     outline: none;
     border-color: var(--monster-purple);
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+    box-shadow: 0 0 0 3px rgba(var(--bx-accent-rgb, 124, 58, 237), 0.1);
 }
 
 .alert {
@@ -192,15 +192,15 @@ body {
 }
 
 .alert-error {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.2);
-    color: #FECACA;
+    background: rgba(var(--bx-err-rgb, 239, 68, 68), 0.1);
+    border: 1px solid rgba(var(--bx-err-rgb, 239, 68, 68), 0.2);
+    color: var(--bx-err-text, #FECACA);
 }
 
 .alert-success {
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    color: #A7F3D0;
+    background: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.1);
+    border: 1px solid rgba(var(--bx-ok-rgb, 16, 185, 129), 0.2);
+    color: var(--bx-ok, #A7F3D0);
 }
 
 /* ========================== Global scrollbar styling ===================== */

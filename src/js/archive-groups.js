@@ -154,7 +154,7 @@ class ArchiveGroupsManager {
                 `<span class="topic-filter-tag">${this.escapeHtml(filter)}</span>`
             ).join('')}
                         ${group.topicFilter.length > 3 ?
-                    `<span class="topic-filter-tag" style="background: var(--accent-blue); color: white;">+${group.topicFilter.length - 3} more</span>` :
+                    `<span class="topic-filter-tag" style="background: var(--accent-blue); color: var(--bx-on-accent, white);">+${group.topicFilter.length - 3} more</span>` :
                     ''
                 }
                     </div>
@@ -174,7 +174,7 @@ class ArchiveGroupsManager {
                 <td>${this.escapeHtml(this.getDatabaseConnectionLabel(group))}</td>
                 <td>${this.escapeHtml(group.payloadFormat || 'DEFAULT')}</td>
                 <td>${group.retainedOnly ? 'Yes' : 'No'}</td>
-                <td style="color: #9333EA; white-space: nowrap;">${(() => {
+                <td style="color: var(--bx-accent, #9333EA); white-space: nowrap;">${(() => {
                     const msgs = group.metrics && group.metrics.length > 0 ? Math.round(group.metrics[0].messagesOut) : 0;
                     const buf = group.metrics && group.metrics.length > 0 ? group.metrics[0].bufferSize : 0;
                     return `${msgs} msg/s<br><span style=\"color: var(--text-secondary);\">${buf} buf</span>`;

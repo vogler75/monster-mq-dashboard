@@ -839,9 +839,9 @@ const VisualFlow = (() => {
     const script = scriptEl.value.trim();
     if(!script){
       validationEl.style.display = 'block';
-      validationEl.style.background = 'rgba(255,193,7,0.15)';
-      validationEl.style.borderColor = '#ffc107';
-      validationEl.style.color = '#ffc107';
+      validationEl.style.background = 'rgba(var(--bx-warn-rgb, 255, 193, 7),0.15)';
+      validationEl.style.borderColor = 'var(--bx-warn, #ffc107)';
+      validationEl.style.color = 'var(--bx-warn, #ffc107)';
       validationEl.innerHTML = '⚠ Script is empty';
       return;
     }
@@ -850,16 +850,16 @@ const VisualFlow = (() => {
       // Validate JavaScript syntax using Function constructor
       new Function(script);
       validationEl.style.display = 'block';
-      validationEl.style.background = 'rgba(46,213,115,0.15)';
-      validationEl.style.borderColor = '#2ed573';
-      validationEl.style.color = '#2ed573';
+      validationEl.style.background = 'rgba(var(--bx-ok-rgb, 46, 213, 115),0.15)';
+      validationEl.style.borderColor = 'var(--bx-ok, #2ed573)';
+      validationEl.style.color = 'var(--bx-ok, #2ed573)';
       validationEl.innerHTML = '✓ JavaScript syntax is valid';
       notify('Script validated successfully', 'success');
     } catch(e) {
       validationEl.style.display = 'block';
-      validationEl.style.background = 'rgba(220,53,69,0.15)';
-      validationEl.style.borderColor = '#dc3545';
-      validationEl.style.color = '#dc3545';
+      validationEl.style.background = 'rgba(var(--bx-err-rgb, 220, 53, 69),0.15)';
+      validationEl.style.borderColor = 'var(--bx-err, #dc3545)';
+      validationEl.style.color = 'var(--bx-err, #dc3545)';
       validationEl.innerHTML = `✗ Syntax error: ${escape(e.message)}`;
       notify('Script has syntax errors', 'error');
     }

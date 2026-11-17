@@ -12,14 +12,14 @@
     <script type="module" src="/js/sidebar.js"></script>
     <style>
         .status-ready {
-            background: rgba(59, 130, 246, 0.15);
+            background: rgba(var(--bx-accent-rgb, 59, 130, 246), 0.15);
             color: var(--accent-blue);
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            border: 1px solid rgba(var(--bx-accent-rgb, 59, 130, 246), 0.3);
         }
         .status-stopped {
-            background: rgba(239, 68, 68, 0.15);
+            background: rgba(var(--bx-err-rgb, 239, 68, 68), 0.15);
             color: var(--monster-red);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            border: 1px solid rgba(var(--bx-err-rgb, 239, 68, 68), 0.3);
         }
         .type-badge {
             display: inline-flex;
@@ -31,14 +31,14 @@
             text-transform: uppercase;
         }
         .type-internal {
-            background: rgba(124, 58, 237, 0.15);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.15);
             color: var(--monster-purple);
-            border: 1px solid rgba(124, 58, 237, 0.3);
+            border: 1px solid rgba(var(--bx-accent-rgb, 124, 58, 237), 0.3);
         }
         .type-external {
-            background: rgba(20, 184, 166, 0.15);
+            background: rgba(var(--bx-accent-2-rgb, 20, 184, 166), 0.15);
             color: var(--monster-teal);
-            border: 1px solid rgba(20, 184, 166, 0.3);
+            border: 1px solid rgba(var(--bx-accent-2-rgb, 20, 184, 166), 0.3);
         }
         .ws-status {
             display: inline-flex;

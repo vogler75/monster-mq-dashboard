@@ -1,4 +1,6 @@
 import { ArchiveTopicBrowser } from './archive-topic-browser.js';
+// Brand colour helpers from js/branding.js; identity fallbacks outside the shell (tests).
+const { brandColor = c => c, brandPalette = p => p.slice() } = globalThis;
 
 // Mounted by the SPA router; resources and handler bindings belong to this visit.
 export function mount(page) {
@@ -10,7 +12,7 @@ const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeo
  */
 
 // Color palette for chart datasets
-const CHART_COLORS = [
+const CHART_COLORS = brandPalette([
     '#22C55E', // Green
     '#6366F1', // Indigo
     '#F59E0B', // Amber
@@ -21,7 +23,7 @@ const CHART_COLORS = [
     '#0EA5E9', // Sky
     '#F97316', // Orange
     '#06B6D4', // Cyan
-];
+]);
 
 class TopicChartManager {
     constructor() {
@@ -62,8 +64,8 @@ class TopicChartManager {
     setupChart() {
         const ctx = document.getElementById('topicChart').getContext('2d');
 
-        Chart.defaults.color = '#CBD5E1';
-        Chart.defaults.borderColor = '#475569';
+        Chart.defaults.color = brandColor('#CBD5E1');
+        Chart.defaults.borderColor = brandColor('#475569');
 
         this.chart = new Chart(ctx, {
             type: 'line',
@@ -88,12 +90,12 @@ class TopicChartManager {
                                 day: 'MMM d'
                             }
                         },
-                        grid: { color: '#334155' },
+                        grid: { color: brandColor('#334155') },
                         ticks: { maxRotation: 0 }
                     },
                     y: {
                         beginAtZero: false,
-                        grid: { color: '#334155' }
+                        grid: { color: brandColor('#334155') }
                     }
                 },
                 plugins: {

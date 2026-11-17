@@ -301,9 +301,9 @@ export function mount(page) {
                             chip.style.fontSize = '0.75rem';
                             chip.style.fontFamily = 'monospace';
                             chip.style.borderRadius = '4px';
-                            chip.style.background = 'rgba(59, 130, 246, 0.15)';
-                            chip.style.color = '#93c5fd';
-                            chip.style.border = '1px solid rgba(59, 130, 246, 0.25)';
+                            chip.style.background = 'rgba(var(--bx-accent-rgb, 59, 130, 246), 0.15)';
+                            chip.style.color = 'var(--bx-accent, #93c5fd)';
+                            chip.style.border = '1px solid rgba(var(--bx-accent-rgb, 59, 130, 246), 0.25)';
                             chip.textContent = top;
                             chipsContainer.appendChild(chip);
                         });
@@ -318,8 +318,8 @@ export function mount(page) {
                     if (s.config?.triggerOnChangeOnly) {
                         const changeBadge = document.createElement('span');
                         changeBadge.style.fontSize = '0.7rem';
-                        changeBadge.style.color = '#a78bfa';
-                        changeBadge.style.border = '1px solid rgba(167, 139, 250, 0.3)';
+                        changeBadge.style.color = 'var(--bx-accent, #a78bfa)';
+                        changeBadge.style.border = '1px solid rgba(var(--bx-accent-rgb, 167, 139, 250), 0.3)';
                         changeBadge.style.borderRadius = '4px';
                         changeBadge.style.padding = '1px 4px';
                         changeBadge.textContent = 'on-change';
@@ -332,9 +332,9 @@ export function mount(page) {
                     timerChip.style.padding = '2px 6px';
                     timerChip.style.fontSize = '0.75rem';
                     timerChip.style.borderRadius = '4px';
-                    timerChip.style.background = 'rgba(245, 158, 11, 0.15)';
-                    timerChip.style.color = '#fcd34d';
-                    timerChip.style.border = '1px solid rgba(245, 158, 11, 0.25)';
+                    timerChip.style.background = 'rgba(var(--bx-warn-rgb, 245, 158, 11), 0.15)';
+                    timerChip.style.color = 'var(--bx-warn-text, #fcd34d)';
+                    timerChip.style.border = '1px solid rgba(var(--bx-warn-rgb, 245, 158, 11), 0.25)';
                     timerChip.textContent = `${s.config?.timerIntervalMs || 0} ms`;
                     chipsContainer.appendChild(timerChip);
                 }
@@ -344,9 +344,9 @@ export function mount(page) {
                     callChip.style.padding = '2px 6px';
                     callChip.style.fontSize = '0.75rem';
                     callChip.style.borderRadius = '4px';
-                    callChip.style.background = 'rgba(16, 185, 129, 0.15)';
-                    callChip.style.color = '#6ee7b7';
-                    callChip.style.border = '1px solid rgba(16, 185, 129, 0.25)';
+                    callChip.style.background = 'rgba(var(--bx-ok-rgb, 16, 185, 129), 0.15)';
+                    callChip.style.color = 'var(--bx-ok, #6ee7b7)';
+                    callChip.style.border = '1px solid rgba(var(--bx-ok-rgb, 16, 185, 129), 0.25)';
                     callChip.textContent = 'Callable';
                     chipsContainer.appendChild(callChip);
                 }
@@ -359,7 +359,7 @@ export function mount(page) {
                 const mode = s.config?.instanceMode || 'SINGLETON';
                 const modeSpan = document.createElement('span');
                 modeSpan.style.fontSize = '0.8rem';
-                modeSpan.style.color = mode === 'SINGLETON' ? 'var(--text-secondary)' : '#c084fc';
+                modeSpan.style.color = mode === 'SINGLETON' ? 'var(--text-secondary)' : 'var(--bx-accent, #c084fc)';
                 modeSpan.textContent = mode;
                 modeTd.appendChild(modeSpan);
                 tr.appendChild(modeTd);
@@ -412,12 +412,12 @@ export function mount(page) {
                     statusBadge.style.marginTop = '2px';
 
                     if (s.lastExecutionStatus === 'SUCCESS') {
-                        statusBadge.style.background = 'rgba(16, 185, 129, 0.15)';
-                        statusBadge.style.color = '#34d399';
+                        statusBadge.style.background = 'rgba(var(--bx-ok-rgb, 16, 185, 129), 0.15)';
+                        statusBadge.style.color = 'var(--bx-ok, #34d399)';
                         statusBadge.textContent = 'SUCCESS';
                     } else if (s.lastExecutionStatus === 'ERROR') {
-                        statusBadge.style.background = 'rgba(239, 68, 68, 0.15)';
-                        statusBadge.style.color = '#f87171';
+                        statusBadge.style.background = 'rgba(var(--bx-err-rgb, 239, 68, 68), 0.15)';
+                        statusBadge.style.color = 'var(--bx-err, #f87171)';
                         statusBadge.textContent = 'ERROR';
                     } else {
                         statusBadge.style.background = 'rgba(255, 255, 255, 0.08)';

@@ -1,3 +1,5 @@
+// Brand colour helpers from js/branding.js; identity fallbacks outside the shell (tests).
+const { brandColor = c => c, brandPalette = p => p.slice(), brandAlpha = c => c } = globalThis;
 // Mounted by the SPA router; resources and handler bindings belong to this visit.
 export function mount(page) {
 const { window, document, ui, setInterval, clearInterval, setTimeout, clearTimeout,
@@ -108,28 +110,29 @@ class DashboardManager {
         const messageBusCtx = document.getElementById('messageBusChart').getContext('2d');
         const archiveGroupsCtx = document.getElementById('archiveGroupsChart').getContext('2d');
 
-        Chart.defaults.color = '#CBD5E1';
-        Chart.defaults.borderColor = '#475569';
+        Chart.defaults.color = brandColor('#CBD5E1');
+        Chart.defaults.borderColor = brandColor('#475569');
 
         // Traffic chart datasets — each spec carries the feature flag that gates it
         // and a `getValue(d)` that pulls the right metric from a broker metrics record.
         // The MQTT Messages series has no feature gate (always shown).
+        const S = brandPalette(['#22C55E', '#0EA5E9', '#EF4444', '#14B8A6', '#EC4899', '#A78BFA', '#F59E0B', '#6366F1']);
         this._trafficDatasetSpecs = [
-            { label: 'MQTT Messages', feature: null, color: '#22C55E', bg: 'rgba(34, 197, 94, 0.12)',
+            { label: 'MQTT Messages', feature: null, color: S[0], bg: brandAlpha(S[0], 0.12),
               getValue: d => (d.messagesIn || 0) + (d.messagesOut || 0) },
-            { label: 'MQTT Bridges', feature: 'MqttClient', color: '#0EA5E9', bg: 'rgba(14, 165, 233, 0.12)',
+            { label: 'MQTT Bridges', feature: 'MqttClient', color: S[1], bg: brandAlpha(S[1], 0.12),
               getValue: d => (d.mqttClientIn || 0) + (d.mqttClientOut || 0) },
-            { label: 'Kafka', feature: 'Kafka', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)',
+            { label: 'Kafka', feature: 'Kafka', color: S[2], bg: brandAlpha(S[2], 0.12),
               getValue: d => (d.kafkaClientIn || 0) + (d.kafkaClientOut || 0) },
-            { label: 'OPC UA', feature: ['OpcUa', 'OpcUaServer'], color: '#14B8A6', bg: 'rgba(20, 184, 166, 0.12)',
+            { label: 'OPC UA', feature: ['OpcUa', 'OpcUaServer'], color: S[3], bg: brandAlpha(S[3], 0.12),
               getValue: d => (d.opcUaClientIn || 0) + (d.opcUaClientOut || 0) },
-            { label: 'WinCC OA', feature: 'WinCCOa', color: '#EC4899', bg: 'rgba(236, 72, 153, 0.12)',
+            { label: 'WinCC OA', feature: 'WinCCOa', color: S[4], bg: brandAlpha(S[4], 0.12),
               getValue: d => (d.winCCOaClientIn || 0) },
-            { label: 'WinCC UA', feature: 'WinCCUa', color: '#A78BFA', bg: 'rgba(167, 139, 250, 0.12)',
+            { label: 'WinCC UA', feature: 'WinCCUa', color: S[5], bg: brandAlpha(S[5], 0.12),
               getValue: d => (d.winCCUaClientIn || 0) },
-            { label: 'NATS', feature: 'Nats', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)',
+            { label: 'NATS', feature: 'Nats', color: S[6], bg: brandAlpha(S[6], 0.12),
               getValue: d => (d.natsClientIn || 0) + (d.natsClientOut || 0) },
-            { label: 'Redis', feature: 'Redis', color: '#6366F1', bg: 'rgba(99, 102, 241, 0.12)',
+            { label: 'Redis', feature: 'Redis', color: S[7], bg: brandAlpha(S[7], 0.12),
               getValue: d => (d.redisClientIn || 0) + (d.redisClientOut || 0) }
         ].filter(spec => this.isFeatureEnabled(spec.feature));
 
@@ -154,10 +157,10 @@ class DashboardManager {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: { color: '#334155' }
+                        grid: { color: brandColor('#334155') }
                     },
                     x: {
-                        grid: { color: '#334155' }
+                        grid: { color: brandColor('#334155') }
                     }
                 },
                 plugins: {
@@ -174,15 +177,15 @@ class DashboardManager {
                     {
                         label: 'Bus In',
                         data: [],
-                        backgroundColor: '#14B8A6',
-                        borderColor: '#14B8A6',
+                        backgroundColor: brandColor('#14B8A6'),
+                        borderColor: brandColor('#14B8A6'),
                         borderWidth: 1
                     },
                     {
                         label: 'Bus Out',
                         data: [],
-                        backgroundColor: '#F97316',
-                        borderColor: '#F97316',
+                        backgroundColor: brandColor('#F97316'),
+                        borderColor: brandColor('#F97316'),
                         borderWidth: 1
                     }
                 ]
@@ -192,8 +195,8 @@ class DashboardManager {
                 maintainAspectRatio: false,
                 aspectRatio: 2,
                 scales: {
-                    y: { beginAtZero: true, grid: { color: '#334155' } },
-                    x: { grid: { color: '#334155' } }
+                    y: { beginAtZero: true, grid: { color: brandColor('#334155') } },
+                    x: { grid: { color: brandColor('#334155') } }
                 },
                 plugins: { legend: { position: 'top' } }
             }
@@ -209,10 +212,10 @@ class DashboardManager {
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: { color: '#334155' },
+                        grid: { color: brandColor('#334155') },
                         title: { display: true, text: 'Messages/sec' }
                     },
-                    x: { grid: { color: '#334155' } }
+                    x: { grid: { color: brandColor('#334155') } }
                 },
                 plugins: { legend: { position: 'top' } }
             }
@@ -280,7 +283,7 @@ class DashboardManager {
     loggerIo(cIn, totalIn, totalOut) {
         return `<span style="color: ${cIn};">${this.formatNumber(totalIn)}</span>` +
             `<span style="color: var(--text-muted); font-weight: 400;"> / </span>` +
-            `<span style="color: #6366F1;">${this.formatNumber(totalOut)}</span>`;
+            `<span style="color: var(--bx-accent, #6366F1);">${this.formatNumber(totalOut)}</span>`;
     }
 
     /** Refresh button target; also the entry point used by the polling loop. */
@@ -503,8 +506,8 @@ class DashboardManager {
 
         const overviewContainer = document.getElementById('cluster-overview');
 
-        const cIn = '#22C55E';  // green for In
-        const cOut = '#6366F1'; // indigo for Out
+        const cIn = brandColor('#22C55E');  // green for In
+        const cOut = brandColor('#6366F1'); // indigo for Out
 
         const overallIn = clusterTotals.messagesIn + clusterTotals.mqttClientIn + clusterTotals.kafkaClientIn + clusterTotals.opcUaClientIn + (clusterTotals.winCCOaClientIn || 0) + (clusterTotals.winCCUaClientIn || 0) + clusterTotals.natsClientIn + clusterTotals.redisClientIn;
         const overallOut = clusterTotals.messagesOut + clusterTotals.mqttClientOut + clusterTotals.kafkaClientOut + clusterTotals.opcUaClientOut + clusterTotals.natsClientOut + clusterTotals.redisClientOut;
@@ -547,7 +550,7 @@ class DashboardManager {
 
     async updateLoggerMetrics() {
         try {
-            const cIn = '#22C55E';
+            const cIn = brandColor('#22C55E');
             const container = document.getElementById('logger-overview');
             const section = document.getElementById('logger-section');
             if (!container || !section) return;
@@ -653,11 +656,11 @@ class DashboardManager {
             const featureTooltip = !hasExplicit ? 'all enabled (default)' : featureList.length === 0 ? 'none enabled' : featureList.join(', ');
             const featureLabel = !hasExplicit ? 'all' : featureList.length === 0 ? 'none' : `${featureList.length} enabled`;
             const featureWarning = hasMismatch
-                ? `<span title="Feature mismatch across cluster nodes! This node: ${featureTooltip}" style="color:#F59E0B;cursor:default;">&#9888; ${featureLabel}</span>`
+                ? `<span title="Feature mismatch across cluster nodes! This node: ${featureTooltip}" style="color:var(--bx-warn, #F59E0B);cursor:default;">&#9888; ${featureLabel}</span>`
                 : `<span title="${featureTooltip}" style="color:var(--text-secondary);cursor:default;">${featureLabel}</span>`;
             const td = (visible, content) => visible ? `<td>${content}</td>` : '';
             return `
-                <tr${hasMismatch ? ' style="background:rgba(245,158,11,0.05);"' : ''}>
+                <tr${hasMismatch ? ' style="background:rgba(var(--bx-warn-rgb, 245, 158, 11),0.05);"' : ''}>
                     <td><strong>${broker.nodeId}</strong></td>
                     <td><code style="font-size: 0.875rem; background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px;">${broker.version || 'unknown'}</code></td>
                     <td><span class="status-indicator ${isHealthy ? 'status-online' : 'status-offline'}"><span class="status-dot"></span>${isHealthy ? 'Online' : 'Offline'}</span></td>
@@ -665,14 +668,14 @@ class DashboardManager {
                     <td>${this.formatNumber(metrics.messagesOut || 0)}</td>
                     <td>${metrics.nodeSessionCount || 0}</td>
                     <td>${this.formatNumber(metrics.queuedMessagesCount || 0)}</td>
-                    <td><span style="color: #14B8A6;">${this.formatNumber(metrics.messageBusIn || 0)}</span> / <span style="color: #F97316;">${this.formatNumber(metrics.messageBusOut || 0)}</span></td>
-                    ${td(colVisible('MqttClient'), `<span style="color: #0EA5E9;">${this.formatNumber(metrics.mqttClientIn || 0)}</span> / <span style="color: #F59E0B;">${this.formatNumber(metrics.mqttClientOut || 0)}</span>`)}
-                    ${td(colVisible('Kafka'), `<span style="color: #EF4444;">${this.formatNumber(metrics.kafkaClientIn || 0)}</span>`)}
-                    ${td(colVisible('OpcUa') || colVisible('OpcUaServer'), `<span style="color: #14B8A6;">${this.formatNumber(metrics.opcUaClientIn || 0)}</span> / <span style="color: #9333EA;">${this.formatNumber(metrics.opcUaClientOut || 0)}</span>`)}
-                    ${td(colVisible('WinCCOa'), `<span style="color: #EC4899;">${this.formatNumber(metrics.winCCOaClientIn || 0)}</span>`)}
-                    ${td(colVisible('WinCCUa'), `<span style="color: #A78BFA;">${this.formatNumber(metrics.winCCUaClientIn || 0)}</span>`)}
-                    ${td(colVisible('Nats'), `<span style="color: #F59E0B;">${this.formatNumber(metrics.natsClientIn || 0)}</span> / <span style="color: #F59E0B;">${this.formatNumber(metrics.natsClientOut || 0)}</span>`)}
-                    ${td(colVisible('Redis'), `<span style="color: #6366F1;">${this.formatNumber(metrics.redisClientIn || 0)}</span> / <span style="color: #6366F1;">${this.formatNumber(metrics.redisClientOut || 0)}</span>`)}
+                    <td><span style="color: var(--bx-accent-2, #14B8A6);">${this.formatNumber(metrics.messageBusIn || 0)}</span> / <span style="color: var(--bx-warn, #F97316);">${this.formatNumber(metrics.messageBusOut || 0)}</span></td>
+                    ${td(colVisible('MqttClient'), `<span style="color: var(--bx-accent, #0EA5E9);">${this.formatNumber(metrics.mqttClientIn || 0)}</span> / <span style="color: var(--bx-warn, #F59E0B);">${this.formatNumber(metrics.mqttClientOut || 0)}</span>`)}
+                    ${td(colVisible('Kafka'), `<span style="color: var(--bx-err, #EF4444);">${this.formatNumber(metrics.kafkaClientIn || 0)}</span>`)}
+                    ${td(colVisible('OpcUa') || colVisible('OpcUaServer'), `<span style="color: var(--bx-accent-2, #14B8A6);">${this.formatNumber(metrics.opcUaClientIn || 0)}</span> / <span style="color: var(--bx-accent, #9333EA);">${this.formatNumber(metrics.opcUaClientOut || 0)}</span>`)}
+                    ${td(colVisible('WinCCOa'), `<span style="color: var(--bx-accent-3, #EC4899);">${this.formatNumber(metrics.winCCOaClientIn || 0)}</span>`)}
+                    ${td(colVisible('WinCCUa'), `<span style="color: var(--bx-accent, #A78BFA);">${this.formatNumber(metrics.winCCUaClientIn || 0)}</span>`)}
+                    ${td(colVisible('Nats'), `<span style="color: var(--bx-warn, #F59E0B);">${this.formatNumber(metrics.natsClientIn || 0)}</span> / <span style="color: var(--bx-warn, #F59E0B);">${this.formatNumber(metrics.natsClientOut || 0)}</span>`)}
+                    ${td(colVisible('Redis'), `<span style="color: var(--bx-accent, #6366F1);">${this.formatNumber(metrics.redisClientIn || 0)}</span> / <span style="color: var(--bx-accent, #6366F1);">${this.formatNumber(metrics.redisClientOut || 0)}</span>`)}
                     <td>${featureWarning}</td>
                 </tr>`;
         }).join('');
@@ -735,7 +738,7 @@ class DashboardManager {
     initializeArchiveGroupsChart(archiveGroups) {
         this.archiveGroupsChart.data.labels = [];
         this.archiveGroupsChart.data.datasets = [];
-        const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#14B8A6', '#06B6D4', '#F97316', '#EC4899', '#6366F1'];
+        const colors = brandPalette(['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#14B8A6', '#06B6D4', '#F97316', '#EC4899', '#6366F1']);
         const timeframe = this.archiveCurrentTimeframe || this.currentTimeframe;
 
         // Build dataset shells for enabled groups with any history
@@ -790,7 +793,7 @@ class DashboardManager {
                 this.archiveGroupsChart.data.datasets[idx].data.push(currentMetric.messagesOut || 0);
                 if (this.archiveGroupsChart.data.datasets[idx].data.length > this.maxDataPoints) this.archiveGroupsChart.data.datasets[idx].data.shift();
             } else {
-                const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#14B8A6', '#06B6D4', '#F97316', '#EC4899', '#6366F1'];
+                const colors = brandPalette(['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#14B8A6', '#06B6D4', '#F97316', '#EC4899', '#6366F1']);
                 const color = colors[this.archiveGroupsChart.data.datasets.length % colors.length];
                 this.archiveGroupsChart.data.datasets.push({ label: group.name, data: [currentMetric.messagesOut || 0], borderColor: color, backgroundColor: color + '20', fill: false, tension: 0.4, spanGaps: true });
             }

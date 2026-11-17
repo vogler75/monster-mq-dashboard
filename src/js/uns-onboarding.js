@@ -1,9 +1,11 @@
+// Brand colour helpers from js/branding.js; identity fallbacks outside the shell (tests).
+const { brandPalette = p => p.slice() } = globalThis;
 // UNS Modeler Direction B view (B1, plan-uns-modeler-design.md §5, §7 B1):
 // source topic tree, proposed datapoint types and datapoints with rename and
 // exclude, JSON import, AI run, and Create in WinCC OA with a summary.
 // Validation comes from the broker (unsModelerValidate).
 
-const PALETTE = ['#38bdf8', '#10b981', '#f59e0b', '#a78bfa', '#f472b6', '#22d3ee', '#84cc16', '#fb923c'];
+const PALETTE = brandPalette(['#38bdf8', '#10b981', '#f59e0b', '#a78bfa', '#f472b6', '#22d3ee', '#84cc16', '#fb923c']);
 
 export function topicMatches(filter, topic) {
     const f = filter.split('/');
@@ -312,7 +314,7 @@ export class OnboardingView {
                 const selected = filters.some(f => topicMatches(f, child) || f === child + '/#');
                 const inScope = filters.some(f => topicMatches(f, child));
                 if (inScope && kids && kids.length === 0) { if (a) assigned++; else unassigned++; }
-                const sw = a ? `<span class="um-swatch" style="background:${colors.get(a[0].type) || '#64748b'}" title="${esc(a.map(x => x.datapoint + '.' + x.element).join(', '))}"></span>` : '';
+                const sw = a ? `<span class="um-swatch" style="background:${colors.get(a[0].type) || 'var(--bx-weak, #64748b)'}" title="${esc(a.map(x => x.datapoint + '.' + x.element).join(', '))}"></span>` : '';
                 const val = this.value(child);
                 rows.push(`<div class="um-row" data-topic="${esc(child)}" style="padding-left:${0.3 + depth * 1.1}rem">
                     <span class="um-chevron${open ? ' expanded' : ''}" data-toggle="1">&#9656;</span>
@@ -432,7 +434,7 @@ export class OnboardingView {
             const t = types.find(x => x.name === d.type);
             const excluded = d.excluded || (t && t.excluded);
             return `<div class="um-card${excluded ? ' excluded' : ''}${iss.some(x => x.severity === 'ERROR') ? ' conflict' : ''}" data-dp="${esc(d.name)}">
-                <div class="um-card-head"><span class="um-swatch" style="background:${colors.get(d.type) || '#64748b'}"></span><strong>${esc(d.name)}</strong>
+                <div class="um-card-head"><span class="um-swatch" style="background:${colors.get(d.type) || 'var(--bx-weak, #64748b)'}"></span><strong>${esc(d.name)}</strong>
                 <span class="um-small">${esc(d.type)}</span>${d.excluded ? '<span class="um-tag">excluded</span>' : ''}${this.issueTags(iss)}
                 <button type="button" class="btn btn-secondary btn-sm" data-a="rename" data-requires-auth>Rename</button>
                 <button type="button" class="btn btn-secondary btn-sm" data-a="exclude" data-requires-auth>${d.excluded ? 'Include' : 'Exclude'}</button></div>

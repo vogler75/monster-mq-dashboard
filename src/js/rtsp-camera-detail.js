@@ -229,13 +229,13 @@ class RtspCameraDetailManager {
 
         if (m.connected) {
             if (statusBadge) { statusBadge.textContent = 'Connected'; statusBadge.className = 'status-badge badge-ok'; }
-            if (connVal) connVal.innerHTML = '<span style="color:var(--status-ok, #22c55e);">&#9679; Connected</span>';
+            if (connVal) connVal.innerHTML = '<span style="color:var(--status-ok, var(--bx-ok, #22c55e));">&#9679; Connected</span>';
         } else if (m.lastError) {
             if (statusBadge) { statusBadge.textContent = 'Error'; statusBadge.className = 'status-badge badge-error'; }
-            if (connVal) connVal.innerHTML = '<span style="color:var(--status-error, #ef4444);">&#9679; Error</span>';
+            if (connVal) connVal.innerHTML = '<span style="color:var(--status-error, var(--bx-err, #ef4444));">&#9679; Error</span>';
         } else {
             if (statusBadge) { statusBadge.textContent = 'Connecting'; statusBadge.className = 'status-badge badge-warning'; }
-            if (connVal) connVal.innerHTML = '<span style="color:var(--status-warning, #eab308);">&#9679; Connecting</span>';
+            if (connVal) connVal.innerHTML = '<span style="color:var(--status-warning, var(--bx-warn, #eab308));">&#9679; Connecting</span>';
         }
 
         if (framesVal) framesVal.textContent = Math.round(m.framesReceived || 0).toLocaleString();

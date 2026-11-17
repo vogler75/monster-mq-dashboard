@@ -11,8 +11,8 @@
             padding: 0;
             height: 100%;
             overflow: hidden;
-            background: var(--background-secondary, #12141a);
-            color: var(--text-primary, #e8eaed);
+            background: var(--background-secondary, var(--bx-bg, #12141a));
+            color: var(--text-primary, var(--bx-body, #e8eaed));
         }
 
         .help-container {
@@ -67,12 +67,12 @@
         }
 
         .help-nav-list a:hover {
-            background: rgba(124, 58, 237, 0.1);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.1);
             color: var(--monster-purple);
         }
 
         .help-nav-list a.active {
-            background: rgba(124, 58, 237, 0.15);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.15);
             color: var(--monster-purple);
             font-weight: 600;
         }
@@ -169,7 +169,7 @@
         }
 
         .info-box {
-            background: rgba(20, 184, 166, 0.1);
+            background: rgba(var(--bx-accent-2-rgb, 20, 184, 166), 0.1);
             border-left: 3px solid var(--monster-teal);
             padding: 1rem 1.25rem;
             margin: 1.5rem 0;
@@ -183,8 +183,8 @@
         }
 
         .warning-box {
-            background: rgba(255, 176, 32, 0.1);
-            border-left: 3px solid #ffb020;
+            background: rgba(var(--bx-warn-rgb, 255, 176, 32), 0.1);
+            border-left: 3px solid var(--bx-warn, #ffb020);
             padding: 1rem 1.25rem;
             margin: 1.5rem 0;
             border-radius: 6px;
@@ -192,13 +192,13 @@
 
         .warning-box-title {
             font-weight: 600;
-            color: #ffb020;
+            color: var(--bx-warn, #ffb020);
             margin-bottom: 0.5rem;
         }
 
         .example-box {
-            background: rgba(124, 58, 237, 0.05);
-            border: 1px solid rgba(124, 58, 237, 0.2);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.05);
+            border: 1px solid rgba(var(--bx-accent-rgb, 124, 58, 237), 0.2);
             padding: 1.25rem;
             margin: 1.5rem 0;
             border-radius: 8px;

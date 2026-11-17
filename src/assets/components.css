@@ -55,16 +55,16 @@
     --c-info: var(--accent-blue);
     --c-accent: var(--monster-purple);
 
-    --c-ok-bg: rgba(16, 185, 129, 0.14);
-    --c-ok-bd: rgba(16, 185, 129, 0.32);
-    --c-warn-bg: rgba(249, 115, 22, 0.14);
-    --c-warn-bd: rgba(249, 115, 22, 0.32);
-    --c-err-bg: rgba(239, 68, 68, 0.14);
-    --c-err-bd: rgba(239, 68, 68, 0.32);
-    --c-info-bg: rgba(59, 130, 246, 0.14);
-    --c-info-bd: rgba(59, 130, 246, 0.32);
-    --c-accent-bg: rgba(124, 58, 237, 0.14);
-    --c-accent-bd: rgba(124, 58, 237, 0.32);
+    --c-ok-bg: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.14);
+    --c-ok-bd: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.32);
+    --c-warn-bg: rgba(var(--bx-warn-rgb, 249, 115, 22), 0.14);
+    --c-warn-bd: rgba(var(--bx-warn-rgb, 249, 115, 22), 0.32);
+    --c-err-bg: rgba(var(--bx-err-rgb, 239, 68, 68), 0.14);
+    --c-err-bd: rgba(var(--bx-err-rgb, 239, 68, 68), 0.32);
+    --c-info-bg: rgba(var(--bx-accent-rgb, 59, 130, 246), 0.14);
+    --c-info-bd: rgba(var(--bx-accent-rgb, 59, 130, 246), 0.32);
+    --c-accent-bg: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.14);
+    --c-accent-bd: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.32);
 
     /* Tabular figures for every number in a table or metric */
     --font-num: 'Siemens Sans', ui-sans-serif, system-ui, sans-serif;
@@ -481,7 +481,7 @@
 .chart-controls button.active {
     background: var(--c-accent);
     border-color: var(--c-accent);
-    color: #fff;
+    color: var(--bx-on-accent, #fff);
 }
 
 /* --------------------------------------------------------------- 4. Tables */
@@ -556,7 +556,7 @@
 }
 
 .data-table tbody tr:hover {
-    background: rgba(124, 58, 237, 0.06);
+    background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.06);
 }
 
 .data-table tbody tr:last-child td {
@@ -602,7 +602,7 @@ table.addresses-table td {
 .section-content > table tbody tr:hover,
 .section-content > .table-responsive > table tbody tr:hover,
 table.addresses-table tbody tr:hover {
-    background: rgba(124, 58, 237, 0.06);
+    background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.06);
 }
 
 .section-content > table tbody tr:last-child td,
@@ -859,11 +859,11 @@ textarea {
     /* Primary actions should read as confident, not fluorescent. A muted
        industrial blue carries the create/save affordance without competing
        with status colours or the purple brand accents elsewhere. */
-    background: #286d8e;
-    border-color: #286d8e;
+    background: var(--bx-accent, #286d8e);
+    border-color: var(--bx-accent, #286d8e);
     /* Pages inject their local styles after this sheet. Keep the foreground
        legible even when a legacy link or icon rule sets an accent colour. */
-    color: #fff !important;
+    color: var(--bx-on-accent, #fff) !important;
 }
 
 .btn-primary:visited,
@@ -873,12 +873,12 @@ textarea {
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: #205b77;
-    border-color: #205b77;
+    background: var(--bx-accent-2, #205b77);
+    border-color: var(--bx-accent-2, #205b77);
 }
 
 .btn-primary:focus-visible {
-    outline: 2px solid rgba(82, 181, 225, 0.85);
+    outline: 2px solid rgba(var(--bx-accent-rgb, 82, 181, 225), 0.85);
     outline-offset: 2px;
 }
 
@@ -919,7 +919,7 @@ textarea {
 .btn-danger-solid {
     background: var(--c-err);
     border-color: var(--c-err);
-    color: #fff;
+    color: var(--bx-on-accent, #fff);
 }
 
 .btn-danger-solid:hover:not(:disabled) {
@@ -1006,7 +1006,7 @@ textarea {
 .btn-icon.btn-pause:hover  { background: var(--c-warn-bg); }
 .btn-icon.btn-cert:hover,
 .btn-icon.btn-edit:hover   { background: var(--c-info-bg); }
-.btn-icon.btn-delete:hover { background: var(--c-err-bg); color: #f87171; }
+.btn-icon.btn-delete:hover { background: var(--c-err-bg); color: var(--bx-err, #f87171); }
 
 /* iX icon buttons — the other half of the button system.
    `variant="subtle-tertiary"` is the borderless look; the `ghost` attribute
@@ -1165,12 +1165,12 @@ ix-icon-button.disabled {
 }
 
 .protocol-v5 { background: var(--c-accent-bg); border-color: var(--c-accent-bd); color: var(--monster-light); }
-.protocol-v3 { background: var(--c-info-bg);   border-color: var(--c-info-bd);   color: #60a5fa; }
+.protocol-v3 { background: var(--c-info-bg);   border-color: var(--c-info-bd);   color: var(--bx-accent, #60a5fa); }
 
 /* MQTT v5 subscription options */
-.sub-no-local        { background: var(--c-err-bg);    border-color: var(--c-err-bd);    color: #fca5a5; }
-.sub-retain-handling { background: var(--c-info-bg);   border-color: var(--c-info-bd);   color: #93c5fd; }
-.sub-rap             { background: var(--c-accent-bg); border-color: var(--c-accent-bd); color: #c4b5fd; }
+.sub-no-local        { background: var(--c-err-bg);    border-color: var(--c-err-bd);    color: var(--bx-err-text, #fca5a5); }
+.sub-retain-handling { background: var(--c-info-bg);   border-color: var(--c-info-bd);   color: var(--bx-accent, #93c5fd); }
+.sub-rap             { background: var(--c-accent-bg); border-color: var(--c-accent-bd); color: var(--bx-accent, #c4b5fd); }
 
 /* Inline status with a dot, used inside table cells */
 .status-indicator {
@@ -1234,7 +1234,7 @@ ix-icon-button.disabled {
     background: var(--c-err-bg);
     border: 1px solid var(--c-err-bd);
     border-radius: var(--r-md);
-    color: #fecaca;
+    color: var(--bx-err-text, #fecaca);
     font-size: 0.85rem;
     line-height: 1.4;
 }
@@ -1310,9 +1310,9 @@ td.empty-cell,
     font-weight: 500;
 }
 
-.alert-error   { background: var(--c-err-bg);  border-color: var(--c-err-bd);  color: #fecaca; }
-.alert-success { background: var(--c-ok-bg);   border-color: var(--c-ok-bd);   color: #a7f3d0; }
-.alert-warning { background: var(--c-warn-bg); border-color: var(--c-warn-bd); color: #fed7aa; }
+.alert-error   { background: var(--c-err-bg);  border-color: var(--c-err-bd);  color: var(--bx-err-text, #fecaca); }
+.alert-success { background: var(--c-ok-bg);   border-color: var(--c-ok-bd);   color: var(--bx-ok, #a7f3d0); }
+.alert-warning { background: var(--c-warn-bg); border-color: var(--c-warn-bd); color: var(--bx-warn-text, #fed7aa); }
 .alert-info    { background: var(--c-info-bg); border-color: var(--c-info-bd); color: #bfdbfe; }
 
 /* --------------------------------------------------------------- 9. Modals
@@ -1332,7 +1332,7 @@ td.empty-cell,
     align-items: center;
     justify-content: center;
     padding: var(--sp-6) var(--sp-4);
-    background: rgba(3, 7, 10, 0.72);
+    background: rgba(var(--bx-bg-rgb, 3, 7, 10), 0.72);
     backdrop-filter: blur(2px);
 }
 
@@ -1565,7 +1565,7 @@ th[aria-sort="descending"] .table-sort::after { content: ' ↓'; }
     background: var(--c-warn-bg);
     border: 1px solid var(--c-warn-bd);
     border-radius: var(--r-md);
-    color: #fed7aa;
+    color: var(--bx-warn-text, #fed7aa);
     font-size: 0.875rem;
     line-height: 1.4;
     margin-bottom: var(--sp-5);
@@ -1601,8 +1601,8 @@ ix-menu-item.menu-item-deprecated {
     min-width: 300px;
     max-width: 600px;
     height: calc(100vh - 48px);
-    background: rgba(24, 38, 45, 0.85);
-    border-left: 1px solid rgba(211, 236, 248, 0.15);
+    background: rgba(var(--bx-surface-rgb, 24, 38, 45), 0.85);
+    border-left: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.15);
     z-index: 1000;
     transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
@@ -1630,7 +1630,7 @@ ix-menu-item.menu-item-deprecated {
 }
 
 .topic-panel-resize-handle:hover {
-    background: rgba(124, 58, 237, 0.3);
+    background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.3);
 }
 
 body.topic-panel-open .main-content {
@@ -1639,8 +1639,8 @@ body.topic-panel-open .main-content {
 
 .topic-panel-header {
     padding: 1.25rem;
-    background: rgba(34, 50, 64, 0.5);
-    border-bottom: 1px solid rgba(211, 236, 248, 0.15);
+    background: rgba(var(--bx-raised-rgb, 34, 50, 64), 0.5);
+    border-bottom: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.15);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1671,7 +1671,7 @@ body.topic-panel-open .main-content {
 }
 
 .topic-panel-close:hover {
-    background: rgba(211, 236, 248, 0.1);
+    background: rgba(var(--bx-line-rgb, 211, 236, 248), 0.1);
     color: var(--text-primary);
 }
 
@@ -1681,8 +1681,8 @@ body.topic-panel-open .main-content {
     gap: 0.75rem;
     align-items: center;
     font-size: 0.85rem;
-    background: rgba(15, 22, 25, 0.2);
-    border: 1px solid rgba(211, 236, 248, 0.05);
+    background: rgba(var(--bx-bg-rgb, 15, 22, 25), 0.2);
+    border: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.05);
     border-radius: 10px;
     padding: 0.65rem 0.85rem;
 }
@@ -1698,8 +1698,8 @@ body.topic-panel-open .main-content {
 .topic-panel-archive-select select {
     flex: 1;
     padding: 0.45rem 0.65rem;
-    background: rgba(15, 22, 25, 0.6);
-    border: 1px solid rgba(211, 236, 248, 0.12);
+    background: rgba(var(--bx-bg-rgb, 15, 22, 25), 0.6);
+    border: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.12);
     border-radius: var(--r-sm);
     color: var(--text-primary);
     font-size: 0.85rem;
@@ -1738,7 +1738,7 @@ body.topic-panel-open .main-content {
 }
 
 .topic-panel-tree .tree-item:hover {
-    background: rgba(124, 58, 237, 0.08);
+    background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.08);
     color: var(--monster-light);
 }
 
@@ -1772,7 +1772,7 @@ body.topic-panel-open .main-content {
 }
 
 .topic-panel-tree .tree-toggle:hover {
-    background: rgba(211, 236, 248, 0.1);
+    background: rgba(var(--bx-line-rgb, 211, 236, 248), 0.1);
     color: var(--text-primary);
 }
 
@@ -1786,7 +1786,7 @@ body.topic-panel-open .main-content {
 
 .topic-panel-tree .tree-children {
     margin-left: 1.15rem;
-    border-left: 1px dashed rgba(211, 236, 248, 0.15);
+    border-left: 1px dashed rgba(var(--bx-line-rgb, 211, 236, 248), 0.15);
     padding-left: 0.4rem;
 }
 

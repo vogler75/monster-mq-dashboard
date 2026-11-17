@@ -48,7 +48,7 @@
             z-index: 1001;
         }
         .topic-panel-resize-handle:hover {
-            background: rgba(20, 184, 166, 0.3);
+            background: rgba(var(--bx-accent-2-rgb, 20, 184, 166), 0.3);
         }
 
         .topic-panel-header {
@@ -126,7 +126,7 @@
             font-size: 0.875rem;
         }
         .topic-panel-tree .tree-item:hover {
-            background: rgba(20, 184, 166, 0.12);
+            background: rgba(var(--bx-accent-2-rgb, 20, 184, 166), 0.12);
         }
         .topic-panel-tree .tree-item.has-data {
             color: var(--monster-teal);
@@ -194,11 +194,11 @@
             border-radius: 8px;
             padding: 1rem;
             transition: all 0.2s ease;
-            background: rgba(15, 23, 42, 0.4);
+            background: rgba(var(--bx-bg-rgb, 15, 23, 42), 0.4);
         }
         .drop-zone.drag-over {
             border-color: var(--monster-teal);
-            background: rgba(20, 184, 166, 0.1);
+            background: rgba(var(--bx-accent-2-rgb, 20, 184, 166), 0.1);
         }
 
         .filter-row {
@@ -445,7 +445,7 @@
                         <div class="form-group">
                             <textarea id="gateway-schema" rows="14" style="font-family:'Fira Code', 'JetBrains Mono', monospace; font-size:0.85rem; width:100%; box-sizing:border-box; background:var(--dark-bg); color:var(--text-primary); border:1px solid var(--dark-border); border-radius:6px; padding:0.75rem;" placeholder="{ &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot; ... }"></textarea>
                         </div>
-                        <div style="background:rgba(15, 23, 42, 0.6); border:1px solid var(--dark-border); border-radius:6px; padding:0.75rem; margin-top:0.75rem; font-size:0.8rem; color:var(--text-muted);">
+                        <div style="background:rgba(var(--bx-bg-rgb, 15, 23, 42), 0.6); border:1px solid var(--dark-border); border-radius:6px; padding:0.75rem; margin-top:0.75rem; font-size:0.8rem; color:var(--text-muted);">
                             <strong style="color:var(--monster-teal);">Mapping Keywords:</strong> 
                             <code>sensorId</code> (ID in Redfish URI), 
                             <code>reading</code> (numeric path or float), 

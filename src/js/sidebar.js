@@ -451,15 +451,15 @@ class SidebarManager {
                 </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:10px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--dark-surface-2, #334155);border:1px solid var(--dark-border, #475569);border-radius:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--dark-surface-2, var(--bx-track, #334155));border:1px solid var(--dark-border, var(--bx-border-input, #475569));border-radius:8px;">
                     <span style="color:var(--text-secondary);font-size:0.9rem;">Dashboard Version</span>
                     <span class="status-badge badge-neutral" style="font-weight:600;font-size:0.85rem;">${dashVersion}</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--dark-surface-2, #334155);border:1px solid var(--dark-border, #475569);border-radius:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--dark-surface-2, var(--bx-track, #334155));border:1px solid var(--dark-border, var(--bx-border-input, #475569));border-radius:8px;">
                     <span style="color:var(--text-secondary);font-size:0.9rem;">Connected Broker</span>
                     <span style="color:var(--text-primary);font-weight:500;font-size:0.9rem;">${nodeId} (${brokerVersion})</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--dark-surface-2, #334155);border:1px solid var(--dark-border, #475569);border-radius:8px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--dark-surface-2, var(--bx-track, #334155));border:1px solid var(--dark-border, var(--bx-border-input, #475569));border-radius:8px;">
                     <span style="color:var(--text-secondary);font-size:0.9rem;">Runtime Platform</span>
                     <span style="color:var(--text-primary);font-size:0.9rem;">${runtime}</span>
                 </div>
@@ -538,22 +538,22 @@ class SidebarManager {
         const style = document.createElement('style');
         style.id = 'broker-switcher-styles';
         style.textContent = [
-            '.broker-switcher-card { background:var(--dark-surface,#1E293B);border:1px solid var(--dark-border,#475569);border-radius:12px;width:400px;max-width:90vw;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.5); }',
-            '.broker-switcher-header { display:flex;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;border-bottom:1px solid var(--dark-border,#475569); }',
-            '.broker-switcher-header h3 { margin:0;color:var(--text-primary,#F1F5F9);font-size:1.1rem; }',
-            '.broker-switcher-close { background:none;border:none;color:var(--text-muted,#94A3B8);font-size:1.5rem;cursor:pointer;padding:0;line-height:1; }',
-            '.broker-switcher-close:hover { color:var(--text-primary,#F1F5F9); }',
+            '.broker-switcher-card { background:var(--dark-surface,var(--bx-surface, #1E293B));border:1px solid var(--dark-border,var(--bx-border-input, #475569));border-radius:12px;width:400px;max-width:90vw;max-height:70vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.5); }',
+            '.broker-switcher-header { display:flex;justify-content:space-between;align-items:center;padding:1.25rem 1.5rem;border-bottom:1px solid var(--dark-border,var(--bx-border-input, #475569)); }',
+            '.broker-switcher-header h3 { margin:0;color:var(--text-primary,var(--bx-heading, #F1F5F9));font-size:1.1rem; }',
+            '.broker-switcher-close { background:none;border:none;color:var(--text-muted,var(--bx-muted, #94A3B8));font-size:1.5rem;cursor:pointer;padding:0;line-height:1; }',
+            '.broker-switcher-close:hover { color:var(--text-primary,var(--bx-heading, #F1F5F9)); }',
             '.broker-switcher-list { overflow-y:auto;padding:0.5rem; }',
-            '.broker-switcher-footer { padding:0.75rem 1rem;border-top:1px solid var(--dark-border,#475569); }',
-            '.broker-switcher-logout { width:100%;padding:0.6rem 0.75rem;border:1px solid var(--dark-border,#475569);border-radius:6px;background:transparent;color:var(--text-secondary,#CBD5E1);font:inherit;font-size:0.85rem;font-weight:600;cursor:pointer; }',
-            '.broker-switcher-logout:hover { background:var(--dark-surface-2,#334155);color:var(--text-primary,#F1F5F9); }',
+            '.broker-switcher-footer { padding:0.75rem 1rem;border-top:1px solid var(--dark-border,var(--bx-border-input, #475569)); }',
+            '.broker-switcher-logout { width:100%;padding:0.6rem 0.75rem;border:1px solid var(--dark-border,var(--bx-border-input, #475569));border-radius:6px;background:transparent;color:var(--text-secondary,var(--bx-body, #CBD5E1));font:inherit;font-size:0.85rem;font-weight:600;cursor:pointer; }',
+            '.broker-switcher-logout:hover { background:var(--dark-surface-2,var(--bx-track, #334155));color:var(--text-primary,var(--bx-heading, #F1F5F9)); }',
             '.broker-switcher-item { display:flex;align-items:center;padding:0.75rem 1rem;border-radius:8px;cursor:pointer;transition:background 0.15s; }',
-            '.broker-switcher-item:hover { background:var(--dark-surface-2,#334155); }',
-            '.broker-switcher-item.active { background:var(--dark-surface-2,#334155);border:1px solid var(--monster-purple,#7C3AED); }',
+            '.broker-switcher-item:hover { background:var(--dark-surface-2,var(--bx-track, #334155)); }',
+            '.broker-switcher-item.active { background:var(--dark-surface-2,var(--bx-track, #334155));border:1px solid var(--monster-purple,var(--bx-accent, #7C3AED)); }',
             '.broker-item-info { flex:1;min-width:0; }',
-            '.broker-item-name { color:var(--text-primary,#F1F5F9);font-weight:500;font-size:0.95rem; }',
-            '.broker-item-detail { color:var(--text-muted,#94A3B8);font-size:0.8rem;margin-top:2px; }',
-            '.broker-active-badge { background:var(--monster-purple,#7C3AED);color:white;font-size:0.65rem;padding:2px 6px;border-radius:4px;margin-left:0.5rem;vertical-align:middle;text-transform:uppercase;letter-spacing:0.03em; }'
+            '.broker-item-name { color:var(--text-primary,var(--bx-heading, #F1F5F9));font-weight:500;font-size:0.95rem; }',
+            '.broker-item-detail { color:var(--text-muted,var(--bx-muted, #94A3B8));font-size:0.8rem;margin-top:2px; }',
+            '.broker-active-badge { background:var(--monster-purple,var(--bx-accent, #7C3AED));color:white;font-size:0.65rem;padding:2px 6px;border-radius:4px;margin-left:0.5rem;vertical-align:middle;text-transform:uppercase;letter-spacing:0.03em; }'
         ].join('\n');
         document.head.appendChild(style);
 

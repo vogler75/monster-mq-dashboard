@@ -21,7 +21,7 @@
         @media (max-width: 900px) { .vt-workspace { grid-template-columns: 1fr; } }
         .vt-pane { min-width: 0; }
         .vt-pane-body { max-height: 60vh; overflow: auto; padding: 0.5rem; }
-        .vt-toolbar { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.5rem; border-bottom: 1px solid rgba(211, 236, 248, 0.12); }
+        .vt-toolbar { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0.5rem; border-bottom: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.12); }
 
         .vt-tree, .vt-tree ul { list-style: none; margin: 0; padding: 0; }
         /* Explorer-style nesting: a fixed indent per level, no connector lines. */
@@ -29,19 +29,19 @@
            20px arrow slot). Each child gets a short tick; the last child ends the line. */
         .vt-tree ul { margin: 0 0 0 16px; padding-left: 8px; }
         .vt-tree ul > li { position: relative; }
-        .vt-tree ul > li::before { content: ''; position: absolute; left: -8px; top: 0; bottom: 0; border-left: 1px solid rgba(211, 236, 248, 0.3); }
+        .vt-tree ul > li::before { content: ''; position: absolute; left: -8px; top: 0; bottom: 0; border-left: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.3); }
         .vt-tree ul > li:last-child::before { bottom: auto; height: 14px; }
-        .vt-tree ul > li::after { content: ''; position: absolute; left: -8px; top: 14px; width: 8px; border-top: 1px solid rgba(211, 236, 248, 0.3); }
+        .vt-tree ul > li::after { content: ''; position: absolute; left: -8px; top: 14px; width: 8px; border-top: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.3); }
         .vt-row {
             display: flex; align-items: center; gap: 0.35rem;
             padding: 0.3rem 0.4rem; border-radius: var(--r-sm);
             cursor: pointer; font-size: 0.85rem; user-select: none;
             border: 1px solid transparent;
         }
-        .vt-row:hover { background: rgba(124, 58, 237, 0.08); }
+        .vt-row:hover { background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.08); }
         .vt-row:focus-visible { outline: 2px solid var(--monster-purple); outline-offset: -2px; }
-        .vt-row.is-selected { background: rgba(124, 58, 237, 0.18); border-color: var(--monster-purple); }
-        .vt-row.is-drop { border-color: var(--monster-teal); background: rgba(45, 212, 191, 0.12); }
+        .vt-row.is-selected { background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.18); border-color: var(--monster-purple); }
+        .vt-row.is-drop { border-color: var(--monster-teal); background: rgba(var(--bx-accent-2-rgb, 45, 212, 191), 0.12); }
         .vt-row.is-observed { font-style: italic; color: var(--text-muted); }
         .vt-row.has-issue .vt-label { text-decoration: underline wavy var(--monster-red); }
         .vt-twisty { box-sizing: border-box; width: 20px; min-width: 20px; height: 20px; flex: none; display: inline-flex; align-items: center; justify-content: center; border: none; background: none; color: var(--text-muted); padding: 0; cursor: pointer; }
@@ -53,7 +53,7 @@
         .vt-path { font-family: monospace; font-size: 0.8rem; word-break: break-all; }
         .vt-issues { margin: 0; padding-left: 1.1rem; font-size: 0.85rem; }
         .vt-issues li.is-error { color: var(--monster-red); }
-        .vt-issues li.is-warn { color: var(--monster-orange, #f59e0b); }
+        .vt-issues li.is-warn { color: var(--monster-orange, var(--bx-warn, #f59e0b)); }
         .vt-conflict { display: none; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
         .vt-move-list { max-height: 14rem; overflow: auto; font-family: monospace; font-size: 0.8rem; margin: 0.5rem 0 0; padding-left: 1.1rem; }
     </style>

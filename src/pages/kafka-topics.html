@@ -12,8 +12,8 @@
     <script type="module" src="/js/sidebar.js"></script>
     <style>
         .filter-bar {
-            background: rgba(24, 38, 45, 0.6);
-            border: 1px solid rgba(211, 236, 248, 0.12);
+            background: rgba(var(--bx-surface-rgb, 24, 38, 45), 0.6);
+            border: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.12);
             border-radius: 16px;
             padding: 1.25rem 1.5rem;
             margin-bottom: 2rem;
@@ -28,7 +28,7 @@
         }
 
         .filter-bar:hover {
-            border-color: rgba(211, 236, 248, 0.2);
+            border-color: rgba(var(--bx-line-rgb, 211, 236, 248), 0.2);
             box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.45);
         }
 
@@ -49,8 +49,8 @@
 
         .filter-input {
             padding: 0.55rem 0.85rem;
-            background: rgba(15, 22, 25, 0.55);
-            border: 1px solid rgba(211, 236, 248, 0.12);
+            background: rgba(var(--bx-bg-rgb, 15, 22, 25), 0.55);
+            border: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.12);
             border-radius: 8px;
             color: var(--text-primary);
             font-size: 0.85rem;
@@ -61,8 +61,8 @@
         .filter-input:focus {
             outline: none;
             border-color: var(--monster-purple);
-            background: rgba(15, 22, 25, 0.8);
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.25), inset 0 2px 4px rgba(0,0,0,0.1);
+            background: rgba(var(--bx-bg-rgb, 15, 22, 25), 0.8);
+            box-shadow: 0 0 0 3px rgba(var(--bx-accent-rgb, 124, 58, 237), 0.25), inset 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .filter-input::placeholder {
@@ -78,9 +78,9 @@
         .filter-bar .btn-query {
             background: linear-gradient(135deg, var(--monster-purple) 0%, var(--monster-dark) 100%);
             border: none;
-            color: white;
+            color: var(--bx-on-accent, white);
             font-weight: 600;
-            box-shadow: 0 4px 15px rgba(124, 58, 237, 0.35);
+            box-shadow: 0 4px 15px rgba(var(--bx-accent-rgb, 124, 58, 237), 0.35);
             padding: 0.55rem 1.35rem;
             border-radius: 8px;
             cursor: pointer;
@@ -93,8 +93,8 @@
         }
 
         .filter-bar .btn-query:hover:not(:disabled) {
-            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-            box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5);
+            background: linear-gradient(135deg, var(--bx-accent, #8b5cf6) 0%, var(--bx-accent-2, #6d28d9) 100%);
+            box-shadow: 0 6px 20px rgba(var(--bx-accent-rgb, 124, 58, 237), 0.5);
             transform: translateY(-1.5px);
         }
 
@@ -111,8 +111,8 @@
         .stats-banner {
             display: flex;
             gap: 1.5rem;
-            background: rgba(15, 22, 25, 0.3);
-            border: 1px solid rgba(211, 236, 248, 0.05);
+            background: rgba(var(--bx-bg-rgb, 15, 22, 25), 0.3);
+            border: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.05);
             border-radius: 12px;
             padding: 0.75rem 1.25rem;
             margin-bottom: 1.5rem;
@@ -148,8 +148,8 @@
         .explorer-table-wrapper {
             flex: 1;
             min-width: 0;
-            background: rgba(24, 38, 45, 0.4);
-            border: 1px solid rgba(211, 236, 248, 0.12);
+            background: rgba(var(--bx-surface-rgb, 24, 38, 45), 0.4);
+            border: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.12);
             border-radius: 16px;
             overflow: hidden;
             box-shadow: var(--card-shadow);
@@ -168,17 +168,17 @@
         }
 
         .explorer-table-wrapper tbody tr:hover {
-            background: rgba(124, 58, 237, 0.06) !important;
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.06) !important;
         }
 
         .explorer-table-wrapper tbody tr.selected {
-            background: rgba(124, 58, 237, 0.15) !important;
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.15) !important;
         }
 
         .explorer-table-wrapper td {
             font-size: 0.85rem;
             padding: 0.75rem 1rem;
-            border-bottom: 1px solid rgba(211, 236, 248, 0.06);
+            border-bottom: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.06);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -186,13 +186,13 @@
 
         .explorer-table-wrapper th {
             padding: 0.85rem 1rem;
-            background: rgba(15, 22, 25, 0.8);
+            background: rgba(var(--bx-bg-rgb, 15, 22, 25), 0.8);
             font-weight: 600;
             color: var(--text-secondary);
             font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            border-bottom: 1px solid rgba(211, 236, 248, 0.15);
+            border-bottom: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.15);
             text-align: left;
         }
 
@@ -224,8 +224,8 @@
             right: -440px;
             width: 420px;
             height: calc(100vh - 48px);
-            background: rgba(24, 38, 45, 0.85);
-            border-left: 1px solid rgba(211, 236, 248, 0.15);
+            background: rgba(var(--bx-surface-rgb, 24, 38, 45), 0.85);
+            border-left: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.15);
             z-index: 1000;
             transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
@@ -242,8 +242,8 @@
 
         .detail-panel-header {
             padding: 1.25rem 1.5rem;
-            background: rgba(34, 50, 64, 0.5);
-            border-bottom: 1px solid rgba(211, 236, 248, 0.15);
+            background: rgba(var(--bx-raised-rgb, 34, 50, 64), 0.5);
+            border-bottom: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.15);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -274,7 +274,7 @@
         }
 
         .detail-panel-close:hover {
-            background: rgba(211, 236, 248, 0.1);
+            background: rgba(var(--bx-line-rgb, 211, 236, 248), 0.1);
             color: var(--text-primary);
         }
 
@@ -286,8 +286,8 @@
 
         .detail-field {
             margin-bottom: 1.5rem;
-            background: rgba(15, 22, 25, 0.3);
-            border: 1px solid rgba(211, 236, 248, 0.05);
+            background: rgba(var(--bx-bg-rgb, 15, 22, 25), 0.3);
+            border: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.05);
             border-radius: 12px;
             padding: 1rem;
         }
@@ -315,8 +315,8 @@
         }
 
         .detail-payload {
-            background: rgba(15, 22, 25, 0.85);
-            border: 1px solid rgba(211, 236, 248, 0.1);
+            background: rgba(var(--bx-bg-rgb, 15, 22, 25), 0.85);
+            border: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.1);
             border-radius: 8px;
             padding: 1rem;
             max-height: 400px;
@@ -335,8 +335,8 @@
             color: var(--text-muted);
             padding: 0.75rem 1.25rem;
             font-weight: 500;
-            border-top: 1px solid rgba(211, 236, 248, 0.06);
-            background: rgba(15, 22, 25, 0.2);
+            border-top: 1px solid rgba(var(--bx-line-rgb, 211, 236, 248), 0.06);
+            background: rgba(var(--bx-bg-rgb, 15, 22, 25), 0.2);
         }
 
         .loading-row td {
@@ -434,7 +434,7 @@
             </div>
 
             <!-- Search bar -->
-            <div class="filter-bar" style="padding: 0.75rem 1.25rem; margin-bottom: 1.5rem; background: rgba(24, 38, 45, 0.4);">
+            <div class="filter-bar" style="padding: 0.75rem 1.25rem; margin-bottom: 1.5rem; background: rgba(var(--bx-surface-rgb, 24, 38, 45), 0.4);">
                 <div class="filter-group" style="flex: 1;">
                     <label for="search-input"><ix-icon name="search" size="16"></ix-icon></label>
                     <input type="text" id="search-input" class="filter-input" placeholder="Filter table content ..." style="width: 100%; max-width: 400px;">

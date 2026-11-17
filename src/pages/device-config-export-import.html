@@ -76,7 +76,7 @@
         }
 
         .device-table tbody tr {
-            border-bottom: 1px solid rgba(71, 85, 105, 0.2);
+            border-bottom: 1px solid rgba(var(--bx-border-input-rgb, 71, 85, 105), 0.2);
             transition: background 0.15s ease;
         }
 
@@ -85,7 +85,7 @@
         }
 
         .device-table tbody tr:hover {
-            background: rgba(124, 58, 237, 0.06);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.06);
         }
 
         .device-table td {
@@ -115,7 +115,7 @@
         .device-type-badge {
             display: inline-block;
             padding: 0.15rem 0.4rem;
-            background: rgba(124, 58, 237, 0.2);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.2);
             color: var(--monster-purple);
             border-radius: 4px;
             font-size: 0.68rem;
@@ -143,19 +143,19 @@
             border-radius: 8px;
             padding: 2rem;
             text-align: center;
-            background: rgba(124, 58, 237, 0.05);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.05);
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .file-upload-area:hover {
             border-color: var(--monster-purple);
-            background: rgba(124, 58, 237, 0.1);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.1);
         }
 
         .file-upload-area.dragover {
             border-color: var(--monster-purple);
-            background: rgba(124, 58, 237, 0.15);
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.15);
         }
 
         .file-upload-icon {
@@ -250,14 +250,14 @@
         }
 
         .import-result-success {
-            background: rgba(16, 185, 129, 0.15);
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: rgba(var(--bx-ok-rgb, 16, 185, 129), 0.15);
+            border: 1px solid rgba(var(--bx-ok-rgb, 16, 185, 129), 0.3);
             color: var(--monster-green);
         }
 
         .import-result-error {
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: rgba(var(--bx-err-rgb, 239, 68, 68), 0.15);
+            border: 1px solid rgba(var(--bx-err-rgb, 239, 68, 68), 0.3);
             color: var(--monster-red);
         }
 

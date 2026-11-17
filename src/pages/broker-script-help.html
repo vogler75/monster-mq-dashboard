@@ -10,8 +10,8 @@
             padding: 0;
             height: 100%;
             overflow: hidden;
-            background: var(--background-secondary, #12141a);
-            color: var(--text-primary, #e8eaed);
+            background: var(--background-secondary, var(--bx-bg, #12141a));
+            color: var(--text-primary, var(--bx-body, #e8eaed));
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
@@ -29,8 +29,8 @@
             position: sticky;
             top: 0;
             align-self: start;
-            background: var(--background-primary, #1a1d28);
-            border-right: 1px solid var(--border-color, #2d3139);
+            background: var(--background-primary, var(--bx-surface, #1a1d28));
+            border-right: 1px solid var(--border-color, var(--bx-raised, #2d3139));
             padding: 1.5rem 1rem;
             max-height: 100vh;
             overflow-y: auto;
@@ -42,7 +42,7 @@
             font-size: 0.75rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: var(--text-secondary, #9ca3af);
+            color: var(--text-secondary, var(--bx-muted, #9ca3af));
             font-weight: 700;
         }
 
@@ -59,7 +59,7 @@
         .help-nav-list a {
             display: block;
             padding: 0.4rem 0.6rem;
-            color: var(--text-secondary, #9ca3af);
+            color: var(--text-secondary, var(--bx-muted, #9ca3af));
             text-decoration: none;
             border-radius: 6px;
             font-size: 0.85rem;
@@ -68,13 +68,13 @@
         }
 
         .help-nav-list a:hover {
-            color: var(--text-primary, #e8eaed);
+            color: var(--text-primary, var(--bx-body, #e8eaed));
             background: rgba(255, 255, 255, 0.05);
         }
 
         .help-nav-list a.active {
             color: #fff;
-            background: var(--primary-color, #7c3aed);
+            background: var(--primary-color, var(--bx-accent, #7c3aed));
             font-weight: 600;
         }
 
@@ -92,12 +92,12 @@
             gap: 0.75rem;
             margin-bottom: 2rem;
             padding-bottom: 1.25rem;
-            border-bottom: 1px solid var(--border-color, #2d3139);
+            border-bottom: 1px solid var(--border-color, var(--bx-raised, #2d3139));
         }
 
         .lang-tabs-label {
             font-size: 0.85rem;
-            color: var(--text-secondary, #9ca3af);
+            color: var(--text-secondary, var(--bx-muted, #9ca3af));
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -114,8 +114,8 @@
             font-size: 0.85rem;
             font-weight: 600;
             background: rgba(255, 255, 255, 0.06);
-            color: var(--text-secondary, #9ca3af);
-            border: 1px solid var(--border-color, #2d3139);
+            color: var(--text-secondary, var(--bx-muted, #9ca3af));
+            border: 1px solid var(--border-color, var(--bx-raised, #2d3139));
             cursor: pointer;
             transition: all 0.15s ease;
         }
@@ -126,15 +126,15 @@
         }
 
         .lang-tab-btn.active {
-            background: var(--primary-color, #7c3aed);
+            background: var(--primary-color, var(--bx-accent, #7c3aed));
             color: #fff;
-            border-color: var(--primary-color, #7c3aed);
+            border-color: var(--primary-color, var(--bx-accent, #7c3aed));
         }
 
         .help-section {
             margin-bottom: 3.5rem;
             padding-bottom: 2rem;
-            border-bottom: 1px solid var(--border-color, #2d3139);
+            border-bottom: 1px solid var(--border-color, var(--bx-raised, #2d3139));
         }
 
         .help-section:last-child {
@@ -153,7 +153,7 @@
         h2 {
             font-size: 1.4rem;
             margin: 0 0 1rem 0;
-            color: #e8eaed;
+            color: var(--bx-body, #e8eaed);
             padding-bottom: 0.5rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
@@ -161,18 +161,18 @@
         h3 {
             font-size: 1.1rem;
             margin: 1.5rem 0 0.5rem 0;
-            color: #d1d5db;
+            color: var(--bx-body, #d1d5db);
         }
 
         p {
             line-height: 1.6;
-            color: #9ca3af;
+            color: var(--bx-muted, #9ca3af);
             margin: 0 0 1rem 0;
         }
 
         ul, ol {
             line-height: 1.6;
-            color: #9ca3af;
+            color: var(--bx-muted, #9ca3af);
             padding-left: 1.5rem;
             margin: 0 0 1rem 0;
         }
@@ -190,20 +190,20 @@
             text-transform: uppercase;
         }
 
-        .badge-python { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
-        .badge-starlark { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-        .badge-js { background: rgba(234, 179, 8, 0.2); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); }
+        .badge-python { background: rgba(var(--bx-accent-rgb, 59, 130, 246), 0.2); color: var(--bx-accent, #60a5fa); border: 1px solid rgba(var(--bx-accent-rgb, 59, 130, 246), 0.3); }
+        .badge-starlark { background: rgba(var(--bx-warn-rgb, 245, 158, 11), 0.2); color: var(--bx-warn, #fbbf24); border: 1px solid rgba(var(--bx-warn-rgb, 245, 158, 11), 0.3); }
+        .badge-js { background: rgba(var(--bx-warn-rgb, 234, 179, 8), 0.2); color: var(--bx-warn, #facc15); border: 1px solid rgba(var(--bx-warn-rgb, 234, 179, 8), 0.3); }
 
         pre {
-            background: #0f1117;
-            border: 1px solid #2d3139;
+            background: var(--bx-bg, #0f1117);
+            border: 1px solid var(--bx-raised, #2d3139);
             border-radius: 8px;
             padding: 1rem 1.25rem;
             overflow-x: auto;
             font-family: 'Fira Code', 'Courier New', Courier, monospace;
             font-size: 0.85rem;
             line-height: 1.5;
-            color: #e2e8f0;
+            color: var(--bx-body, #e2e8f0);
             margin: 0.75rem 0 1.25rem 0;
         }
 
@@ -213,7 +213,7 @@
             background: rgba(255, 255, 255, 0.08);
             padding: 0.15rem 0.35rem;
             border-radius: 4px;
-            color: #e2e8f0;
+            color: var(--bx-body, #e2e8f0);
         }
 
         pre code {
@@ -232,12 +232,12 @@
         .api-table th, .api-table td {
             padding: 0.75rem 1rem;
             text-align: left;
-            border-bottom: 1px solid #2d3139;
+            border-bottom: 1px solid var(--bx-raised, #2d3139);
         }
 
         .api-table th {
-            background: #1a1d28;
-            color: #e8eaed;
+            background: var(--bx-surface, #1a1d28);
+            color: var(--bx-body, #e8eaed);
             font-weight: 600;
         }
 
@@ -246,13 +246,13 @@
         }
 
         .card-tip {
-            background: rgba(124, 58, 237, 0.08);
-            border-left: 3px solid #7c3aed;
+            background: rgba(var(--bx-accent-rgb, 124, 58, 237), 0.08);
+            border-left: 3px solid var(--bx-accent, #7c3aed);
             padding: 1rem 1.25rem;
             border-radius: 0 8px 8px 0;
             margin: 1rem 0 1.5rem 0;
         }
-        .card-tip p { margin: 0; color: #cbd5e1; }
+        .card-tip p { margin: 0; color: var(--bx-body, #cbd5e1); }
     </style>
 </head>
 <body>
@@ -260,7 +260,7 @@
         <nav class="help-nav" id="help-nav-container">
             <h3>Contents</h3>
             <ul class="help-nav-list" id="nav-list">
-                <li><span style="font-size: 0.85rem; color: var(--text-secondary, #9ca3af);">Loading...</span></li>
+                <li><span style="font-size: 0.85rem; color: var(--text-secondary, var(--bx-muted, #9ca3af));">Loading...</span></li>
             </ul>
         </nav>
 
@@ -271,7 +271,7 @@
             </div>
 
             <div id="doc-render-target">
-                <div style="padding: 3rem 1rem; text-align: center; color: var(--text-secondary, #9ca3af);">
+                <div style="padding: 3rem 1rem; text-align: center; color: var(--text-secondary, var(--bx-muted, #9ca3af));">
                     <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Loading documentation from broker...</p>
                     <p style="font-size: 0.85rem; opacity: 0.7;">Fetching supported language references via GraphQL</p>
                 </div>

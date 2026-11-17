@@ -94,8 +94,8 @@ const HelpModal = (() => {
       }
 
       .help-modal-container {
-        background: #0f1117;
-        border: 1px solid #2d3139;
+        background: var(--bx-bg, #0f1117);
+        border: 1px solid var(--bx-raised, #2d3139);
         border-radius: 12px;
         width: 95%;
         max-width: 1400px;
@@ -118,8 +118,8 @@ const HelpModal = (() => {
       }
 
       .help-modal-header {
-        background: #1a1d28;
-        border-bottom: 1px solid #2d3139;
+        background: var(--bx-surface, #1a1d28);
+        border-bottom: 1px solid var(--bx-raised, #2d3139);
         padding: 1rem 1.5rem;
         display: flex;
         justify-content: space-between;
@@ -131,14 +131,14 @@ const HelpModal = (() => {
       .help-modal-title {
         font-size: 1.1rem;
         font-weight: 600;
-        color: #e8eaed;
+        color: var(--bx-body, #e8eaed);
         margin: 0;
       }
 
       .help-modal-close {
         background: transparent;
         border: none;
-        color: #9ca3af;
+        color: var(--bx-muted, #9ca3af);
         cursor: pointer;
         padding: 0.5rem;
         border-radius: 6px;
@@ -149,8 +149,8 @@ const HelpModal = (() => {
       }
 
       .help-modal-close:hover {
-        background: #2d3139;
-        color: #e8eaed;
+        background: var(--bx-raised, #2d3139);
+        color: var(--bx-body, #e8eaed);
       }
 
       .help-modal-iframe {
@@ -159,7 +159,7 @@ const HelpModal = (() => {
         border: none;
         border-bottom-left-radius: 12px;
         border-bottom-right-radius: 12px;
-        background: var(--background-primary, #1a1d28);
+        background: var(--background-primary, var(--bx-surface, #1a1d28));
       }
     `;
     document.head.appendChild(style);
