@@ -355,6 +355,15 @@ export default defineConfig({
           return;
         }
 
+        // `make.py run --brand <pack>` passes the branding here instead of a
+        // src/config/branding.json, which the build would copy into dist/.
+        if (url === '/config/branding.json' && process.env.DASHBOARD_BRANDING) {
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Cache-Control', 'no-store');
+          res.end(process.env.DASHBOARD_BRANDING);
+          return;
+        }
+
         if (url === '/config/brokers.json') {
           const brokersPath = resolve(configRoot, 'brokers.json');
           if (!existsSync(brokersPath)) {

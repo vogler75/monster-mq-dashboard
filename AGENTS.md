@@ -20,6 +20,7 @@ npm run dev
 # Expose on all interfaces (or proxy to a specific broker host:port)
 python make.py run
 VITE_LOCAL_GRAPHQL_TARGET=http://localhost:4000 python make.py run
+python make.py run --brand nexusmq   # Dev server with a brand pack (nothing written to src/ or dist/)
 
 # Production web build (outputs to dist/)
 npm run build
